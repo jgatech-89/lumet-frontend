@@ -1,3 +1,16 @@
+# Dependencies
+node_modules
+
+# Build
+dist
+dist-ssr
+*.local
+
+# Environment (mantener .env.example)
+.env
+.env.local
+.env.*.local
+
 # Logs
 logs
 *.log
@@ -7,18 +20,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Cache / temporales
+.cache
+.temp
+.tmp
+*.tsbuildinfo
+.eslintcache
+.npm
+.parcel-cache
+.vite
 
-# Editor directories and files
+# Tests / coverage
+coverage
+*.lcov
+.nyc_output
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs / editores
+.idea
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*~
+
+# Misc
+*.bak
+*.orig
