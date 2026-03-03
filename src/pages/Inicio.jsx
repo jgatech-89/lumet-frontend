@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 
-const Home = () => (
+const Inicio = () => (
   <Box
     sx={{
       minHeight: '100vh',
@@ -11,9 +11,9 @@ const Home = () => (
     }}
   >
     <Typography variant="h1" component="h1" color="primary.dark">
-      lumet frontend
+      Inicio
     </Typography>
   </Box>
 );
 
-export default Home;
+export default Inicio;
