@@ -32,8 +32,9 @@ Abrir **http://localhost:5173**
 
 ## Scripts (dentro del contenedor)
 
-| Comando         | Descripción            |
-|-----------------|------------------------|
-| `npm run dev`   | Servidor de desarrollo |
-| `npm run build` | Build de producción    |
-| `npm run lint`  | ESLint                 |
+| Comando           | Descripción            |
+|-------------------|------------------------|
+| `npm run dev`     | Servidor de desarrollo |
+| `npm run build`   | Build de producción    |
+| `npm run lint`    | ESLint                 |
+| `npm run sync-logo` | Copia el logo de `src/assets/logo-lumet.png` a `public/` (favicon). Ejecutar al cambiar el logo. |
