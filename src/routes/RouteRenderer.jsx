@@ -1,11 +1,12 @@
 import { Suspense } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Navigate } from 'react-router-dom';
 import { Box, CircularProgress, Skeleton } from '@mui/material';
 import MainLayout from '../layouts/MainLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import ProtectedRoute from './ProtectedRoute';
 import RoleRoute from './RoleRoute';
 import PublicRoute from './PublicRoute';
+import { useAuth } from '../context/AuthContext';
 
 const PageFallback = () => (
   <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto' }}>
@@ -18,14 +19,38 @@ const PageFallback = () => (
   </Box>
 );
 
+/** Loader a pantalla completa mientras se resuelve la auth. Evita el parpadeo del layout. */
+const FullPageAuthLoader = () => (
+  <Box
+    sx={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      bgcolor: 'background.default',
+    }}
+  >
+    <CircularProgress />
+  </Box>
+);
+
 /**
  * Envuelve cada ruta con Layout, protección (privada/pública) y roles según routeConfig.
  * Permite escalar añadiendo solo entradas en routeConfig.
  */
 const RouteRenderer = ({ config }) => {
   const location = useLocation();
+  const { initialized, isAuthenticated } = useAuth();
   const Page = config.element;
   const Layout = config.layout === 'auth' ? AuthLayout : MainLayout;
+
+  // Rutas privadas: no mostrar MainLayout hasta saber si hay sesión (evita parpadeo)
+  if (config.private) {
+    if (!initialized) return <FullPageAuthLoader />;
+    if (!isAuthenticated) {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+  }
 
   let content = (
     <Box
