@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import { useSnackbar } from '../context/SnackbarContext';
 import LoginLeftPanel from '../components/login/LoginLeftPanel';
 import LoginForm from '../components/login/LoginForm';
+import ConfirmCodeForm from '../components/login/ConfirmCodeForm';
 
 /**
  * JWT de demo (solo desarrollo). En producción el token lo devuelve el backend.
@@ -16,16 +18,31 @@ const createMockToken = (payload, expSeconds = 3600) => {
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState(1);
+  const [pendingEmail, setPendingEmail] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showSnackbar } = useSnackbar();
 
-  const handleSubmit = (data) => {
+  const handleLoginSubmit = (data) => {
     setIsLoading(true);
-    const role = data.email?.toLowerCase().includes('admin') ? 'admin' : 'user';
-    const token = createMockToken({ sub: data.email, role });
-    login(token, { sub: data.email, email: data.email, role });
+    setPendingEmail(data.email);
+    setStep(2);
+    setIsLoading(false);
+  };
+
+  const handleConfirmCode = (data) => {
+    setIsLoading(true);
+    const role = pendingEmail?.toLowerCase().includes('admin') ? 'admin' : 'user';
+    const token = createMockToken({ sub: pendingEmail, role });
+    login(token, { sub: pendingEmail, email: pendingEmail, role });
     navigate('/dashboard', { replace: true });
     setIsLoading(false);
+  };
+
+  const handleResendCode = () => {
+    // En producción aquí se llamaría al backend para reenviar el código
+    showSnackbar('Código reenviado');
   };
 
   return (
@@ -34,7 +51,7 @@ const Login = () => {
         position: 'relative',
         display: 'flex',
         width: '100%',
-        minWidth: 0,
+        minWidth: '100%',
         minHeight: '100vh',
         overflow: 'hidden',
         background: '#f8fbff',
@@ -93,7 +110,29 @@ const Login = () => {
           py: 3,
         }}
       >
-        <LoginForm onSubmit={handleSubmit} isLoading={isLoading} />
+        <Box
+          key={step}
+          sx={{
+            width: '100%',
+            maxWidth: 460,
+            animation: 'stepIn 0.4s ease-out forwards',
+            '@keyframes stepIn': {
+              from: { opacity: 0, transform: 'translateX(16px)' },
+              to: { opacity: 1, transform: 'translateX(0)' },
+            },
+          }}
+        >
+          {step === 1 ? (
+            <LoginForm onSubmit={handleLoginSubmit} isLoading={isLoading} />
+          ) : (
+            <ConfirmCodeForm
+              email={pendingEmail}
+              onSubmit={handleConfirmCode}
+              onResendCode={handleResendCode}
+              isLoading={isLoading}
+            />
+          )}
+        </Box>
       </Box>
     </Box>
   );

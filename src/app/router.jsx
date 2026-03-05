@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Suspense } from 'react';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, Skeleton } from '@mui/material';
 import routeConfig from '../routes/routeConfig';
 import RouteRenderer from '../routes/RouteRenderer';
 import MainLayout from '../layouts/MainLayout';
@@ -10,8 +10,12 @@ import { useAuth } from '../context/AuthContext';
 import { setLogoutCallback } from '../services/api';
 
 const PageFallback = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-    <CircularProgress />
+  <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', p: 2 }}>
+    <Skeleton variant="text" width="40%" height={48} sx={{ mb: 2 }} />
+    <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2, mb: 2 }} />
+    <Skeleton variant="text" width="90%" />
+    <Skeleton variant="text" width="70%" />
+    <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2, mt: 2 }} />
   </Box>
 );
 

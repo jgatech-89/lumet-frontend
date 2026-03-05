@@ -30,7 +30,11 @@ const MainLayout = ({ children }) => {
                 component={Link}
                 to="/dashboard"
                 color="inherit"
-                sx={{ opacity: location.pathname === '/dashboard' ? 1 : 0.8 }}
+                sx={{
+                  opacity: location.pathname === '/dashboard' ? 1 : 0.8,
+                  transition: 'opacity 0.2s ease, transform 0.2s ease',
+                  '&:hover': { opacity: 1, transform: 'translateY(-1px)' },
+                }}
               >
                 Dashboard
               </Button>
@@ -38,17 +42,36 @@ const MainLayout = ({ children }) => {
                 component={Link}
                 to="/admin"
                 color="inherit"
-                sx={{ opacity: location.pathname === '/admin' ? 1 : 0.8 }}
+                sx={{
+                  opacity: location.pathname === '/admin' ? 1 : 0.8,
+                  transition: 'opacity 0.2s ease, transform 0.2s ease',
+                  '&:hover': { opacity: 1, transform: 'translateY(-1px)' },
+                }}
               >
                 Admin
               </Button>
-              <Button color="inherit" onClick={handleLogout}>
+              <Button
+                color="inherit"
+                onClick={handleLogout}
+                sx={{
+                  transition: 'opacity 0.2s ease, transform 0.2s ease',
+                  '&:hover': { opacity: 1, transform: 'translateY(-1px)' },
+                }}
+              >
                 Salir
               </Button>
             </>
           )}
           {!isAuthenticated && (
-            <Button component={Link} to="/login" color="inherit">
+            <Button
+              component={Link}
+              to="/login"
+              color="inherit"
+              sx={{
+                transition: 'opacity 0.2s ease, transform 0.2s ease',
+                '&:hover': { transform: 'translateY(-1px)' },
+              }}
+            >
               Login
             </Button>
           )}
