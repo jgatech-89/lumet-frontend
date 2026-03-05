@@ -28,10 +28,10 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
     handleSubmit,
     formState: { errors },
   } = useForm({
-    defaultValues: {
-      email: 'demo@minimals.cc',
-      password: '@2Minimal',
-    },
+    // defaultValues: {
+    //   email: 'demo@minimals.cc',
+    //   password: '@2Minimal',
+    // },
   });
 
   return (
@@ -96,7 +96,7 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
         type="email"
         margin="normal"
         size="medium"
-        defaultValue="demo@minimals.cc"
+        defaultValue=""
         {...register('email', {
           required: 'El correo es obligatorio',
           pattern: {
@@ -131,7 +131,7 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
           type={showPassword ? 'text' : 'password'}
           margin="normal"
           size="medium"
-          defaultValue="@2Minimal"
+          defaultValue=""
           {...register('password', { required: 'La contraseña es obligatoria' })}
           error={Boolean(errors.password)}
           helperText={errors.password?.message}
