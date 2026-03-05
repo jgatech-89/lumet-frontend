@@ -72,12 +72,13 @@ const Login = () => {
           return showAlert('error', 'No se pudo verificar el código.');
         }
 
-        const access = resp?.access_token;
-        const refresh = resp?.refresh_token;
+        const access = resp?.access ?? resp?.access_token;
+        const refresh = resp?.refresh ?? resp?.refresh_token;
 
-        if (!access) return showAlert('error', 'Ocurrio un error, contacta al administrador.');
+        if (!access) return showAlert('error', 'Ocurrió un error, contacta al administrador.');
 
         setTokens({ access, refresh });
+        // user se llenará luego desde endpoint /me; por ahora solo correo/email
         login(access, { correo: pendingEmail, email: pendingEmail });
 
         showSnackbar('Sesión iniciada');

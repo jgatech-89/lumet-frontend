@@ -1,14 +1,6 @@
 import { createContext, useContext, useCallback, useState, useEffect } from 'react';
-import {
-  getToken,
-  setToken as persistToken,
-  removeToken,
-  getUserFromStorage,
-  setUserInStorage,
-  removeUserFromStorage,
-  isTokenExpired,
-  decodeToken,
-} from '../utils/auth';
+import { getToken, setToken as persistToken, isTokenExpired, decodeToken } from '../utils/auth';
+import { clearTokens } from '../js/funciones';
 
 const AuthContext = createContext(null);
 
@@ -22,18 +14,17 @@ export const useAuth = () => {
 
 /**
  * AuthProvider: gestiona token, usuario y estado de autenticación.
- * Persiste token (y opcionalmente user) en localStorage.
+ * Solo persiste el access token (clave "access_token"). El usuario no se persiste.
  * NOTA: Las rutas protegidas aquí son solo una capa de UX. La seguridad
  * real debe estar en el backend (validar token, roles y permisos en cada request).
  */
 export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(() => getToken());
-  const [user, setUser] = useState(() => getUserFromStorage());
+  const [user, setUser] = useState(null);
   const [initialized, setInitialized] = useState(false);
 
   const logout = useCallback(() => {
-    removeToken();
-    removeUserFromStorage();
+    clearTokens();
     setAccessToken(null);
     setUser(null);
   }, []);
@@ -49,7 +40,6 @@ export const AuthProvider = ({ children }) => {
     const decoded = decodeToken(token);
     const resolvedUser = userData ?? (decoded?.sub ? { sub: decoded.sub, role: decoded.role ?? 'user' } : null);
     if (resolvedUser) {
-      setUserInStorage(resolvedUser);
       setUser(resolvedUser);
     }
   }, [logout]);

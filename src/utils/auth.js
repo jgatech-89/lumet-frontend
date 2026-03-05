@@ -1,11 +1,11 @@
 /**
  * Utilidades para manejo de JWT y persistencia en localStorage.
+ * Solo se persiste el access token bajo la clave "access_token".
  * NOTA: La seguridad real debe implementarse en el backend. Este módulo
  * solo facilita la capa de UX y el envío del token al API.
  */
 
-const TOKEN_KEY = 'lumet_access_token';
-const USER_KEY = 'lumet_user';
+const TOKEN_KEY = 'access_token';
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 
@@ -16,25 +16,6 @@ export const setToken = (token) => {
 };
 
 export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
-
-export const getUserFromStorage = () => {
-  try {
-    const stored = localStorage.getItem(USER_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-};
-
-export const setUserInStorage = (user) => {
-  if (user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(USER_KEY);
-  }
-};
-
-export const removeUserFromStorage = () => localStorage.removeItem(USER_KEY);
 
 /**
  * Decodifica el payload de un JWT (sin verificar firma; eso lo hace el backend).

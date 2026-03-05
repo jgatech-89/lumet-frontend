@@ -1,25 +1,26 @@
-
 import axios from 'axios';
+import { getToken, setToken, removeToken } from '../utils/auth';
 
 export const api = "http://localhost:8000";
 export const AUTH_PREFIX = "/auth";
 
-const ACCESS_KEY = "access_token";
 const REFRESH_KEY = "refresh_token";
 
-export const getAccessToken = () => localStorage.getItem(ACCESS_KEY);
+/** Access token: delegado a auth.js (clave "access_token"). */
+export const getAccessToken = () => getToken();
+
 export const getRefreshToken = () => localStorage.getItem(REFRESH_KEY);
 
 export const setTokens = ({ access, refresh, access_token, refresh_token }) => {
   const a = access ?? access_token;
   const r = refresh ?? refresh_token;
 
-  if (a) localStorage.setItem(ACCESS_KEY, a);
+  if (a) setToken(a);
   if (r) localStorage.setItem(REFRESH_KEY, r);
 };
 
 export const clearTokens = () => {
-  localStorage.removeItem(ACCESS_KEY);
+  removeToken();
   localStorage.removeItem(REFRESH_KEY);
 };
 

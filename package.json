@@ -10,6 +10,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "trim-logo": "node scripts/trim-logo.mjs",
+    "sync-logo": "cp src/assets/logo-lumet.png public/logo-lumet.png",
     "lint": "eslint .",
     "preview": "vite preview"
   },

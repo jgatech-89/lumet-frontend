@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import { Box, CircularProgress, Skeleton } from '@mui/material';
 import MainLayout from '../layouts/MainLayout';
@@ -19,20 +19,32 @@ const PageFallback = () => (
   </Box>
 );
 
-/** Loader a pantalla completa mientras se resuelve la auth. Evita el parpadeo del layout. */
-const FullPageAuthLoader = () => (
-  <Box
-    sx={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      bgcolor: 'background.default',
-    }}
-  >
-    <CircularProgress />
-  </Box>
-);
+/** Loader a pantalla completa; se muestra solo tras un delay para evitar parpadeo cuando la auth resuelve rápido. */
+const AUTH_LOADER_DELAY_MS = 150;
+
+const FullPageAuthLoader = () => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), AUTH_LOADER_DELAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'background.default',
+      }}
+    >
+      <CircularProgress />
+    </Box>
+  );
+};
 
 /**
  * Envuelve cada ruta con Layout, protección (privada/pública) y roles según routeConfig.
