@@ -1,51 +1,30 @@
 import axios from 'axios';
-import { getToken, setToken, removeToken } from '../utils/auth';
+import { getToken, setTokens, clearTokens, getRefreshToken } from './auth';
+import { api } from './funciones';
 
-export const api = "http://localhost:8000";
-export const AUTH_PREFIX = "/auth";
-
-const REFRESH_KEY = "refresh_token";
-
-/** Access token: delegado a auth.js (clave "access_token"). */
-export const getAccessToken = () => getToken();
-
-export const getRefreshToken = () => localStorage.getItem(REFRESH_KEY);
-
-export const setTokens = ({ access, refresh, access_token, refresh_token }) => {
-  const a = access ?? access_token;
-  const r = refresh ?? refresh_token;
-
-  if (a) setToken(a);
-  if (r) localStorage.setItem(REFRESH_KEY, r);
-};
-
-export const clearTokens = () => {
-  removeToken();
-  localStorage.removeItem(REFRESH_KEY);
-};
-
+// ─── Callback 401 (logout) ───────────────────────────────────────────────────
 let onUnauthorized = () => {
   clearTokens();
-  window.location.href = "/sin_sesion";
+  window.location.href = "/login";
 };
 
 export const setOnUnauthorized = (fn) => {
   onUnauthorized = typeof fn === "function" ? fn : onUnauthorized;
 };
+export const setLogoutCallback = setOnUnauthorized;
 
+// ─── Cliente HTTP ───────────────────────────────────────────────────────────
 const http = axios.create({
   baseURL: api,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  timeout: 15000,
 });
 
 http.interceptors.request.use((config) => {
   if (config.skipAuth === true) return config;
-
-  const access = getAccessToken();
+  const access = getToken();
   if (access) config.headers.Authorization = `Bearer ${access}`;
   return config;
 });
@@ -64,17 +43,13 @@ const resolveQueue = (error, newAccess = null) => {
 const refreshAccessToken = async () => {
   const refresh = getRefreshToken();
   if (!refresh) throw new Error("No refresh token");
-
-  const refreshUrl = `${api}${AUTH_PREFIX}/refresh`;
-
+  const refreshUrl = `${api}/auth/refresh`;
   const { data } = await axios.post(
     refreshUrl,
     { refresh },
     { headers: { "Content-Type": "application/json", Accept: "application/json" } }
   );
-
   if (!data?.access) throw new Error("Refresh no devolvió access");
-
   setTokens({ access: data.access });
   return data.access;
 };
@@ -84,19 +59,13 @@ http.interceptors.response.use(
   async (error) => {
     const status = error?.response?.status;
     const originalRequest = error?.config;
-
     if (!originalRequest || status !== 401) return Promise.reject(error);
-
-    if (originalRequest.skipAuth === true) {
-      return Promise.reject(error);
-    }
-
+    if (originalRequest.skipAuth === true) return Promise.reject(error);
     if (originalRequest._retry) {
       onUnauthorized();
       return Promise.reject(error);
     }
     originalRequest._retry = true;
-
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         refreshQueue.push({
@@ -108,12 +77,10 @@ http.interceptors.response.use(
         });
       });
     }
-
     isRefreshing = true;
     try {
       const newAccess = await refreshAccessToken();
       resolveQueue(null, newAccess);
-
       originalRequest.headers.Authorization = `Bearer ${newAccess}`;
       return http(originalRequest);
     } catch (refreshErr) {
@@ -126,52 +93,44 @@ http.interceptors.response.use(
   }
 );
 
-export const consulta = async (
-  url,
-  data = null,
-  method = null,
-  callback = () => {},
-  authorization = true
-) => {
+// ─── Request base (usado por get, post, put, patch, del en funciones.js) ───
+const normalizePath = (url) => (String(url).startsWith("/") ? url : `/${url}`);
+
+/**
+ * Hace la petición al API. Resuelve con { data, status, headers } o rechaza con { err, status, response }.
+ * Exportado para que funciones.js pueda implementar consulta().
+ */
+export const request = async (url, data, method, authorization = true) => {
+  const m = String(method).toUpperCase();
+  const path = normalizePath(url);
+  const config = {
+    url: path,
+    method: m,
+    skipAuth: !authorization,
+    headers: authorization ? undefined : {},
+  };
+  if (data != null) {
+    if (m === "GET") config.params = data;
+    else config.data = data;
+  }
   try {
-    let m = method ?? (data ? "POST" : "GET");
-    if (String(m).toLowerCase() === "patch") m = "PATCH";
-    m = String(m).toUpperCase();
-
-    const path = String(url).startsWith("/") ? url : `/${url}`;
-
-    const config = {
-      url: path,
-      method: m,
-      skipAuth: !authorization,
-      headers: authorization ? undefined : {},
-    };
-
-    if (data) {
-      if (m === "GET") config.params = data;
-      else config.data = data;
-    }
-
     const res = await http.request(config);
-    callback(null, res.status, res.data);
+    return { data: res.data, status: res.status, headers: res.headers };
   } catch (err) {
     const status = err?.response?.status ?? 0;
-    const resp = err?.response?.data ?? null;
-
+    const response = err?.response?.data ?? null;
     if (status === 401 && authorization) onUnauthorized();
-
-    callback(err, status, resp);
+    throw { err, status, response };
   }
 };
 
-export const mostrarError = (errores) => {
-  if (!errores || typeof errores !== "object") return "Ocurrió un error.";
-  for (const k in errores) {
-    const r = errores[k];
-    if (Array.isArray(r)) return `${k} : ${r.join(" ")}`;
-    return `${k} : ${String(r)}`;
-  }
-  return "Ocurrió un error.";
+export const parseAuthResponse = (resp) => {
+  if (!resp || typeof resp !== "object") return { access: null, refresh: null };
+  return {
+    access: resp.access ?? resp.access_token ?? null,
+    refresh: resp.refresh ?? resp.refresh_token ?? null,
+  };
 };
 
+export { setTokens } from './auth';
 export default http;

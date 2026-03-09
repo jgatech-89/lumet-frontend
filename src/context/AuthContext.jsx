@@ -1,6 +1,5 @@
 import { createContext, useContext, useCallback, useState, useEffect } from 'react';
-import { getToken, setToken as persistToken, isTokenExpired, decodeToken } from '../utils/auth';
-import { clearTokens } from '../js/funciones';
+import { getToken, setToken as persistToken, isTokenExpired, decodeToken, clearTokens } from '../utils/auth';
 
 const AuthContext = createContext(null);
 

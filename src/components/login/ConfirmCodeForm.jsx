@@ -144,6 +144,10 @@ const ConfirmCodeForm = ({ email, onSubmit, onResendCode, isLoading = false }) =
       </Box>
 
       <Box
+        component="fieldset"
+        border="none"
+        padding={0}
+        margin={0}
         sx={{
           display: 'flex',
           gap: 1.5,
@@ -151,7 +155,25 @@ const ConfirmCodeForm = ({ email, onSubmit, onResendCode, isLoading = false }) =
           flexWrap: 'nowrap',
           mb: 1,
         }}
+        aria-describedby={error ? 'confirm-code-error' : undefined}
+        aria-invalid={Boolean(error)}
       >
+        <Box
+          component="legend"
+          sx={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: 'hidden',
+            clip: 'rect(0,0,0,0)',
+            whiteSpace: 'nowrap',
+            border: 0,
+          }}
+        >
+          Código de verificación de 6 dígitos
+        </Box>
         {digits.map((digit, index) => (
           <TextField
             key={index}
@@ -162,7 +184,7 @@ const ConfirmCodeForm = ({ email, onSubmit, onResendCode, isLoading = false }) =
             inputProps={{
               maxLength: 6,
               inputMode: 'numeric',
-              'aria-label': `Dígito ${index + 1}`,
+              'aria-label': `Dígito ${index + 1} de 6`,
               autoComplete: index === 0 ? 'one-time-code' : 'off',
             }}
             error={Boolean(error)}
@@ -171,7 +193,13 @@ const ConfirmCodeForm = ({ email, onSubmit, onResendCode, isLoading = false }) =
         ))}
       </Box>
       {error && (
-        <Typography variant="caption" color="error" sx={{ display: 'block', textAlign: 'center', mb: 1 }}>
+        <Typography
+          id="confirm-code-error"
+          variant="caption"
+          color="error"
+          role="alert"
+          sx={{ display: 'block', textAlign: 'center', mb: 1 }}
+        >
           {error}
         </Typography>
       )}

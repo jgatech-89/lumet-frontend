@@ -189,6 +189,8 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
         fullWidth
         variant="contained"
         disabled={isLoading}
+        aria-busy={isLoading}
+        aria-label={isLoading ? 'Enviando formulario de inicio de sesión' : 'Iniciar sesión'}
         sx={{
           mt: 2.5,
           height: 60,

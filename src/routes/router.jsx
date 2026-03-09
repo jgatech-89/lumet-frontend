@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Suspense } from 'react';
 import { Box, Skeleton } from '@mui/material';
-import routeConfig from '../routes/routeConfig';
-import RouteRenderer from '../routes/RouteRenderer';
+import routeConfig from './routeConfig';
+import RouteRenderer from './RouteRenderer';
+import RouteErrorFallback from './RouteErrorFallback';
 import MainLayout from '../layouts/MainLayout';
-import { NotFound } from '../routes/routeConfig';
+import { NotFound } from './routeConfig';
 import { useAuth } from '../context/AuthContext';
-import { setLogoutCallback } from '../services/api';
+import { setLogoutCallback } from '../utils/api';
 
 const PageFallback = () => (
   <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', p: 2 }}>
@@ -27,6 +28,7 @@ const routes = [
   ...routeConfig.map((config) => ({
     path: config.path,
     element: <RouteRenderer key={config.path} config={config} />,
+    errorElement: <RouteErrorFallback />,
   })),
   {
     path: '*',
@@ -37,6 +39,7 @@ const routes = [
         </Suspense>
       </MainLayout>
     ),
+    errorElement: <RouteErrorFallback />,
   },
 ];
 

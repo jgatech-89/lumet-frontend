@@ -6,14 +6,9 @@ import { useSnackbar } from '../context/SnackbarContext';
 import LoginLeftPanel from '../components/login/LoginLeftPanel';
 import LoginForm from '../components/login/LoginForm';
 import ConfirmCodeForm from '../components/login/ConfirmCodeForm';
-
-import { consulta, mostrarError, setTokens } from '../js/funciones';
-
-const CheckIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" />
-  </svg>
-);
+import { post, getErrorMessage } from '../utils/funciones';
+import { setTokens, parseAuthResponse } from '../utils/api';
+import { CheckIcon } from '../theme/iconos.jsx';
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,77 +29,54 @@ const Login = () => {
     setAlertOpen(true);
   };
 
-  const handleLoginSubmit = (data) => {
+  const handleLoginSubmit = async (data) => {
     setIsLoading(true);
     setAlertOpen(false);
     setPendingEmail(data.email);
-
-    const payload = { correo: data.email, password: data.password };
-
-    consulta('auth/login',payload,'POST',(err, status, resp) => {
-    setIsLoading(false);
-
-        if (err) {
-          if (status === 400 && resp) return showAlert('error', mostrarError(resp));
-          if (status === 401) return showAlert('error', resp?.detail );
-          return showAlert('error', 'Ocurrió un error al iniciar sesión.');
-        }
-
-        showAlert('success', resp?.mensaje);
-        setStep(2);
-      },
-      false 
-    );
+    try {
+      const { data: resp } = await post('auth/login', { correo: data.email, password: data.password }, false);
+      showAlert('success', resp?.mensaje);
+      setStep(2);
+    } catch (e) {
+      showAlert('error', getErrorMessage(e, 'Ocurrió un error al iniciar sesión.'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleConfirmCode = (data) => {
+  const handleConfirmCode = async (data) => {
     setIsLoading(true);
     setAlertOpen(false);
-
-    const codigo = data?.code ?? data?.codigo ?? '';
-    const payload = { correo: pendingEmail, codigo };
-
-    consulta('auth/verificar-codigo',payload,'POST', (err, status, resp) => {
-        setIsLoading(false);
-
-        if (err) {
-          if (status === 400 && resp) return showAlert('error', resp?.detail ?? mostrarError(resp));
-          return showAlert('error', 'No se pudo verificar el código.');
-        }
-
-        const access = resp?.access ?? resp?.access_token;
-        const refresh = resp?.refresh ?? resp?.refresh_token;
-
-        if (!access) return showAlert('error', 'Ocurrió un error, contacta al administrador.');
-
-        setTokens({ access, refresh });
-        // user se llenará luego desde endpoint /me; por ahora solo correo/email
-        login(access, { correo: pendingEmail, email: pendingEmail });
-
-        showSnackbar('Sesión iniciada');
-        navigate('/dashboard', { replace: true });
-      },
-      false 
-    );
+    try {
+      const { data: resp } = await post('auth/verificar-codigo', { correo: pendingEmail, codigo: data?.code ?? data?.codigo ?? '' }, false);
+      const { access, refresh } = parseAuthResponse(resp);
+      if (!access) {
+        showAlert('error', 'Ocurrió un error, contacta al administrador.');
+        return;
+      }
+      setTokens({ access, refresh });
+      login(access, { correo: pendingEmail, email: pendingEmail });
+      showSnackbar('Sesión iniciada');
+      navigate('/dashboard', { replace: true });
+    } catch (e) {
+      showAlert('error', getErrorMessage(e, 'No se pudo verificar el código.'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
     setIsLoading(true);
     setAlertOpen(false);
-
-    consulta('auth/resend-code',{ correo: pendingEmail },'POST',(err, status, resp) => {
-        setIsLoading(false);
-
-        if (err) {
-          if (status === 400 && resp) return showAlert('error', mostrarError(resp));
-          return showAlert('error', 'No se pudo reenviar el código.');
-        }
-
-        showAlert('success', resp?.mensaje);
-        showSnackbar('Solicitud de reenvío enviada');
-      },
-      false 
-    );
+    try {
+      const { data: resp } = await post('auth/resend-code', { correo: pendingEmail }, false);
+      showAlert('success', resp?.mensaje);
+      showSnackbar('Solicitud de reenvío enviada');
+    } catch (e) {
+      showAlert('error', getErrorMessage(e, 'No se pudo reenviar el código.'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -116,10 +88,12 @@ const Login = () => {
         <Box sx={{ width: '100%', maxWidth: 460 }}>
           <Collapse in={alertOpen} sx={{ mb: 2 }}>
             <Alert
+              role="alert"
+              aria-live="polite"
               severity={alertSeverity}
               icon={alertSeverity === 'success' ? <CheckIcon /> : undefined}
               action={
-                <IconButton aria-label="cerrar" size="small" onClick={() => setAlertOpen(false)}>
+                <IconButton aria-label="Cerrar mensaje" size="small" onClick={() => setAlertOpen(false)}>
                   ✕
                 </IconButton>
               }
