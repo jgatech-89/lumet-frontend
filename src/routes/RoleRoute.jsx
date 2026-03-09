@@ -13,7 +13,7 @@ const RoleRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/login" replace />;
   }
 
-  const userRole = user?.role ?? user?.roles?.[0];
+  const userRole = user?.role ?? user?.roles?.[0] ?? 'user';
   const hasRole = Array.isArray(allowedRoles) && allowedRoles.length > 0
     ? allowedRoles.includes(userRole)
     : true;

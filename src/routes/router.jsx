@@ -5,7 +5,7 @@ import { Box, Skeleton } from '@mui/material';
 import routeConfig from './routeConfig';
 import RouteRenderer from './RouteRenderer';
 import RouteErrorFallback from './RouteErrorFallback';
-import MainLayout from '../layouts/MainLayout';
+import DashboardLayout from '../layouts/DashboardLayout';
 import { NotFound } from './routeConfig';
 import { useAuth } from '../context/AuthContext';
 import { setLogoutCallback } from '../utils/api';
@@ -33,11 +33,11 @@ const routes = [
   {
     path: '*',
     element: (
-      <MainLayout>
+      <DashboardLayout>
         <Suspense fallback={<PageFallback />}>
           <NotFound />
         </Suspense>
-      </MainLayout>
+      </DashboardLayout>
     ),
     errorElement: <RouteErrorFallback />,
   },

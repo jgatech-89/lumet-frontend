@@ -8,12 +8,12 @@ import { lazy } from 'react';
  * element: componente (lazy o no)
  * private: si true, requiere autenticación (ProtectedRoute)
  * roles: array de roles permitidos (ej. ['admin', 'user']). Si no se define, no se valida rol.
- * layout: 'main' | 'auth' (MainLayout o AuthLayout)
+ * layout: 'main' | 'auth' (DashboardLayout o AuthLayout)
  *
  * IMPORTANTE: Las rutas protegidas y por rol son solo una capa de UX.
  * La seguridad real debe implementarse en el backend (validar token y permisos en cada request).
  */
-const Dashboard = lazy(() => import('../pages/Dashboard'));
+const ClientsPage = lazy(() => import('../pages/dashboard/ClientsPage'));
 const Admin = lazy(() => import('../pages/Admin'));
 const Login = lazy(() => import('../pages/Login'));
 const NotFound = lazy(() => import('../pages/NotFound'));
@@ -27,7 +27,7 @@ const routeConfig = [
   },
   {
     path: '/dashboard',
-    element: Dashboard,
+    element: ClientsPage,
     private: true,
     roles: ['admin', 'user'],
     layout: 'main',
@@ -42,7 +42,7 @@ const routeConfig = [
   // Ruta raíz: misma lógica que dashboard (ordenada al final para no pisar rutas más específicas)
   {
     path: '/',
-    element: Dashboard,
+    element: ClientsPage,
     private: true,
     roles: ['admin', 'user'],
     layout: 'main',
@@ -50,4 +50,4 @@ const routeConfig = [
 ];
 
 export default routeConfig;
-export { Dashboard, Admin, Login, NotFound };
+export { ClientsPage, Admin, Login, NotFound };

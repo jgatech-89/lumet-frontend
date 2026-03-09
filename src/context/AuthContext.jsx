@@ -37,7 +37,14 @@ export const AuthProvider = ({ children }) => {
     persistToken(token);
     setAccessToken(token);
     const decoded = decodeToken(token);
-    const resolvedUser = userData ?? (decoded?.sub ? { sub: decoded.sub, role: decoded.role ?? 'user' } : null);
+    const resolvedUser = userData ?? (decoded?.sub ? {
+      sub: decoded.sub,
+      role: decoded.role ?? 'user',
+      name: decoded.name ?? (decoded.given_name || decoded.family_name ? [decoded.given_name, decoded.family_name].filter(Boolean).join(' ') : undefined),
+      email: decoded.email,
+      given_name: decoded.given_name,
+      family_name: decoded.family_name,
+    } : null);
     if (resolvedUser) {
       setUser(resolvedUser);
     }
@@ -51,6 +58,19 @@ export const AuthProvider = ({ children }) => {
     }
     if (isTokenExpired(token)) {
       logout();
+      setInitialized(true);
+      return;
+    }
+    const decoded = decodeToken(token);
+    if (decoded?.sub) {
+      setUser((prev) => prev ?? {
+        sub: decoded.sub,
+        role: decoded.role ?? 'user',
+        name: decoded.name ?? (decoded.given_name || decoded.family_name ? [decoded.given_name, decoded.family_name].filter(Boolean).join(' ') : undefined),
+        email: decoded.email,
+        given_name: decoded.given_name,
+        family_name: decoded.family_name,
+      });
     }
     setInitialized(true);
   }, [logout]);
