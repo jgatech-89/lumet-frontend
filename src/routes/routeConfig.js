@@ -14,6 +14,8 @@ import { lazy } from 'react';
  * La seguridad real debe implementarse en el backend (validar token y permisos en cada request).
  */
 const ClientsPage = lazy(() => import('../pages/dashboard/ClientsPage'));
+const ConfigurationPage = lazy(() => import('../pages/dashboard/ConfigurationPage'));
+const NewClientPage = lazy(() => import('../pages/dashboard/NewClientPage'));
 const Admin = lazy(() => import('../pages/Admin'));
 const Login = lazy(() => import('../pages/Login'));
 const NotFound = lazy(() => import('../pages/NotFound'));
@@ -28,6 +30,20 @@ const routeConfig = [
   {
     path: '/dashboard',
     element: ClientsPage,
+    private: true,
+    roles: ['admin', 'user'],
+    layout: 'main',
+  },
+  {
+    path: '/nuevo-cliente',
+    element: NewClientPage,
+    private: true,
+    roles: ['admin', 'user'],
+    layout: 'main',
+  },
+  {
+    path: '/configuracion',
+    element: ConfigurationPage,
     private: true,
     roles: ['admin', 'user'],
     layout: 'main',
@@ -50,4 +66,4 @@ const routeConfig = [
 ];
 
 export default routeConfig;
-export { ClientsPage, Admin, Login, NotFound };
+export { ClientsPage, ConfigurationPage, NewClientPage, Admin, Login, NotFound };

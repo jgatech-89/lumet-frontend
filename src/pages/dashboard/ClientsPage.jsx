@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -172,6 +173,8 @@ const actionBtnRed = {
             </Typography>
           </Box>
           <Button
+            component={Link}
+            to="/nuevo-cliente"
             variant="contained"
             startIcon={<Typography component="span" sx={{ fontSize: '1.25rem', lineHeight: 1, fontWeight: 300 }}>+</Typography>}
             sx={{
