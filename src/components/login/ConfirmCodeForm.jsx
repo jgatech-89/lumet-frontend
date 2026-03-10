@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Box, Typography, TextField, Button, Link } from '@mui/material';
+import { Box, Typography, TextField, Link } from '@mui/material';
+import { LoadingButton } from '../loading';
 
 const DIGIT_COUNT = 6;
 const RESEND_COOLDOWN_SEC = 60;
@@ -235,11 +236,12 @@ const ConfirmCodeForm = ({ email, onSubmit, onResendCode, isLoading = false }) =
         )}
       </Box>
 
-      <Button
+      <LoadingButton
         type="submit"
         fullWidth
         variant="contained"
-        disabled={isLoading}
+        loading={isLoading}
+        loadingText="Verificando..."
         sx={{
           mt: 2.5,
           height: 60,
@@ -256,8 +258,8 @@ const ConfirmCodeForm = ({ email, onSubmit, onResendCode, isLoading = false }) =
           },
         }}
       >
-        {isLoading ? 'Verificando...' : 'Confirmar'}
-      </Button>
+        Confirmar
+      </LoadingButton>
     </Box>
   );
 };

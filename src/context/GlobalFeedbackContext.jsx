@@ -59,7 +59,7 @@ export const GlobalFeedbackProvider = ({ children }) => {
       )}
       <Snackbar
         open={errorOpen}
-        autoHideDuration={6000}
+        autoHideDuration={5000}
         onClose={closeError}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >

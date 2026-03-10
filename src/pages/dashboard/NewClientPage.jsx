@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { COMPACT_MEDIA } from '../../utils/theme';
+import { LoadingButton } from '../../components/loading';
 import {
   Box,
   Typography,
@@ -41,7 +42,14 @@ const NewClientPage = () => {
     });
   };
 
-  const handleGuardar = () => {
+  const [guardando, setGuardando] = useState(false);
+  const handleGuardar = async () => {
+    setGuardando(true);
+    try {
+      // TODO: llamar API para crear cliente cuando exista el endpoint
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const selectFieldSx = {
@@ -298,9 +306,11 @@ const NewClientPage = () => {
             >
               Limpiar
             </Button>
-            <Button
+            <LoadingButton
               variant="contained"
               onClick={handleGuardar}
+              loading={guardando}
+              loadingText="Guardando..."
               sx={{
                 borderRadius: 2,
                 textTransform: 'none',
@@ -314,7 +324,7 @@ const NewClientPage = () => {
               }}
             >
               Guardar cliente
-            </Button>
+            </LoadingButton>
           </Stack>
         </Paper>
       </Box>

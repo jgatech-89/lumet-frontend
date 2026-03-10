@@ -4,10 +4,11 @@ import {
   Box,
   Typography,
   TextField,
-  Button,
   InputAdornment,
   IconButton,
-  Link,} from '@mui/material';
+  Link,
+} from '@mui/material';
+import { LoadingButton } from '../loading';
 
 const VisibilityIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
@@ -184,13 +185,12 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
         ¿Olvidaste tu contraseña?
       </Link>
 
-      <Button
+      <LoadingButton
         type="submit"
         fullWidth
         variant="contained"
-        disabled={isLoading}
-        aria-busy={isLoading}
-        aria-label={isLoading ? 'Enviando formulario de inicio de sesión' : 'Iniciar sesión'}
+        loading={isLoading}
+        loadingText="Entrando..."
         sx={{
           mt: 2.5,
           height: 60,
@@ -207,8 +207,8 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
           },
         }}
       >
-        {isLoading ? 'Entrando...' : 'Iniciar sesión'}
-      </Button>
+        Iniciar sesión
+      </LoadingButton>
     </Box>
   );
 };

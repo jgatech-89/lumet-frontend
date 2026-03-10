@@ -18,8 +18,8 @@ export const mostrarError = (errores) => {
   if (!errores || typeof errores !== "object") return "Ocurrió un error.";
   for (const k in errores) {
     const r = errores[k];
-    if (Array.isArray(r)) return `${k}: ${r.join(" ")}`;
-    return `${k}: ${String(r)}`;
+    if (Array.isArray(r)) return r.join(" ").trim() || "Ocurrió un error.";
+    return String(r).trim() || "Ocurrió un error.";
   }
   return "Ocurrió un error.";
 };
