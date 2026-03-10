@@ -15,8 +15,8 @@ import {
 
 const NewClientPage = () => {
   const navigate = useNavigate();
-  const [tipoCliente, setTipoCliente] = useState('Empresa');
-  const [empresa, setEmpresa] = useState('Naturgy');
+  const [tipoCliente, setTipoCliente] = useState('');
+  const [empresa, setEmpresa] = useState('');
   const [formData, setFormData] = useState({
     cupsLuz: '',
     comercializadoraLuz: '',
@@ -28,8 +28,8 @@ const NewClientPage = () => {
   });
 
   const handleLimpiar = () => {
-    setTipoCliente('Empresa');
-    setEmpresa('Naturgy');
+    setTipoCliente('');
+    setEmpresa('');
     setFormData({
       cupsLuz: '',
       comercializadoraLuz: '',
@@ -104,6 +104,7 @@ const NewClientPage = () => {
                 label="Tipo de cliente *"
                 onChange={(e) => setTipoCliente(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 <MenuItem value="Empresa">Empresa</MenuItem>
                 <MenuItem value="Particular">Particular</MenuItem>
               </Select>
@@ -116,6 +117,7 @@ const NewClientPage = () => {
                 label="Empresa *"
                 onChange={(e) => setEmpresa(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 <MenuItem value="Naturgy">Naturgy</MenuItem>
                 <MenuItem value="Iberdrola">Iberdrola</MenuItem>
                 <MenuItem value="Endesa">Endesa</MenuItem>
@@ -125,7 +127,7 @@ const NewClientPage = () => {
           </Stack>
 
           <Typography variant="subtitle1" fontWeight={600} color="text.primary" sx={{ mb: 2 }}>
-            {empresa}
+            {empresa || 'Seleccionar una empresa para ver los campos'}
           </Typography>
           <Stack spacing={3} sx={{ maxWidth: 480, width: '100%' }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
@@ -140,7 +142,7 @@ const NewClientPage = () => {
                   label="Seleccionar"
                   onChange={(e) => setFormData((p) => ({ ...p, cupsLuz: e.target.value }))}
                 >
-                  <MenuItem value="">Seleccionar</MenuItem>
+                  <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
                 </Select>
@@ -158,7 +160,7 @@ const NewClientPage = () => {
                   label="Seleccionar"
                   onChange={(e) => setFormData((p) => ({ ...p, comercializadoraLuz: e.target.value }))}
                 >
-                  <MenuItem value="">Seleccionar</MenuItem>
+                  <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
                 </Select>
@@ -176,7 +178,7 @@ const NewClientPage = () => {
                   label="Seleccionar"
                   onChange={(e) => setFormData((p) => ({ ...p, tarifaLuz: e.target.value }))}
                 >
-                  <MenuItem value="">Seleccionar</MenuItem>
+                  <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
                 </Select>
@@ -194,7 +196,7 @@ const NewClientPage = () => {
                   label="Seleccionar"
                   onChange={(e) => setFormData((p) => ({ ...p, mantenimientoLuz: e.target.value }))}
                 >
-                  <MenuItem value="">Seleccionar</MenuItem>
+                  <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
                 </Select>
@@ -212,7 +214,7 @@ const NewClientPage = () => {
                   label="Seleccionar"
                   onChange={(e) => setFormData((p) => ({ ...p, cupsGas: e.target.value }))}
                 >
-                  <MenuItem value="">Seleccionar</MenuItem>
+                  <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
                 </Select>
@@ -230,7 +232,7 @@ const NewClientPage = () => {
                   label="Seleccionar"
                   onChange={(e) => setFormData((p) => ({ ...p, comercializadoraGas: e.target.value }))}
                 >
-                  <MenuItem value="">Seleccionar</MenuItem>
+                  <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
                 </Select>
@@ -248,7 +250,7 @@ const NewClientPage = () => {
                   label="Seleccionar"
                   onChange={(e) => setFormData((p) => ({ ...p, mantenimientoGas: e.target.value }))}
                 >
-                  <MenuItem value="">Seleccionar</MenuItem>
+                  <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
                 </Select>

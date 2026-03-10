@@ -57,12 +57,12 @@ const DashboardLayout = ({ children }) => {
             flex: 1,
             minWidth: 0,
             minHeight: 0,
-            p: { xs: 2, sm: 3 },
+            p: { xs: 4, sm: 5 },
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             bgcolor: 'background.default',
-            [COMPACT_MEDIA]: { p: 1.5 },
+            [COMPACT_MEDIA]: { p: 3 },
           }}
         >
           {children}

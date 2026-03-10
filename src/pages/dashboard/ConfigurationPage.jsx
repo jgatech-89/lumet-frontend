@@ -176,7 +176,7 @@ const getTabConfig = (empresas, servicios, campos, vendedores) => ({
 
 const FILAS_POR_PAGINA = 5;
 
-const compactCellSx = { py: 1, [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } };
+const compactCellSx = { py: 1.5, [COMPACT_MEDIA]: { py: 1, fontSize: '0.8125rem' } };
 const compactChipSx = { [COMPACT_MEDIA]: { fontSize: '0.6875rem', px: 0.75, height: 20 } };
 
 const modalPaperSx = {
@@ -221,7 +221,7 @@ const ConfigurationPage = () => {
   const [nombreCampo, setNombreCampo] = useState('');
   const [empresaIdCampo, setEmpresaIdCampo] = useState('');
   const [servicioIdCampo, setServicioIdCampo] = useState('');
-  const [tipoCampoSeleccionado, setTipoCampoSeleccionado] = useState('Texto');
+  const [tipoCampoSeleccionado, setTipoCampoSeleccionado] = useState('');
   const [opcionesCampo, setOpcionesCampo] = useState([]);
   const [opcionInput, setOpcionInput] = useState('');
   const [campoEnEdicion, setCampoEnEdicion] = useState(null);
@@ -235,7 +235,7 @@ const ConfigurationPage = () => {
   const [modalEliminarVendedor, setModalEliminarVendedor] = useState(false);
   const [nombreVendedor, setNombreVendedor] = useState('');
   const [numeroIdentificacion, setNumeroIdentificacion] = useState('');
-  const [tipoIdentificacion, setTipoIdentificacion] = useState('DNI');
+  const [tipoIdentificacion, setTipoIdentificacion] = useState('');
   const [vendedorEnEdicion, setVendedorEnEdicion] = useState(null);
   const [vendedorAEliminar, setVendedorAEliminar] = useState(null);
 
@@ -316,7 +316,7 @@ const ConfigurationPage = () => {
   // Handlers modales Servicios
   const handleAbrirNuevoServicio = () => {
     setNombreServicio('');
-    setEmpresaIdServicio(empresas.length > 0 ? empresas[0].id.toString() : '');
+    setEmpresaIdServicio('');
     setModalNuevoServicio(true);
   };
 
@@ -385,9 +385,9 @@ const ConfigurationPage = () => {
   // Handlers modales Campos
   const handleAbrirNuevoCampo = () => {
     setNombreCampo('');
-    setEmpresaIdCampo(empresas.length > 0 ? empresas[0].id.toString() : '');
+    setEmpresaIdCampo('');
     setServicioIdCampo('');
-    setTipoCampoSeleccionado('Texto');
+    setTipoCampoSeleccionado('');
     setOpcionesCampo([]);
     setOpcionInput('');
     setModalNuevoCampo(true);
@@ -398,7 +398,7 @@ const ConfigurationPage = () => {
     setNombreCampo('');
     setEmpresaIdCampo('');
     setServicioIdCampo('');
-    setTipoCampoSeleccionado('Texto');
+    setTipoCampoSeleccionado('');
     setOpcionesCampo([]);
     setOpcionInput('');
   };
@@ -455,7 +455,7 @@ const ConfigurationPage = () => {
     setNombreCampo('');
     setEmpresaIdCampo('');
     setServicioIdCampo('');
-    setTipoCampoSeleccionado('Texto');
+    setTipoCampoSeleccionado('');
     setOpcionesCampo([]);
     setOpcionInput('');
   };
@@ -513,7 +513,7 @@ const ConfigurationPage = () => {
   const handleAbrirNuevoVendedor = () => {
     setNombreVendedor('');
     setNumeroIdentificacion('');
-    setTipoIdentificacion('DNI');
+    setTipoIdentificacion('');
     setModalNuevoVendedor(true);
   };
 
@@ -521,7 +521,7 @@ const ConfigurationPage = () => {
     setModalNuevoVendedor(false);
     setNombreVendedor('');
     setNumeroIdentificacion('');
-    setTipoIdentificacion('DNI');
+    setTipoIdentificacion('');
   };
 
   const handleGuardarNuevoVendedor = () => {
@@ -538,7 +538,7 @@ const ConfigurationPage = () => {
     setVendedorEnEdicion(col);
     setNombreVendedor(col.nombre);
     setNumeroIdentificacion(col.numeroIdentificacion ?? '');
-    setTipoIdentificacion(col.tipoIdentificacion ?? 'DNI');
+    setTipoIdentificacion(col.tipoIdentificacion ?? '');
     setModalEditarVendedor(true);
   };
 
@@ -547,7 +547,7 @@ const ConfigurationPage = () => {
     setVendedorEnEdicion(null);
     setNombreVendedor('');
     setNumeroIdentificacion('');
-    setTipoIdentificacion('DNI');
+    setTipoIdentificacion('');
   };
 
   const handleGuardarEditarVendedor = () => {
@@ -592,8 +592,8 @@ const ConfigurationPage = () => {
       case 'empresa':
         return (
           <>
-            <TableCell sx={{ py: 1, fontWeight: 500 }}>{row.nombre}</TableCell>
-            <TableCell sx={{ py: 1 }}>
+            <TableCell sx={{ py: 1.5, fontWeight: 500 }}>{row.nombre}</TableCell>
+            <TableCell sx={{ py: 1.5 }}>
               <Chip
                 label={row.estado}
                 size="small"
@@ -608,7 +608,7 @@ const ConfigurationPage = () => {
                 }}
               />
             </TableCell>
-            <TableCell align="center" sx={{ py: 1 }}>
+            <TableCell align="center" sx={{ py: 1.5 }}>
               <Stack direction="row" justifyContent="center" spacing={0.75}>
                 <IconButton
                   size="small"
@@ -793,6 +793,8 @@ const ConfigurationPage = () => {
         overflow: 'hidden',
         bgcolor: 'background.paper',
         width: '100%',
+        flex: 1,
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         [COMPACT_MEDIA]: { borderRadius: 2 },
@@ -800,10 +802,14 @@ const ConfigurationPage = () => {
     >
       <Box
         sx={{
-          p: { xs: 2, sm: 3 },
+          p: { xs: 3, sm: 4 },
+          pb: { xs: 4, sm: 5 },
+          flex: 1,
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
-          [COMPACT_MEDIA]: { p: 1.5 },
+          overflow: 'hidden',
+          [COMPACT_MEDIA]: { p: 2, pb: 3 },
         }}
       >
         {/* Encabezado */}
@@ -889,7 +895,7 @@ const ConfigurationPage = () => {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           gap={2}
-          sx={{ mb: 3, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1.5, gap: 1 } }}
+          sx={{ mb: 4, flexShrink: 0, [COMPACT_MEDIA]: { mb: 2.5, gap: 1 } }}
         >
           <TextField
             placeholder={config.searchPlaceholder}
@@ -913,6 +919,7 @@ const ConfigurationPage = () => {
               label="Estado"
               onChange={(e) => setFiltroEstado(e.target.value)}
             >
+              <MenuItem value="">Seleccionar una opción</MenuItem>
               <MenuItem value="todos">Todos los estados</MenuItem>
               <MenuItem value="activa">Activa</MenuItem>
               <MenuItem value="inactiva">Inactiva</MenuItem>
@@ -922,9 +929,9 @@ const ConfigurationPage = () => {
 
         <TableContainer
           sx={{
+            flexShrink: 0,
             borderRadius: 2,
             border: '1px solid rgba(0,0,0,0.06)',
-            overflow: 'visible',
             [COMPACT_MEDIA]: { borderRadius: 1 },
           }}
         >
@@ -938,8 +945,8 @@ const ConfigurationPage = () => {
                       fontWeight: 600,
                       color: 'text.secondary',
                       fontSize: '0.8125rem',
-                      py: 1,
-                      [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 },
+                      py: 1.5,
+                      [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 },
                       ...(col === 'Opciones' && { align: 'center' }),
                     }}
                     align={col === 'Opciones' ? 'center' : 'left'}
@@ -965,6 +972,8 @@ const ConfigurationPage = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <Box sx={{ flex: 1, minHeight: 0 }} />
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
@@ -1222,6 +1231,7 @@ const ConfigurationPage = () => {
                 label="Empresa"
                 onChange={(e) => setEmpresaIdServicio(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {empresas.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
@@ -1298,6 +1308,7 @@ const ConfigurationPage = () => {
                 label="Empresa"
                 onChange={(e) => setEmpresaIdServicio(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {empresas.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
@@ -1416,6 +1427,7 @@ const ConfigurationPage = () => {
                   setServicioIdCampo('');
                 }}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {empresas.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
@@ -1432,6 +1444,7 @@ const ConfigurationPage = () => {
                 onChange={(e) => setServicioIdCampo(e.target.value)}
                 disabled={!empresaIdCampo}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {serviciosFiltradosPorEmpresa.map((s) => (
                   <MenuItem key={s.id} value={s.id.toString()}>
                     {s.servicio}
@@ -1457,6 +1470,7 @@ const ConfigurationPage = () => {
                 label="Tipo de campo"
                 onChange={(e) => setTipoCampoSeleccionado(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {TIPOS_CAMPO.map((t) => (
                   <MenuItem key={t} value={t}>
                     {t}
@@ -1510,6 +1524,7 @@ const ConfigurationPage = () => {
               !nombreCampo.trim() ||
               !empresaIdCampo ||
               !servicioIdCampo ||
+              !tipoCampoSeleccionado ||
               (tipoCampoSeleccionado === 'Select' && opcionesCampo.length === 0)
             }
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
@@ -1545,6 +1560,7 @@ const ConfigurationPage = () => {
                   setServicioIdCampo('');
                 }}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {empresas.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
@@ -1561,6 +1577,7 @@ const ConfigurationPage = () => {
                 onChange={(e) => setServicioIdCampo(e.target.value)}
                 disabled={!empresaIdCampo}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {serviciosFiltradosPorEmpresa.map((s) => (
                   <MenuItem key={s.id} value={s.id.toString()}>
                     {s.servicio}
@@ -1586,6 +1603,7 @@ const ConfigurationPage = () => {
                 label="Tipo de campo"
                 onChange={(e) => setTipoCampoSeleccionado(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {TIPOS_CAMPO.map((t) => (
                   <MenuItem key={t} value={t}>
                     {t}
@@ -1639,6 +1657,7 @@ const ConfigurationPage = () => {
               !nombreCampo.trim() ||
               !empresaIdCampo ||
               !servicioIdCampo ||
+              !tipoCampoSeleccionado ||
               (tipoCampoSeleccionado === 'Select' && opcionesCampo.length === 0)
             }
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
@@ -1798,6 +1817,7 @@ const ConfigurationPage = () => {
                 label="Tipo de identificación"
                 onChange={(e) => setTipoIdentificacion(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {TIPOS_IDENTIFICACION.map((t) => (
                   <MenuItem key={t} value={t}>
                     {t}
@@ -1824,7 +1844,7 @@ const ConfigurationPage = () => {
           <Button
             variant="contained"
             onClick={handleGuardarNuevoVendedor}
-            disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim()}
+            disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim() || !tipoIdentificacion}
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
           >
             Guardar vendedor
@@ -1865,6 +1885,7 @@ const ConfigurationPage = () => {
                 label="Tipo de identificación"
                 onChange={(e) => setTipoIdentificacion(e.target.value)}
               >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
                 {TIPOS_IDENTIFICACION.map((t) => (
                   <MenuItem key={t} value={t}>
                     {t}
@@ -1891,7 +1912,7 @@ const ConfigurationPage = () => {
           <Button
             variant="contained"
             onClick={handleGuardarEditarVendedor}
-            disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim()}
+            disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim() || !tipoIdentificacion}
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
           >
             Guardar

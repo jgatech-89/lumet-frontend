@@ -152,6 +152,8 @@ const actionBtnRed = {
         overflow: 'hidden',
         bgcolor: 'background.paper',
         width: '100%',
+        flex: 1,
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         [COMPACT_MEDIA]: { borderRadius: 2 },
@@ -159,10 +161,14 @@ const actionBtnRed = {
     >
       <Box
         sx={{
-          p: { xs: 2, sm: 3 },
+          p: { xs: 3, sm: 4 },
+          pb: { xs: 4, sm: 5 },
+          flex: 1,
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
-          [COMPACT_MEDIA]: { p: 1.5 },
+          overflow: 'hidden',
+          [COMPACT_MEDIA]: { p: 2, pb: 3 },
         }}
       >
         {/* Encabezado */}
@@ -223,7 +229,7 @@ const actionBtnRed = {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           gap={2}
-          sx={{ mb: 3, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1.5, gap: 1 } }}
+          sx={{ mb: 4, flexShrink: 0, [COMPACT_MEDIA]: { mb: 2.5, gap: 1 } }}
         >
           <TextField
             placeholder="Buscar cliente..."
@@ -247,6 +253,7 @@ const actionBtnRed = {
               label="Estado"
               onChange={(e) => setFiltroEstado(e.target.value)}
             >
+              <MenuItem value="">Seleccionar una opción</MenuItem>
               <MenuItem value="todos">Todos los estados</MenuItem>
               {Object.keys(CHIP_ESTADOS).map((est) => (
                 <MenuItem key={est} value={est}>{est}</MenuItem>
@@ -255,24 +262,24 @@ const actionBtnRed = {
           </FormControl>
         </Stack>
 
-        {/* Tabla: 5 filas por página, tamaños compactos sin scroll */}
+        {/* Tabla: solo el espacio necesario */}
         <TableContainer
           sx={{
+            flexShrink: 0,
             borderRadius: 2,
             border: '1px solid rgba(0,0,0,0.06)',
-            overflow: 'visible',
             [COMPACT_MEDIA]: { borderRadius: 1 },
           }}
         >
           <Table size="small" sx={{ minWidth: 500 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Correo</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Vendedor</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }} align="center">Opciones</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Correo</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Vendedor</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }} align="center">Opciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -285,11 +292,11 @@ const actionBtnRed = {
                     '&:hover': { bgcolor: 'action.hover' },
                   }}
                 >
-                  <TableCell sx={{ py: 1, fontWeight: 500, [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.nombre}</TableCell>
-                  <TableCell sx={{ py: 1, color: 'text.secondary', [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.telefono}</TableCell>
-                  <TableCell sx={{ py: 1, color: 'text.secondary', [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.correo}</TableCell>
-                  <TableCell sx={{ py: 1, color: 'text.secondary', [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.vendedor ?? '-'}</TableCell>
-                  <TableCell sx={{ py: 1, [COMPACT_MEDIA]: { py: 0.5 } }}>
+                  <TableCell sx={{ py: 1.5, fontWeight: 500, [COMPACT_MEDIA]: { py: 1, fontSize: '0.8125rem' } }}>{row.nombre}</TableCell>
+                  <TableCell sx={{ py: 1.5, color: 'text.secondary', [COMPACT_MEDIA]: { py: 1, fontSize: '0.8125rem' } }}>{row.telefono}</TableCell>
+                  <TableCell sx={{ py: 1.5, color: 'text.secondary', [COMPACT_MEDIA]: { py: 1, fontSize: '0.8125rem' } }}>{row.correo}</TableCell>
+                  <TableCell sx={{ py: 1.5, color: 'text.secondary', [COMPACT_MEDIA]: { py: 1, fontSize: '0.8125rem' } }}>{row.vendedor ?? '-'}</TableCell>
+                  <TableCell sx={{ py: 1.5, [COMPACT_MEDIA]: { py: 1 } }}>
                     <Chip
                       label={row.estado}
                       size="small"
@@ -305,7 +312,7 @@ const actionBtnRed = {
                       }}
                     />
                   </TableCell>
-                  <TableCell align="center" sx={{ py: 1, [COMPACT_MEDIA]: { py: 0.5 } }}>
+                  <TableCell align="center" sx={{ py: 1.5, [COMPACT_MEDIA]: { py: 1 } }}>
                     <Stack direction="row" justifyContent="center" spacing={0.75}>
                       <IconButton
                         size="small"
@@ -346,6 +353,8 @@ const actionBtnRed = {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <Box sx={{ flex: 1, minHeight: 0 }} />
 
         {/* Pie de tabla - siempre visible en la parte inferior */}
         <Stack
