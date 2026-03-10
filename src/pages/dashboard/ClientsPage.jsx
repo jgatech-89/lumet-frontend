@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { COMPACT_MEDIA } from '../../utils/theme';
+import { useThemeMode } from '../../context/ThemeContext';
+import { getChipEstadosVenta } from '../../utils/chipColors';
 import {
   Box,
   Typography,
@@ -51,25 +53,6 @@ const DeleteIcon = () => (
   </SvgIcon>
 );
 
-/** Estilos de chips: fondo suave/translúcido + texto fuerte (badges modernos) */
-const CHIP_ESTADOS = {
-  'Venta completada': {
-    bg: 'rgba(46, 125, 50, 0.12)',
-    color: '#1b5e20',
-  },
-  'Venta cancelada': {
-    bg: 'rgba(198, 40, 40, 0.12)',
-    color: '#b71c1c',
-  },
-  'Venta pospuesta': {
-    bg: 'rgba(245, 124, 0, 0.12)',
-    color: '#e65100',
-  },
-  'Venta pendiente': {
-    bg: 'rgba(21, 101, 192, 0.12)',
-    color: '#0d47a1',
-  },
-};
 
 const clientesMock = [
   { id: 1, nombre: 'Ana López', telefono: '+1 123 456 789', correo: 'ana@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta completada' },
@@ -103,6 +86,8 @@ const TOTAL_CLIENTES = clientesMock.length;
 const FILAS_POR_PAGINA = 5;
 
 const ClientsPage = () => {
+  const { isDark } = useThemeMode();
+  const CHIP_ESTADOS = getChipEstadosVenta(isDark);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [pagina, setPagina] = useState(1);
@@ -114,34 +99,31 @@ const ClientsPage = () => {
   const filasPagina = clientesMock.slice((pagina - 1) * FILAS_POR_PAGINA, pagina * FILAS_POR_PAGINA);
 
   const actionBtnBase = {
-  width: 32,
-  height: 32,
-  minWidth: 32,
-  minHeight: 32,
-  [COMPACT_MEDIA]: { width: 28, height: 28, minWidth: 28, minHeight: 28 },
-  padding: 0,
-  borderRadius: '8px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  border: '1px solid transparent',
-  transition: 'background-color 0.2s ease, border-color 0.2s ease',
-};
-
-// Azul primario del proyecto (#2196f3) como el botón "Nuevo cliente"
-const actionBtnBlue = {
-  ...actionBtnBase,
-  bgcolor: 'rgba(33, 150, 243, 0.1)',
-  color: 'primary.main',
-  '&:hover': { bgcolor: 'rgba(33, 150, 243, 0.18)' },
-};
-
-const actionBtnRed = {
-  ...actionBtnBase,
-  bgcolor: 'rgba(244, 67, 54, 0.1)',
-  color: 'error.main',
-  '&:hover': { bgcolor: 'rgba(244, 67, 54, 0.18)' },
-};
+    width: 32,
+    height: 32,
+    minWidth: 32,
+    minHeight: 32,
+    [COMPACT_MEDIA]: { width: 28, height: 28, minWidth: 28, minHeight: 28 },
+    padding: 0,
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '1px solid transparent',
+    transition: 'background-color 0.2s ease, border-color 0.2s ease',
+  };
+  const actionBtnBlue = {
+    ...actionBtnBase,
+    bgcolor: isDark ? 'rgba(33, 150, 243, 0.22)' : 'rgba(33, 150, 243, 0.1)',
+    color: 'primary.main',
+    '&:hover': { bgcolor: isDark ? 'rgba(33, 150, 243, 0.35)' : 'rgba(33, 150, 243, 0.18)' },
+  };
+  const actionBtnRed = {
+    ...actionBtnBase,
+    bgcolor: isDark ? 'rgba(244, 67, 54, 0.22)' : 'rgba(244, 67, 54, 0.1)',
+    color: 'error.main',
+    '&:hover': { bgcolor: isDark ? 'rgba(244, 67, 54, 0.35)' : 'rgba(244, 67, 54, 0.18)' },
+  };
 
   return (
     <Paper
@@ -267,13 +249,14 @@ const actionBtnRed = {
           sx={{
             flexShrink: 0,
             borderRadius: 2,
-            border: '1px solid rgba(0,0,0,0.06)',
+            border: 1,
+            borderColor: 'divider',
             [COMPACT_MEDIA]: { borderRadius: 1 },
           }}
         >
           <Table size="small" sx={{ minWidth: 500 }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f8fafc' }}>
+              <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Nombre</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Teléfono</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Correo</TableCell>
@@ -305,7 +288,7 @@ const actionBtnRed = {
                         fontWeight: 500,
                         borderRadius: 999,
                         px: 1.25,
-                        bgcolor: CHIP_ESTADOS[row.estado]?.bg ?? 'rgba(0,0,0,0.06)',
+                        bgcolor: CHIP_ESTADOS[row.estado]?.bg ?? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'),
                         color: CHIP_ESTADOS[row.estado]?.color ?? 'text.secondary',
                         '& .MuiChip-label': { px: 0.5 },
                         [COMPACT_MEDIA]: { fontSize: '0.6875rem', px: 0.75, height: 20 },

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { COMPACT_MEDIA } from '../../utils/theme';
 import { useSnackbar } from '../../context/SnackbarContext';
+import { useThemeMode } from '../../context/ThemeContext';
+import { getChipEstadoActivo, getChipEstadoInactivo, getChipTipoCampo, getChipTipoEmpresa } from '../../utils/chipColors';
 import { getErrorMessage } from '../../utils/funciones';
 import { listarVendedores, crearVendedor, actualizarVendedor, eliminarVendedor, mapVendedorFromApi } from '../../utils/apiVendedores';
 import { TableLoader, LoadingButton } from '../../components/loading';
@@ -79,41 +81,20 @@ const actionBtnBase = {
   [COMPACT_MEDIA]: { width: 28, height: 28, minWidth: 28, minHeight: 28 },
 };
 
-const actionBtnBlue = {
+const getActionBtnBlue = (isDark) => ({
   ...actionBtnBase,
-  bgcolor: 'rgba(33, 150, 243, 0.1)',
+  bgcolor: isDark ? 'rgba(33, 150, 243, 0.22)' : 'rgba(33, 150, 243, 0.1)',
   color: 'primary.main',
-  '&:hover': { bgcolor: 'rgba(33, 150, 243, 0.18)' },
-};
+  '&:hover': { bgcolor: isDark ? 'rgba(33, 150, 243, 0.35)' : 'rgba(33, 150, 243, 0.18)' },
+});
 
-const actionBtnRed = {
+const getActionBtnRed = (isDark) => ({
   ...actionBtnBase,
-  bgcolor: 'rgba(244, 67, 54, 0.1)',
+  bgcolor: isDark ? 'rgba(244, 67, 54, 0.22)' : 'rgba(244, 67, 54, 0.1)',
   color: 'error.main',
-  '&:hover': { bgcolor: 'rgba(244, 67, 54, 0.18)' },
-};
+  '&:hover': { bgcolor: isDark ? 'rgba(244, 67, 54, 0.35)' : 'rgba(244, 67, 54, 0.18)' },
+});
 
-const actionBtnGray = {
-  ...actionBtnBase,
-  bgcolor: 'rgba(0, 0, 0, 0.06)',
-  color: 'text.secondary',
-  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.1)' },
-};
-
-const CHIP_ESTADO_ACTIVO = {
-  bg: 'rgba(46, 125, 50, 0.12)',
-  color: '#1b5e20',
-};
-
-const CHIP_TIPO_CAMPO = {
-  bg: 'rgba(33, 150, 243, 0.12)',
-  color: '#0d47a1',
-};
-
-const CHIP_TIPO_EMPRESA = {
-  bg: 'rgba(33, 150, 243, 0.12)',
-  color: '#0d47a1',
-};
 
 // Mock data inicial
 const EMPRESAS_INICIAL = [
@@ -201,6 +182,19 @@ const modalPaperSx = {
 
 const ConfigurationPage = () => {
   const { showSnackbar } = useSnackbar();
+  const { isDark } = useThemeMode();
+  const CHIP_ESTADO_ACTIVO = getChipEstadoActivo(isDark);
+  const CHIP_ESTADO_INACTIVO = getChipEstadoInactivo(isDark);
+  const CHIP_TIPO_CAMPO = getChipTipoCampo(isDark);
+  const CHIP_TIPO_EMPRESA = getChipTipoEmpresa(isDark);
+  const actionBtnBlue = getActionBtnBlue(isDark);
+  const actionBtnRed = getActionBtnRed(isDark);
+  const actionBtnGray = {
+    ...actionBtnBase,
+    bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+    color: 'text.secondary',
+    '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.1)' },
+  };
   const [tabActual, setTabActual] = useState(0);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
@@ -684,10 +678,7 @@ const ConfigurationPage = () => {
 
   const getEstadoChip = (estado) => {
     const isActivo = estado === 'Activa' || estado === 'Activo';
-    return {
-      bg: isActivo ? CHIP_ESTADO_ACTIVO.bg : 'rgba(0,0,0,0.06)',
-      color: isActivo ? CHIP_ESTADO_ACTIVO.color : 'text.secondary',
-    };
+    return isActivo ? CHIP_ESTADO_ACTIVO : CHIP_ESTADO_INACTIVO;
   };
 
   const renderTableRow = (row) => {
@@ -1032,13 +1023,14 @@ const ConfigurationPage = () => {
           sx={{
             flexShrink: 0,
             borderRadius: 2,
-            border: '1px solid rgba(0,0,0,0.06)',
+            border: 1,
+            borderColor: 'divider',
             [COMPACT_MEDIA]: { borderRadius: 1 },
           }}
         >
           <Table size="small" sx={{ minWidth: 400 }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f8fafc' }}>
+              <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                 {config.columns.map((col) => (
                   <TableCell
                     key={col}
@@ -1088,7 +1080,8 @@ const ConfigurationPage = () => {
             flexShrink: 0,
             px: 2,
             py: 1.5,
-            borderTop: '1px solid rgba(0,0,0,0.06)',
+            borderTop: '1px solid',
+            borderColor: 'divider',
             bgcolor: 'background.paper',
             flexWrap: 'wrap',
             gap: 1.5,

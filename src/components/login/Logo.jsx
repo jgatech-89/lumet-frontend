@@ -1,13 +1,18 @@
 import { Box, Typography } from '@mui/material';
 import logoIcon from '../../assets/logo-lumet.png';
+import { useThemeMode } from '../../context/ThemeContext';
 
 /**
  * Logo Lumet.beta: icono (PNG) + texto "Lumet.beta".
  */
 const Logo = ({ size = 'medium' }) => {
+  const { isDark } = useThemeMode();
   const isSmall = size === 'small';
   const fontSize = isSmall ? 20 : 24;
   const iconHeight = Math.round(fontSize * 2.35);
+
+  const textColor = isDark ? '#ffffff' : '#0d2137';
+  const dotColor = isDark ? '#90caf9' : '#1976d2';
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
@@ -31,7 +36,7 @@ const Logo = ({ size = 'medium' }) => {
           sx={{
             fontSize,
             fontWeight: 700,
-            color: '#0d2137',
+            color: textColor,
             letterSpacing: 'inherit',
             lineHeight: 1,
           }}
@@ -43,7 +48,7 @@ const Logo = ({ size = 'medium' }) => {
           sx={{
             fontSize,
             fontWeight: 700,
-            color: '#1976d2',
+            color: dotColor,
             letterSpacing: 'inherit',
             lineHeight: 1,
             ml: '-0.08em',

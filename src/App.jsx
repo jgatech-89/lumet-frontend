@@ -1,13 +1,12 @@
-import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import theme from './utils/theme';
+import { ThemeModeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { SnackbarProvider } from './context/SnackbarContext';
 import { GlobalFeedbackProvider } from './context/GlobalFeedbackContext';
 import AppRouter from './routes/router';
 
 const App = () => (
-  <ThemeProvider theme={theme}>
+  <ThemeModeProvider>
     <CssBaseline />
     <AuthProvider>
       <GlobalFeedbackProvider>
@@ -16,7 +15,7 @@ const App = () => (
         </SnackbarProvider>
       </GlobalFeedbackProvider>
     </AuthProvider>
-  </ThemeProvider>
+  </ThemeModeProvider>
 );
 
 export default App;

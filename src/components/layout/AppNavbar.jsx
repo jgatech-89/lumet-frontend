@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppBar, Toolbar, Box, Avatar, Menu, MenuItem, ButtonBase, Typography, SvgIcon, IconButton } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../login/Logo';
+import DarkModeToggle from './DarkModeToggle';
 
 const PersonIcon = () => (
   <SvgIcon>
@@ -63,7 +64,8 @@ const AppNavbar = ({ onMenuClick }) => {
       sx={{
         height: 64,
         bgcolor: 'background.paper',
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        borderBottom: 1,
+        borderColor: 'divider',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}
     >
@@ -76,6 +78,9 @@ const AppNavbar = ({ onMenuClick }) => {
           <Logo size="small" />
         </Box>
         <Box sx={{ flexGrow: 1 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+          <DarkModeToggle showLabel={false} size="small" />
+        </Box>
         {isAuthenticated && (
           <>
             <ButtonBase
