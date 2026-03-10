@@ -5,17 +5,21 @@ const BASE = '/api/empresas/';
 export const mapEmpresaFromApi = (item) => ({
   id: item.id,
   nombre: item.nombre ?? '',
-  estado: item.estado === '1' ? 'Activa' : 'Inactiva',
+  estado: item.estado ?? (item.estado_empresa === '1' ? 'Activa' : 'Inactiva'),
+  estado_empresa: item.estado_empresa ?? (item.estado === 'Activa' ? '1' : '0'),
 });
 
 /**
- * Lista empresas con paginación (igual que vendedores, 5 por página).
+ * Lista empresas con paginación y filtro por estado (igual que vendedores).
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página
+ * @param {{ estado?: string }} params - estado: '1' Activa, '0' Inactiva (omitir = todos)
  * @returns {Promise<{ results: Array, count: number }>}
  */
-export const listarEmpresas = async (page = 1, pageSize = 5) => {
-  const { data } = await get(BASE, { page, page_size: pageSize });
+export const listarEmpresas = async (page = 1, pageSize = 5, params = {}) => {
+  const query = { page, page_size: pageSize };
+  if (params.estado === '1' || params.estado === '0') query.estado = params.estado;
+  const { data } = await get(BASE, query);
   const results = Array.isArray(data) ? data : data?.results ?? [];
   const count = data?.count ?? results.length;
   return {

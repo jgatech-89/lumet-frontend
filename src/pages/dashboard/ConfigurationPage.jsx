@@ -261,7 +261,11 @@ const ConfigurationPage = () => {
     async (page = 1) => {
       setEmpresasLoading(true);
       try {
-        const { results, count } = await listarEmpresas(page, EMPRESAS_POR_PAGINA);
+        const estadoParam =
+          filtroEstado === 'activa' ? '1' : filtroEstado === 'inactiva' ? '0' : undefined;
+        const { results, count } = await listarEmpresas(page, EMPRESAS_POR_PAGINA, {
+          estado: estadoParam,
+        });
         setEmpresas(results);
         setEmpresasTotal(count);
       } catch (e) {
@@ -270,7 +274,7 @@ const ConfigurationPage = () => {
         setEmpresasLoading(false);
       }
     },
-    [showSnackbar]
+    [showSnackbar, filtroEstado]
   );
 
   const cargarEmpresasParaSelect = useCallback(async () => {
@@ -325,6 +329,13 @@ const ConfigurationPage = () => {
       cargarVendedores(1);
     }
   }, [busqueda, filtroEstado, cargarVendedores]);
+
+  useEffect(() => {
+    if (tabKeys[tabActual] === 'empresa') {
+      setPagina(1);
+      cargarEmpresas(1);
+    }
+  }, [filtroEstado, tabActual, cargarEmpresas]);
 
   const esTabEmpresa = tabKeys[tabActual] === 'empresa';
   const esTabVendedor = tabKeys[tabActual] === 'vendedor';
@@ -399,7 +410,7 @@ const ConfigurationPage = () => {
   const handleAbrirEditarEmpresa = (empresa) => {
     setEmpresaEnEdicion(empresa);
     setNombreEmpresa(empresa.nombre);
-    setEstadoEmpresa(empresa.estado === 'Activa' ? '1' : '0');
+    setEstadoEmpresa(empresa.estado_empresa ?? (empresa.estado === 'Activa' ? '1' : '0'));
     setModalEditarEmpresa(true);
   };
 
@@ -414,11 +425,11 @@ const ConfigurationPage = () => {
     if (!empresaEnEdicion || !nombreEmpresa.trim()) return;
     setEmpresaGuardandoEditar(true);
     try {
-      await actualizarEmpresa(empresaEnEdicion.id, { nombre: nombreEmpresa.trim(), estado: estadoEmpresa });
+      await actualizarEmpresa(empresaEnEdicion.id, { nombre: nombreEmpresa.trim(), estado_empresa: estadoEmpresa });
+      showSnackbar('Empresa actualizada correctamente', 'success');
+      handleCerrarEditarEmpresa();
       await cargarEmpresasParaSelect();
       await cargarEmpresas(pagina);
-      handleCerrarEditarEmpresa();
-      showSnackbar('Empresa actualizada correctamente', 'success');
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo actualizar la empresa'), 'error');
     } finally {
@@ -441,10 +452,12 @@ const ConfigurationPage = () => {
     setEmpresaEliminando(true);
     try {
       await eliminarEmpresa(empresaAEliminar.id);
-      await cargarEmpresasParaSelect();
-      await cargarEmpresas(pagina);
       handleCerrarEliminarEmpresa();
       showSnackbar('Empresa eliminada correctamente', 'success');
+      const nextPage = empresas.length === 1 && pagina > 1 ? pagina - 1 : pagina;
+      setPagina(nextPage);
+      await cargarEmpresasParaSelect();
+      await cargarEmpresas(nextPage);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo eliminar la empresa'), 'error');
     } finally {
@@ -1262,13 +1275,7 @@ const ConfigurationPage = () => {
       </Dialog>
 
       {/* Modal Editar empresa */}
-      <Dialog
-        open={modalEditarEmpresa}
-        onClose={handleCerrarEditarEmpresa}
-        PaperProps={{
-          sx: modalPaperSx,
-        }}
-      >
+      <Dialog open={modalEditarEmpresa} onClose={handleCerrarEditarEmpresa} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
           <Typography variant="h6" fontWeight={600}>
             Editar empresa
@@ -1279,43 +1286,35 @@ const ConfigurationPage = () => {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Modifica el nombre y el estado de la empresa.
+            Modifica los datos de la empresa.
           </Typography>
-          <TextField
-            fullWidth
-            size="small"
-            label="Nombre de la empresa"
-            placeholder="Introduce el nombre..."
-            value={nombreEmpresa}
-            onChange={(e) => setNombreEmpresa(e.target.value)}
-            required
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 }, mb: 2 }}
-          />
-          <FormControl fullWidth size="small" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-            <InputLabel id="editar-empresa-estado-label">Estado de la empresa</InputLabel>
-            <Select
-              labelId="editar-empresa-estado-label"
-              value={estadoEmpresa}
-              label="Estado de la empresa"
-              onChange={(e) => setEstadoEmpresa(e.target.value)}
-            >
-              <MenuItem value="1">Activa</MenuItem>
-              <MenuItem value="0">Inactiva</MenuItem>
-            </Select>
-          </FormControl>
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Nombre de la empresa"
+              placeholder="Introduce el nombre..."
+              value={nombreEmpresa}
+              onChange={(e) => setNombreEmpresa(e.target.value)}
+              required
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <FormControl fullWidth size="small" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+              <InputLabel id="editar-empresa-estado-label">Estado de la empresa</InputLabel>
+              <Select
+                labelId="editar-empresa-estado-label"
+                value={estadoEmpresa}
+                label="Estado de la empresa"
+                onChange={(e) => setEstadoEmpresa(e.target.value)}
+              >
+                <MenuItem value="1">Activa</MenuItem>
+                <MenuItem value="0">Inactiva</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
-          <Button
-            variant="outlined"
-            onClick={handleCerrarEditarEmpresa}
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              borderColor: 'rgba(0,0,0,0.12)',
-              color: 'text.primary',
-            }}
-          >
+          <Button variant="outlined" onClick={handleCerrarEditarEmpresa} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: 'text.primary' }}>
             Cerrar
           </Button>
           <LoadingButton
@@ -1324,12 +1323,7 @@ const ConfigurationPage = () => {
             disabled={!nombreEmpresa.trim()}
             loading={empresaGuardandoEditar}
             loadingText="Guardando..."
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)',
-            }}
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
           >
             Guardar
           </LoadingButton>
@@ -1337,13 +1331,7 @@ const ConfigurationPage = () => {
       </Dialog>
 
       {/* Modal Eliminar empresa */}
-      <Dialog
-        open={modalEliminarEmpresa}
-        onClose={handleCerrarEliminarEmpresa}
-        PaperProps={{
-          sx: modalPaperSx,
-        }}
-      >
+      <Dialog open={modalEliminarEmpresa} onClose={handleCerrarEliminarEmpresa} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
           <Typography variant="h6" fontWeight={600}>
             Eliminar empresa
@@ -1363,31 +1351,10 @@ const ConfigurationPage = () => {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
-          <Button
-            variant="outlined"
-            onClick={handleCerrarEliminarEmpresa}
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              borderColor: 'rgba(0,0,0,0.12)',
-              color: 'text.primary',
-            }}
-          >
+          <Button variant="outlined" onClick={handleCerrarEliminarEmpresa} disabled={empresaEliminando} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: 'text.primary' }}>
             Cancelar
           </Button>
-          <LoadingButton
-            variant="contained"
-            color="error"
-            onClick={handleConfirmarEliminarEmpresa}
-            loading={empresaEliminando}
-            loadingText="Eliminando..."
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
-          >
+          <LoadingButton variant="contained" color="error" onClick={handleConfirmarEliminarEmpresa} loading={empresaEliminando} loadingText="Eliminando..." sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
             Aceptar
           </LoadingButton>
         </DialogActions>
