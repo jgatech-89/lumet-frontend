@@ -4,6 +4,7 @@ import { useSnackbar } from '../../context/SnackbarContext';
 import { useThemeMode } from '../../context/ThemeContext';
 import { getChipEstadoActivo, getChipEstadoInactivo, getChipTipoCampo, getChipTipoEmpresa } from '../../utils/chipColors';
 import { getErrorMessage } from '../../utils/funciones';
+import { listarEmpresas, listarEmpresasParaSelect, crearEmpresa, actualizarEmpresa, eliminarEmpresa } from '../../utils/apiEmpresas';
 import { listarVendedores, crearVendedor, actualizarVendedor, eliminarVendedor, mapVendedorFromApi } from '../../utils/apiVendedores';
 import { TableLoader, LoadingButton } from '../../components/loading';
 import {
@@ -96,13 +97,6 @@ const getActionBtnRed = (isDark) => ({
 });
 
 
-// Mock data inicial
-const EMPRESAS_INICIAL = [
-  { id: 1, nombre: 'Telefonía', estado: 'Activa' },
-  { id: 2, nombre: 'Energía', estado: 'Activa' },
-  { id: 3, nombre: 'ONG', estado: 'Activa' },
-];
-
 const SERVICIOS_INICIAL = [
   { id: 1, servicio: 'Luz', tipoEmpresa: 'Energía', estado: 'Activa' },
   { id: 2, servicio: 'Gas', tipoEmpresa: 'Energía', estado: 'Activa' },
@@ -166,7 +160,8 @@ const getTabConfig = (empresas, servicios, campos, vendedores) => ({
 });
 
 const FILAS_POR_PAGINA = 5;
-/** Solo para la pestaña Vendedor: tamaño de página en el servidor */
+/** Tamaño de página en el servidor para Empresa y Vendedor */
+const EMPRESAS_POR_PAGINA = 5;
 const VENDEDORES_POR_PAGINA = 5;
 
 const compactCellSx = { py: 1.5, [COMPACT_MEDIA]: { py: 1, fontSize: '0.8125rem' } };
@@ -199,7 +194,13 @@ const ConfigurationPage = () => {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [pagina, setPagina] = useState(1);
-  const [empresas, setEmpresas] = useState(EMPRESAS_INICIAL);
+  const [empresas, setEmpresas] = useState([]);
+  const [empresasTotal, setEmpresasTotal] = useState(0);
+  const [empresasParaSelect, setEmpresasParaSelect] = useState([]);
+  const [empresasLoading, setEmpresasLoading] = useState(false);
+  const [empresaGuardandoNuevo, setEmpresaGuardandoNuevo] = useState(false);
+  const [empresaGuardandoEditar, setEmpresaGuardandoEditar] = useState(false);
+  const [empresaEliminando, setEmpresaEliminando] = useState(false);
   const [servicios, setServicios] = useState(SERVICIOS_INICIAL);
   const [campos, setCampos] = useState(CAMPOS_INICIAL);
   const [vendedores, setVendedores] = useState(VENDEDORES_INICIAL);
@@ -214,6 +215,7 @@ const ConfigurationPage = () => {
   const [modalEditarEmpresa, setModalEditarEmpresa] = useState(false);
   const [modalEliminarEmpresa, setModalEliminarEmpresa] = useState(false);
   const [nombreEmpresa, setNombreEmpresa] = useState('');
+  const [estadoEmpresa, setEstadoEmpresa] = useState('1');
   const [empresaEnEdicion, setEmpresaEnEdicion] = useState(null);
   const [empresaAEliminar, setEmpresaAEliminar] = useState(null);
 
@@ -255,6 +257,31 @@ const ConfigurationPage = () => {
   const tabKeys = ['empresa', 'servicios', 'campos', 'vendedor'];
   const TAB_CONFIG = getTabConfig(empresas, servicios, campos, vendedores);
 
+  const cargarEmpresas = useCallback(
+    async (page = 1) => {
+      setEmpresasLoading(true);
+      try {
+        const { results, count } = await listarEmpresas(page, EMPRESAS_POR_PAGINA);
+        setEmpresas(results);
+        setEmpresasTotal(count);
+      } catch (e) {
+        showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar las empresas'), 'error');
+      } finally {
+        setEmpresasLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
+
+  const cargarEmpresasParaSelect = useCallback(async () => {
+    try {
+      const results = await listarEmpresasParaSelect();
+      setEmpresasParaSelect(results);
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar las empresas'), 'error');
+    }
+  }, [showSnackbar]);
+
   const cargarVendedores = useCallback(
     async (page = 1) => {
       setVendedoresLoading(true);
@@ -277,6 +304,16 @@ const ConfigurationPage = () => {
   );
 
   useEffect(() => {
+    cargarEmpresasParaSelect();
+  }, [cargarEmpresasParaSelect]);
+
+  useEffect(() => {
+    if (tabKeys[tabActual] === 'empresa') {
+      cargarEmpresas(pagina);
+    }
+  }, [tabActual, pagina, cargarEmpresas]);
+
+  useEffect(() => {
     if (tabKeys[tabActual] === 'vendedor') {
       cargarVendedores(pagina);
     }
@@ -289,27 +326,34 @@ const ConfigurationPage = () => {
     }
   }, [busqueda, filtroEstado, cargarVendedores]);
 
+  const esTabEmpresa = tabKeys[tabActual] === 'empresa';
+  const esTabVendedor = tabKeys[tabActual] === 'vendedor';
   const serviciosFiltradosPorEmpresa = empresaIdCampo
-    ? servicios.filter((s) => s.tipoEmpresa === empresas.find((e) => e.id.toString() === empresaIdCampo)?.nombre)
+    ? servicios.filter((s) => s.tipoEmpresa === empresasParaSelect.find((e) => e.id.toString() === empresaIdCampo)?.nombre)
     : [];
   const config = TAB_CONFIG[tabKeys[tabActual]];
-  const esTabVendedor = tabKeys[tabActual] === 'vendedor';
-  const totalItems = esTabVendedor ? vendedoresTotal : config.data.length;
+  const totalItems = esTabEmpresa ? empresasTotal : esTabVendedor ? vendedoresTotal : config.data.length;
   const inicio =
     totalItems === 0
       ? 0
-      : esTabVendedor
-        ? (pagina - 1) * VENDEDORES_POR_PAGINA + 1
-        : (pagina - 1) * FILAS_POR_PAGINA + 1;
+      : esTabEmpresa
+        ? (pagina - 1) * EMPRESAS_POR_PAGINA + 1
+        : esTabVendedor
+          ? (pagina - 1) * VENDEDORES_POR_PAGINA + 1
+          : (pagina - 1) * FILAS_POR_PAGINA + 1;
   const fin =
     totalItems === 0
       ? 0
-      : esTabVendedor
-        ? Math.min(pagina * VENDEDORES_POR_PAGINA, vendedoresTotal)
-        : Math.min(pagina * FILAS_POR_PAGINA, totalItems);
-  const filasPagina = esTabVendedor
-    ? vendedores
-    : config.data.slice((pagina - 1) * FILAS_POR_PAGINA, pagina * FILAS_POR_PAGINA);
+      : esTabEmpresa
+        ? Math.min(pagina * EMPRESAS_POR_PAGINA, empresasTotal)
+        : esTabVendedor
+          ? Math.min(pagina * VENDEDORES_POR_PAGINA, vendedoresTotal)
+          : Math.min(pagina * FILAS_POR_PAGINA, totalItems);
+  const filasPagina = esTabEmpresa
+    ? empresas
+    : esTabVendedor
+      ? vendedores
+      : config.data.slice((pagina - 1) * FILAS_POR_PAGINA, pagina * FILAS_POR_PAGINA);
 
   const handleChangeTab = (_, value) => {
     setTabActual(value);
@@ -318,7 +362,9 @@ const ConfigurationPage = () => {
 
   const handleChangePagina = (_, value) => {
     setPagina(value);
-    if (tabKeys[tabActual] === 'vendedor') {
+    if (tabKeys[tabActual] === 'empresa') {
+      cargarEmpresas(value);
+    } else if (tabKeys[tabActual] === 'vendedor') {
       cargarVendedores(value);
     }
   };
@@ -334,16 +380,26 @@ const ConfigurationPage = () => {
     setNombreEmpresa('');
   };
 
-  const handleGuardarNuevaEmpresa = () => {
+  const handleGuardarNuevaEmpresa = async () => {
     if (!nombreEmpresa.trim()) return;
-    const nuevoId = Math.max(...empresas.map((e) => e.id), 0) + 1;
-    setEmpresas((prev) => [...prev, { id: nuevoId, nombre: nombreEmpresa.trim(), estado: 'Activa' }]);
-    handleCerrarNuevaEmpresa();
+    setEmpresaGuardandoNuevo(true);
+    try {
+      await crearEmpresa({ nombre: nombreEmpresa.trim() });
+      await cargarEmpresasParaSelect();
+      await cargarEmpresas(pagina);
+      handleCerrarNuevaEmpresa();
+      showSnackbar('Empresa creada correctamente', 'success');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo crear la empresa'), 'error');
+    } finally {
+      setEmpresaGuardandoNuevo(false);
+    }
   };
 
   const handleAbrirEditarEmpresa = (empresa) => {
     setEmpresaEnEdicion(empresa);
     setNombreEmpresa(empresa.nombre);
+    setEstadoEmpresa(empresa.estado === 'Activa' ? '1' : '0');
     setModalEditarEmpresa(true);
   };
 
@@ -351,14 +407,23 @@ const ConfigurationPage = () => {
     setModalEditarEmpresa(false);
     setEmpresaEnEdicion(null);
     setNombreEmpresa('');
+    setEstadoEmpresa('1');
   };
 
-  const handleGuardarEditarEmpresa = () => {
+  const handleGuardarEditarEmpresa = async () => {
     if (!empresaEnEdicion || !nombreEmpresa.trim()) return;
-    setEmpresas((prev) =>
-      prev.map((e) => (e.id === empresaEnEdicion.id ? { ...e, nombre: nombreEmpresa.trim() } : e))
-    );
-    handleCerrarEditarEmpresa();
+    setEmpresaGuardandoEditar(true);
+    try {
+      await actualizarEmpresa(empresaEnEdicion.id, { nombre: nombreEmpresa.trim(), estado: estadoEmpresa });
+      await cargarEmpresasParaSelect();
+      await cargarEmpresas(pagina);
+      handleCerrarEditarEmpresa();
+      showSnackbar('Empresa actualizada correctamente', 'success');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo actualizar la empresa'), 'error');
+    } finally {
+      setEmpresaGuardandoEditar(false);
+    }
   };
 
   const handleAbrirEliminarEmpresa = (empresa) => {
@@ -371,11 +436,20 @@ const ConfigurationPage = () => {
     setEmpresaAEliminar(null);
   };
 
-  const handleConfirmarEliminarEmpresa = () => {
-    if (empresaAEliminar) {
-      setEmpresas((prev) => prev.filter((e) => e.id !== empresaAEliminar.id));
+  const handleConfirmarEliminarEmpresa = async () => {
+    if (!empresaAEliminar) return;
+    setEmpresaEliminando(true);
+    try {
+      await eliminarEmpresa(empresaAEliminar.id);
+      await cargarEmpresasParaSelect();
+      await cargarEmpresas(pagina);
+      handleCerrarEliminarEmpresa();
+      showSnackbar('Empresa eliminada correctamente', 'success');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo eliminar la empresa'), 'error');
+    } finally {
+      setEmpresaEliminando(false);
     }
-    handleCerrarEliminarEmpresa();
   };
 
   // Handlers modales Servicios
@@ -393,7 +467,7 @@ const ConfigurationPage = () => {
 
   const handleGuardarNuevoServicio = () => {
     if (!nombreServicio.trim() || !empresaIdServicio) return;
-    const empresa = empresas.find((e) => e.id.toString() === empresaIdServicio);
+    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaIdServicio);
     if (!empresa) return;
     const nuevoId = Math.max(...servicios.map((s) => s.id), 0) + 1;
     setServicios((prev) => [
@@ -420,7 +494,7 @@ const ConfigurationPage = () => {
 
   const handleGuardarEditarServicio = () => {
     if (!servicioEnEdicion || !nombreServicio.trim() || !empresaIdServicio) return;
-    const empresa = empresas.find((e) => e.id.toString() === empresaIdServicio);
+    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaIdServicio);
     if (!empresa) return;
     setServicios((prev) =>
       prev.map((s) =>
@@ -482,7 +556,7 @@ const ConfigurationPage = () => {
 
   const handleGuardarNuevoCampo = () => {
     if (!nombreCampo.trim() || !empresaIdCampo || !servicioIdCampo) return;
-    const empresa = empresas.find((e) => e.id.toString() === empresaIdCampo);
+    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaIdCampo);
     const servicio = servicios.find((s) => s.id.toString() === servicioIdCampo);
     if (!empresa || !servicio) return;
     const nuevoId = Math.max(...campos.map((c) => c.id), 0) + 1;
@@ -504,8 +578,8 @@ const ConfigurationPage = () => {
   const handleAbrirEditarCampo = (campo) => {
     setCampoEnEdicion(campo);
     setNombreCampo(campo.campo);
-    const emp = empresas.find((e) => e.nombre === campo.empresa);
-    setEmpresaIdCampo(emp?.id?.toString() ?? empresas[0]?.id?.toString() ?? '');
+    const emp = empresasParaSelect.find((e) => e.nombre === campo.empresa);
+    setEmpresaIdCampo(emp?.id?.toString() ?? empresasParaSelect[0]?.id?.toString() ?? '');
     const serv = servicios.find((s) => s.servicio === campo.servicio && s.tipoEmpresa === campo.empresa);
     setServicioIdCampo(serv?.id?.toString() ?? '');
     setTipoCampoSeleccionado(campo.tipoCampo);
@@ -527,7 +601,7 @@ const ConfigurationPage = () => {
 
   const handleGuardarEditarCampo = () => {
     if (!campoEnEdicion || !nombreCampo.trim() || !empresaIdCampo || !servicioIdCampo) return;
-    const empresa = empresas.find((e) => e.id.toString() === empresaIdCampo);
+    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaIdCampo);
     const servicio = servicios.find((s) => s.id.toString() === servicioIdCampo);
     if (!empresa || !servicio) return;
     setCampos((prev) =>
@@ -1050,7 +1124,9 @@ const ConfigurationPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {tabKeys[tabActual] === 'vendedor' && vendedoresLoading ? (
+              {tabKeys[tabActual] === 'empresa' && empresasLoading ? (
+                <TableLoader columnCount={config.columns.length} message="Cargando empresas..." />
+              ) : tabKeys[tabActual] === 'vendedor' && vendedoresLoading ? (
                 <TableLoader columnCount={config.columns.length} message="Cargando vendedores..." />
               ) : (
                 filasPagina.map((row) => (
@@ -1099,9 +1175,11 @@ const ConfigurationPage = () => {
           <Pagination
             count={Math.max(
               1,
-              esTabVendedor
-                ? Math.ceil(vendedoresTotal / VENDEDORES_POR_PAGINA)
-                : Math.ceil(totalItems / FILAS_POR_PAGINA)
+              esTabEmpresa
+                ? Math.ceil(empresasTotal / EMPRESAS_POR_PAGINA)
+                : esTabVendedor
+                  ? Math.ceil(vendedoresTotal / VENDEDORES_POR_PAGINA)
+                  : Math.ceil(totalItems / FILAS_POR_PAGINA)
             )}
             page={pagina}
             onChange={handleChangePagina}
@@ -1165,10 +1243,12 @@ const ConfigurationPage = () => {
           >
             Cancelar
           </Button>
-          <Button
+          <LoadingButton
             variant="contained"
             onClick={handleGuardarNuevaEmpresa}
             disabled={!nombreEmpresa.trim()}
+            loading={empresaGuardandoNuevo}
+            loadingText="Guardando..."
             sx={{
               borderRadius: 2,
               textTransform: 'none',
@@ -1177,7 +1257,7 @@ const ConfigurationPage = () => {
             }}
           >
             Guardar empresa
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -1199,7 +1279,7 @@ const ConfigurationPage = () => {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Modifica el nombre de la empresa.
+            Modifica el nombre y el estado de la empresa.
           </Typography>
           <TextField
             fullWidth
@@ -1209,8 +1289,20 @@ const ConfigurationPage = () => {
             value={nombreEmpresa}
             onChange={(e) => setNombreEmpresa(e.target.value)}
             required
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 }, mb: 2 }}
           />
+          <FormControl fullWidth size="small" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+            <InputLabel id="editar-empresa-estado-label">Estado de la empresa</InputLabel>
+            <Select
+              labelId="editar-empresa-estado-label"
+              value={estadoEmpresa}
+              label="Estado de la empresa"
+              onChange={(e) => setEstadoEmpresa(e.target.value)}
+            >
+              <MenuItem value="1">Activa</MenuItem>
+              <MenuItem value="0">Inactiva</MenuItem>
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
           <Button
@@ -1226,10 +1318,12 @@ const ConfigurationPage = () => {
           >
             Cerrar
           </Button>
-          <Button
+          <LoadingButton
             variant="contained"
             onClick={handleGuardarEditarEmpresa}
             disabled={!nombreEmpresa.trim()}
+            loading={empresaGuardandoEditar}
+            loadingText="Guardando..."
             sx={{
               borderRadius: 2,
               textTransform: 'none',
@@ -1238,7 +1332,7 @@ const ConfigurationPage = () => {
             }}
           >
             Guardar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -1282,10 +1376,12 @@ const ConfigurationPage = () => {
           >
             Cancelar
           </Button>
-          <Button
+          <LoadingButton
             variant="contained"
             color="error"
             onClick={handleConfirmarEliminarEmpresa}
+            loading={empresaEliminando}
+            loadingText="Eliminando..."
             sx={{
               borderRadius: 2,
               textTransform: 'none',
@@ -1293,7 +1389,7 @@ const ConfigurationPage = () => {
             }}
           >
             Aceptar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -1335,7 +1431,7 @@ const ConfigurationPage = () => {
                 onChange={(e) => setEmpresaIdServicio(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {empresas.map((e) => (
+                {empresasParaSelect.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
                   </MenuItem>
@@ -1412,7 +1508,7 @@ const ConfigurationPage = () => {
                 onChange={(e) => setEmpresaIdServicio(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {empresas.map((e) => (
+                {empresasParaSelect.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
                   </MenuItem>
@@ -1531,7 +1627,7 @@ const ConfigurationPage = () => {
                 }}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {empresas.map((e) => (
+                {empresasParaSelect.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
                   </MenuItem>
@@ -1664,7 +1760,7 @@ const ConfigurationPage = () => {
                 }}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {empresas.map((e) => (
+                {empresasParaSelect.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>
                     {e.nombre}
                   </MenuItem>
