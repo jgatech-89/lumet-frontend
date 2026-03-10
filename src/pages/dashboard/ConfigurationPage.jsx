@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { COMPACT_MEDIA } from '../../utils/theme';
+import { useSnackbar } from '../../context/SnackbarContext';
+import { getErrorMessage } from '../../utils/funciones';
+import { listarVendedores, crearVendedor, actualizarVendedor, eliminarVendedor, mapVendedorFromApi } from '../../utils/apiVendedores';
+import { TableLoader, LoadingButton } from '../../components/loading';
 import {
   Box,
   Typography,
@@ -132,12 +136,18 @@ const CAMPOS_INICIAL = [
   { id: 4, campo: 'Tipo de donación', empresa: 'ONG', servicio: 'Donación', tipoCampo: 'Select', estado: 'Activa', opciones: ['Única', 'Recurrente'] },
 ];
 
-const VENDEDORES_INICIAL = [
-  { id: 1, nombre: 'Eduardo Magno', numeroIdentificacion: '12345678A', tipoIdentificacion: 'DNI', estado: 'Activo' },
-];
+const VENDEDORES_INICIAL = [];
 
 const TIPOS_CAMPO = ['Texto', 'Select', 'Número'];
-const TIPOS_IDENTIFICACION = ['CC', 'DNI', 'Pasaporte', 'PT'];
+// Valores alineados con el backend (persona.choices.TIPO_IDENTIFICACION). value = código en BD, label = lo que ve el usuario
+const TIPOS_IDENTIFICACION = [
+  { value: 'CC', label: 'CC - Cédula de ciudadanía' },
+  { value: 'CE', label: 'CE - Cédula de extranjería' },
+  { value: 'NIT', label: 'NIT - NIT' },
+  { value: 'PAS', label: 'PAS - Pasaporte' },
+  { value: 'PPT', label: 'PPT - Permiso provisional de trabajo' },
+  { value: 'OTRO', label: 'OTRO - Otro' },
+];
 
 const getTabConfig = (empresas, servicios, campos, vendedores) => ({
   empresa: {
@@ -175,6 +185,8 @@ const getTabConfig = (empresas, servicios, campos, vendedores) => ({
 });
 
 const FILAS_POR_PAGINA = 5;
+/** Solo para la pestaña Vendedor: tamaño de página en el servidor */
+const VENDEDORES_POR_PAGINA = 5;
 
 const compactCellSx = { py: 1.5, [COMPACT_MEDIA]: { py: 1, fontSize: '0.8125rem' } };
 const compactChipSx = { [COMPACT_MEDIA]: { fontSize: '0.6875rem', px: 0.75, height: 20 } };
@@ -188,6 +200,7 @@ const modalPaperSx = {
 };
 
 const ConfigurationPage = () => {
+  const { showSnackbar } = useSnackbar();
   const [tabActual, setTabActual] = useState(0);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
@@ -196,6 +209,11 @@ const ConfigurationPage = () => {
   const [servicios, setServicios] = useState(SERVICIOS_INICIAL);
   const [campos, setCampos] = useState(CAMPOS_INICIAL);
   const [vendedores, setVendedores] = useState(VENDEDORES_INICIAL);
+  const [vendedoresTotal, setVendedoresTotal] = useState(0);
+  const [vendedoresLoading, setVendedoresLoading] = useState(false);
+  const [vendedorGuardandoNuevo, setVendedorGuardandoNuevo] = useState(false);
+  const [vendedorGuardandoEditar, setVendedorGuardandoEditar] = useState(false);
+  const [vendedorEliminando, setVendedorEliminando] = useState(false);
 
   // Modales Empresa
   const [modalNuevaEmpresa, setModalNuevaEmpresa] = useState(false);
@@ -236,27 +254,80 @@ const ConfigurationPage = () => {
   const [nombreVendedor, setNombreVendedor] = useState('');
   const [numeroIdentificacion, setNumeroIdentificacion] = useState('');
   const [tipoIdentificacion, setTipoIdentificacion] = useState('');
+  const [estadoVendedor, setEstadoVendedor] = useState('1');
   const [vendedorEnEdicion, setVendedorEnEdicion] = useState(null);
   const [vendedorAEliminar, setVendedorAEliminar] = useState(null);
 
   const tabKeys = ['empresa', 'servicios', 'campos', 'vendedor'];
   const TAB_CONFIG = getTabConfig(empresas, servicios, campos, vendedores);
 
+  const cargarVendedores = useCallback(
+    async (page = 1) => {
+      setVendedoresLoading(true);
+      try {
+        const estadoParam =
+          filtroEstado === 'activa' ? '1' : filtroEstado === 'inactiva' ? '0' : undefined;
+        const { results, count } = await listarVendedores(page, VENDEDORES_POR_PAGINA, {
+          search: busqueda.trim() || undefined,
+          estado: estadoParam,
+        });
+        setVendedores(results);
+        setVendedoresTotal(count);
+      } catch (e) {
+        showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los vendedores'), 'error');
+      } finally {
+        setVendedoresLoading(false);
+      }
+    },
+    [showSnackbar, busqueda, filtroEstado]
+  );
+
+  useEffect(() => {
+    if (tabKeys[tabActual] === 'vendedor') {
+      cargarVendedores(pagina);
+    }
+  }, [tabActual, pagina, cargarVendedores]);
+
+  useEffect(() => {
+    if (tabKeys[tabActual] === 'vendedor') {
+      setPagina(1);
+      cargarVendedores(1);
+    }
+  }, [busqueda, filtroEstado, cargarVendedores]);
+
   const serviciosFiltradosPorEmpresa = empresaIdCampo
     ? servicios.filter((s) => s.tipoEmpresa === empresas.find((e) => e.id.toString() === empresaIdCampo)?.nombre)
     : [];
   const config = TAB_CONFIG[tabKeys[tabActual]];
-  const totalItems = config.data.length;
-  const inicio = (pagina - 1) * FILAS_POR_PAGINA + 1;
-  const fin = Math.min(pagina * FILAS_POR_PAGINA, totalItems);
-  const filasPagina = config.data.slice((pagina - 1) * FILAS_POR_PAGINA, pagina * FILAS_POR_PAGINA);
+  const esTabVendedor = tabKeys[tabActual] === 'vendedor';
+  const totalItems = esTabVendedor ? vendedoresTotal : config.data.length;
+  const inicio =
+    totalItems === 0
+      ? 0
+      : esTabVendedor
+        ? (pagina - 1) * VENDEDORES_POR_PAGINA + 1
+        : (pagina - 1) * FILAS_POR_PAGINA + 1;
+  const fin =
+    totalItems === 0
+      ? 0
+      : esTabVendedor
+        ? Math.min(pagina * VENDEDORES_POR_PAGINA, vendedoresTotal)
+        : Math.min(pagina * FILAS_POR_PAGINA, totalItems);
+  const filasPagina = esTabVendedor
+    ? vendedores
+    : config.data.slice((pagina - 1) * FILAS_POR_PAGINA, pagina * FILAS_POR_PAGINA);
 
   const handleChangeTab = (_, value) => {
     setTabActual(value);
     setPagina(1);
   };
 
-  const handleChangePagina = (_, value) => setPagina(value);
+  const handleChangePagina = (_, value) => {
+    setPagina(value);
+    if (tabKeys[tabActual] === 'vendedor') {
+      cargarVendedores(value);
+    }
+  };
 
   // Handlers modales Empresa
   const handleAbrirNuevaEmpresa = () => {
@@ -524,14 +595,24 @@ const ConfigurationPage = () => {
     setTipoIdentificacion('');
   };
 
-  const handleGuardarNuevoVendedor = () => {
+  const handleGuardarNuevoVendedor = async () => {
     if (!nombreVendedor.trim() || !numeroIdentificacion.trim()) return;
-    const nuevoId = Math.max(...vendedores.map((c) => c.id), 0) + 1;
-    setVendedores((prev) => [
-      ...prev,
-      { id: nuevoId, nombre: nombreVendedor.trim(), numeroIdentificacion: numeroIdentificacion.trim(), tipoIdentificacion, estado: 'Activo' },
-    ]);
-    handleCerrarNuevoVendedor();
+    setVendedorGuardandoNuevo(true);
+    try {
+      const creado = await crearVendedor({
+        nombre_completo: nombreVendedor.trim(),
+        tipo_identificacion: tipoIdentificacion || undefined,
+        numero_identificacion: numeroIdentificacion.trim(),
+      });
+      showSnackbar('Vendedor registrado correctamente');
+      handleCerrarNuevoVendedor();
+      setPagina(1);
+      cargarVendedores(1);
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al guardar el vendedor'), 'error');
+    } finally {
+      setVendedorGuardandoNuevo(false);
+    }
   };
 
   const handleAbrirEditarVendedor = (col) => {
@@ -539,6 +620,7 @@ const ConfigurationPage = () => {
     setNombreVendedor(col.nombre);
     setNumeroIdentificacion(col.numeroIdentificacion ?? '');
     setTipoIdentificacion(col.tipoIdentificacion ?? '');
+    setEstadoVendedor(col.estadoVendedor ?? '1');
     setModalEditarVendedor(true);
   };
 
@@ -548,18 +630,27 @@ const ConfigurationPage = () => {
     setNombreVendedor('');
     setNumeroIdentificacion('');
     setTipoIdentificacion('');
+    setEstadoVendedor('1');
   };
 
-  const handleGuardarEditarVendedor = () => {
+  const handleGuardarEditarVendedor = async () => {
     if (!vendedorEnEdicion || !nombreVendedor.trim() || !numeroIdentificacion.trim()) return;
-    setVendedores((prev) =>
-      prev.map((c) =>
-        c.id === vendedorEnEdicion.id
-          ? { ...c, nombre: nombreVendedor.trim(), numeroIdentificacion: numeroIdentificacion.trim(), tipoIdentificacion }
-          : c
-      )
-    );
-    handleCerrarEditarVendedor();
+    setVendedorGuardandoEditar(true);
+    try {
+      const actualizado = await actualizarVendedor(vendedorEnEdicion.id, {
+        nombre_completo: nombreVendedor.trim(),
+        tipo_identificacion: tipoIdentificacion || undefined,
+        numero_identificacion: numeroIdentificacion.trim(),
+        estado_vendedor: estadoVendedor,
+      });
+      showSnackbar('Vendedor actualizado correctamente');
+      handleCerrarEditarVendedor();
+      cargarVendedores(pagina);
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al actualizar el vendedor'), 'error');
+    } finally {
+      setVendedorGuardandoEditar(false);
+    }
   };
 
   const handleAbrirEliminarVendedor = (col) => {
@@ -572,11 +663,21 @@ const ConfigurationPage = () => {
     setVendedorAEliminar(null);
   };
 
-  const handleConfirmarEliminarVendedor = () => {
-    if (vendedorAEliminar) {
-      setVendedores((prev) => prev.filter((c) => c.id !== vendedorAEliminar.id));
+  const handleConfirmarEliminarVendedor = async () => {
+    if (!vendedorAEliminar) return;
+    setVendedorEliminando(true);
+    try {
+      await eliminarVendedor(vendedorAEliminar.id);
+      showSnackbar('Vendedor eliminado correctamente');
+      handleCerrarEliminarVendedor();
+      const nextPage = vendedores.length === 1 && pagina > 1 ? pagina - 1 : pagina;
+      setPagina(nextPage);
+      cargarVendedores(nextPage);
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al eliminar el vendedor'), 'error');
+    } finally {
+      setVendedorEliminando(false);
     }
-    handleCerrarEliminarVendedor();
   };
 
   const getEstadoChip = (estado) => {
@@ -957,18 +1058,22 @@ const ConfigurationPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filasPagina.map((row) => (
-                <TableRow
-                  key={row.id}
-                  hover
-                  sx={{
-                    '&:last-child td': { borderBottom: 0 },
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  {renderTableRow(row)}
-                </TableRow>
-              ))}
+              {tabKeys[tabActual] === 'vendedor' && vendedoresLoading ? (
+                <TableLoader columnCount={config.columns.length} message="Cargando vendedores..." />
+              ) : (
+                filasPagina.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    hover
+                    sx={{
+                      '&:last-child td': { borderBottom: 0 },
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    {renderTableRow(row)}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -999,7 +1104,12 @@ const ConfigurationPage = () => {
             Mostrando {inicio}–{fin} de {totalItems} {config.countLabel}
           </Typography>
           <Pagination
-            count={Math.max(1, Math.ceil(totalItems / FILAS_POR_PAGINA))}
+            count={Math.max(
+              1,
+              esTabVendedor
+                ? Math.ceil(vendedoresTotal / VENDEDORES_POR_PAGINA)
+                : Math.ceil(totalItems / FILAS_POR_PAGINA)
+            )}
             page={pagina}
             onChange={handleChangePagina}
             color="primary"
@@ -1819,8 +1929,8 @@ const ConfigurationPage = () => {
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
                 {TIPOS_IDENTIFICACION.map((t) => (
-                  <MenuItem key={t} value={t}>
-                    {t}
+                  <MenuItem key={t.value} value={t.value}>
+                    {t.label}
                   </MenuItem>
                 ))}
               </Select>
@@ -1841,14 +1951,16 @@ const ConfigurationPage = () => {
           <Button variant="outlined" onClick={handleCerrarNuevoVendedor} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: 'text.primary' }}>
             Cancelar
           </Button>
-          <Button
+          <LoadingButton
             variant="contained"
             onClick={handleGuardarNuevoVendedor}
             disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim() || !tipoIdentificacion}
+            loading={vendedorGuardandoNuevo}
+            loadingText="Guardando..."
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
           >
             Guardar vendedor
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -1887,8 +1999,8 @@ const ConfigurationPage = () => {
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
                 {TIPOS_IDENTIFICACION.map((t) => (
-                  <MenuItem key={t} value={t}>
-                    {t}
+                  <MenuItem key={t.value} value={t.value}>
+                    {t.label}
                   </MenuItem>
                 ))}
               </Select>
@@ -1903,20 +2015,34 @@ const ConfigurationPage = () => {
               required
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
+            <FormControl size="small" fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+              <InputLabel id="editar-vendedor-estado-label">Estado del vendedor</InputLabel>
+              <Select
+                labelId="editar-vendedor-estado-label"
+                value={estadoVendedor}
+                label="Estado del vendedor"
+                onChange={(e) => setEstadoVendedor(e.target.value)}
+              >
+                <MenuItem value="1">Activo</MenuItem>
+                <MenuItem value="0">Inactivo</MenuItem>
+              </Select>
+            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
           <Button variant="outlined" onClick={handleCerrarEditarVendedor} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: 'text.primary' }}>
             Cerrar
           </Button>
-          <Button
+          <LoadingButton
             variant="contained"
             onClick={handleGuardarEditarVendedor}
             disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim() || !tipoIdentificacion}
+            loading={vendedorGuardandoEditar}
+            loadingText="Guardando..."
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
           >
             Guardar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -1941,12 +2067,12 @@ const ConfigurationPage = () => {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
-          <Button variant="outlined" onClick={handleCerrarEliminarVendedor} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: 'text.primary' }}>
+          <Button variant="outlined" onClick={handleCerrarEliminarVendedor} disabled={vendedorEliminando} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: 'rgba(0,0,0,0.12)', color: 'text.primary' }}>
             Cancelar
           </Button>
-          <Button variant="contained" color="error" onClick={handleConfirmarEliminarVendedor} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+          <LoadingButton variant="contained" color="error" onClick={handleConfirmarEliminarVendedor} loading={vendedorEliminando} loadingText="Eliminando..." sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
             Aceptar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </Paper>
