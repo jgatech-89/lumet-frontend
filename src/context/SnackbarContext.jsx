@@ -11,14 +11,21 @@ export const useSnackbar = () => {
   return ctx;
 };
 
+const DEFAULT_ANCHOR = { vertical: 'top', horizontal: 'left' };
+const DEFAULT_DURATION = 2000;
+
 export const SnackbarProvider = ({ children }) => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [severity, setSeverity] = useState('success');
+  const [anchorOrigin, setAnchorOrigin] = useState(DEFAULT_ANCHOR);
+  const [autoHideDuration, setAutoHideDuration] = useState(DEFAULT_DURATION);
 
-  const showSnackbar = useCallback((msg, sev = 'success') => {
+  const showSnackbar = useCallback((msg, sev = 'success', opts = {}) => {
     setMessage(msg);
     setSeverity(sev);
+    setAnchorOrigin(opts.anchorOrigin ?? DEFAULT_ANCHOR);
+    setAutoHideDuration(opts.autoHideDuration ?? DEFAULT_DURATION);
     setOpen(true);
   }, []);
 
@@ -32,9 +39,9 @@ export const SnackbarProvider = ({ children }) => {
       {children}
       <Snackbar
         open={open}
-        autoHideDuration={5000}
+        autoHideDuration={autoHideDuration}
         onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={anchorOrigin}
         sx={{
           '&.MuiSnackbar-root': {
             animation: 'slideUp 0.35s ease-out',

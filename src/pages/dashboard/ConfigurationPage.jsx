@@ -595,8 +595,10 @@ const ConfigurationPage = () => {
     setTipoIdentificacion('');
   };
 
+  const numeroIdentificacionValido = numeroIdentificacion.trim().length >= 5;
+
   const handleGuardarNuevoVendedor = async () => {
-    if (!nombreVendedor.trim() || !numeroIdentificacion.trim()) return;
+    if (!nombreVendedor.trim() || !numeroIdentificacionValido) return;
     setVendedorGuardandoNuevo(true);
     try {
       const creado = await crearVendedor({
@@ -634,7 +636,7 @@ const ConfigurationPage = () => {
   };
 
   const handleGuardarEditarVendedor = async () => {
-    if (!vendedorEnEdicion || !nombreVendedor.trim() || !numeroIdentificacion.trim()) return;
+    if (!vendedorEnEdicion || !nombreVendedor.trim() || !numeroIdentificacionValido) return;
     setVendedorGuardandoEditar(true);
     try {
       const actualizado = await actualizarVendedor(vendedorEnEdicion.id, {
@@ -936,34 +938,6 @@ const ConfigurationPage = () => {
               Administra la configuración del sistema
             </Typography>
           </Box>
-        </Stack>
-
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          alignItems={{ sm: 'center' }}
-          justifyContent="space-between"
-          gap={2}
-          sx={{ mb: 2, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1, gap: 1 } }}
-        >
-          <Tabs
-            value={tabActual}
-            onChange={handleChangeTab}
-            variant="scrollable"
-            scrollButtons="auto"
-            allowScrollButtonsMobile
-            sx={{
-              minHeight: 40,
-              flex: { xs: 1, sm: 'none' },
-              minWidth: 0,
-              '& .MuiTab-root': { textTransform: 'none', fontWeight: 500, fontSize: { xs: '0.8125rem', sm: '0.9375rem' }, [COMPACT_MEDIA]: { fontSize: '0.75rem', minHeight: 36 } },
-              '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
-            }}
-          >
-            <Tab label="Empresa" />
-            <Tab label="Servicios" />
-            <Tab label="Campos" />
-            <Tab label="Vendedor" />
-          </Tabs>
           <Button
             variant="contained"
             startIcon={<Typography component="span" sx={{ fontSize: '1.25rem', lineHeight: 1, fontWeight: 300 }}>+</Typography>}
@@ -991,6 +965,32 @@ const ConfigurationPage = () => {
           >
             {config.addLabel}
           </Button>
+        </Stack>
+
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems={{ sm: 'center' }}
+          sx={{ mb: 2, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1 } }}
+        >
+          <Tabs
+            value={tabActual}
+            onChange={handleChangeTab}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{
+              minHeight: 40,
+              flex: { xs: 1, sm: 'none' },
+              minWidth: 0,
+              '& .MuiTab-root': { textTransform: 'none', fontWeight: 500, fontSize: { xs: '0.8125rem', sm: '0.9375rem' }, [COMPACT_MEDIA]: { fontSize: '0.75rem', minHeight: 36 } },
+              '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
+            }}
+          >
+            <Tab label="Empresa" />
+            <Tab label="Servicios" />
+            <Tab label="Campos" />
+            <Tab label="Vendedor" />
+          </Tabs>
         </Stack>
 
         <Stack
@@ -1939,10 +1939,13 @@ const ConfigurationPage = () => {
               fullWidth
               size="small"
               label="Número de identificación"
-              placeholder="Introduce el número..."
+              placeholder="Dígita mínimo 5 caracteres"
               value={numeroIdentificacion}
               onChange={(e) => setNumeroIdentificacion(e.target.value)}
               required
+              error={numeroIdentificacion.trim().length > 0 && numeroIdentificacion.trim().length < 5}
+              helperText={numeroIdentificacion.trim().length > 0 && numeroIdentificacion.trim().length < 5 ? 'Mínimo 5 caracteres' : ''}
+              inputProps={{ minLength: 5 }}
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Stack>
@@ -1954,7 +1957,7 @@ const ConfigurationPage = () => {
           <LoadingButton
             variant="contained"
             onClick={handleGuardarNuevoVendedor}
-            disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim() || !tipoIdentificacion}
+            disabled={!nombreVendedor.trim() || !numeroIdentificacionValido || !tipoIdentificacion}
             loading={vendedorGuardandoNuevo}
             loadingText="Guardando..."
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
@@ -2036,7 +2039,7 @@ const ConfigurationPage = () => {
           <LoadingButton
             variant="contained"
             onClick={handleGuardarEditarVendedor}
-            disabled={!nombreVendedor.trim() || !numeroIdentificacion.trim() || !tipoIdentificacion}
+            disabled={!nombreVendedor.trim() || !numeroIdentificacionValido || !tipoIdentificacion}
             loading={vendedorGuardandoEditar}
             loadingText="Guardando..."
             sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)' }}
