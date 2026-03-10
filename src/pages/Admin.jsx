@@ -10,7 +10,7 @@ const Admin = () => {
         Panel Admin
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-        Acceso restringido a rol admin. Usuario: {user?.sub ?? user?.email ?? '—'} (rol: {user?.role ?? '—'})
+        Acceso restringido a rol admin. Usuario: {user?.correo ?? user?.id ?? '—'} (rol: {user?.perfil ?? user?.role ?? '—'})
       </Typography>
       <Paper
         sx={{

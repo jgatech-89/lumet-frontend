@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getToken, setTokens, clearTokens, getRefreshToken } from './auth';
-import { api } from './funciones';
+import { api } from './config';
 
 // ─── Callback 401 (logout) ───────────────────────────────────────────────────
 let onUnauthorized = () => {

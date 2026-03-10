@@ -1,6 +1,7 @@
-export const api = "http://localhost:8000";
-
 import { request } from './api';
+import { api } from './config';
+
+export { api };
 
 export const get = (url, params = null, authorization = true) =>
   request(url, params, "GET", authorization);

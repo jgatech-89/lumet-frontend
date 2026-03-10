@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AppBar, Toolbar, Box, Avatar, Menu, MenuItem, ButtonBase, Typography, SvgIcon } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../login/Logo';
@@ -32,7 +32,6 @@ const LogoutIcon = () => (
 );
 
 const AppNavbar = () => {
-  const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -43,14 +42,13 @@ const AppNavbar = () => {
   const handleLogout = () => {
     handleClose();
     logout();
-    navigate('/login');
+    // Navegación completa para reemplazar historial y evitar volver atrás a rutas ya cerradas
+    window.location.replace('/login');
   };
 
-  const displayName = user?.name
-    ?? (user?.given_name || user?.family_name ? [user.given_name, user.family_name].filter(Boolean).join(' ') : null)
-    ?? user?.email
-    ?? user?.sub
-    ?? 'Usuario';
+  const displayName = (user?.primer_nombre || user?.primer_apellido)
+    ? [user.primer_nombre, user.primer_apellido].filter(Boolean).join(' ').trim()
+    : (user?.correo || 'Usuario');
 
   return (
     <AppBar

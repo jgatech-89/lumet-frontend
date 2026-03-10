@@ -20,7 +20,7 @@ const Login = () => {
   const [alertMsg, setAlertMsg] = useState('');
 
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, fetchMe } = useAuth();
   const { showSnackbar } = useSnackbar();
 
   const showAlert = (severity, msg) => {
@@ -55,11 +55,12 @@ const Login = () => {
         return;
       }
       setTokens({ access, refresh });
-      login(access, { correo: pendingEmail, email: pendingEmail });
+      login(access);
+      await fetchMe();
       showSnackbar('Sesión iniciada');
       navigate('/dashboard', { replace: true });
     } catch (e) {
-      showAlert('error', getErrorMessage(e, 'No se pudo verificar el código.'));
+      showAlert('error', getErrorMessage(e, 'No se pudo completar el inicio de sesión.'));
     } finally {
       setIsLoading(false);
     }
