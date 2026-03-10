@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { COMPACT_MEDIA } from '../../utils/theme';
 import {
   Box,
   Typography,
@@ -71,31 +72,31 @@ const CHIP_ESTADOS = {
 };
 
 const clientesMock = [
-  { id: 1, nombre: 'Ana López', telefono: '+1 123 456 789', correo: 'ana@empresa.com', estado: 'Venta completada' },
-  { id: 2, nombre: 'Carlos Martinez', telefono: '+1 957 321 654', correo: 'carlos@empresa.com', estado: 'Venta cancelada' },
-  { id: 3, nombre: 'Empresa ABC', telefono: '+1 444 555 886', correo: 'contacto@empresaabc.com', estado: 'Venta pospuesta' },
-  { id: 4, nombre: 'Grupo Sigma', telefono: '+1 653 222 111', correo: 'info@gruposigma.com', estado: 'Venta pendiente' },
-  { id: 5, nombre: 'María García', telefono: '+1 555 111 222', correo: 'maria@empresa.com', estado: 'Venta completada' },
-  { id: 6, nombre: 'Luis Fernández', telefono: '+1 555 333 444', correo: 'luis@empresa.com', estado: 'Venta cancelada' },
-  { id: 7, nombre: 'Tech Solutions', telefono: '+1 555 666 777', correo: 'contacto@techsol.com', estado: 'Venta pospuesta' },
-  { id: 8, nombre: 'Laura Pérez', telefono: '+1 555 888 999', correo: 'laura@empresa.com', estado: 'Venta pendiente' },
-  { id: 9, nombre: 'Roberto Díaz', telefono: '+1 555 000 111', correo: 'roberto@empresa.com', estado: 'Venta completada' },
-  { id: 10, nombre: 'Consultores SA', telefono: '+1 555 222 333', correo: 'info@consultores.com', estado: 'Venta cancelada' },
-  { id: 11, nombre: 'Sofia Ruiz', telefono: '+1 555 444 555', correo: 'sofia@empresa.com', estado: 'Venta pospuesta' },
-  { id: 12, nombre: 'Andrés Mora', telefono: '+1 555 666 777', correo: 'andres@empresa.com', estado: 'Venta pendiente' },
-  { id: 13, nombre: 'Inversiones XYZ', telefono: '+1 555 888 000', correo: 'contacto@inversiones.com', estado: 'Venta completada' },
-  { id: 14, nombre: 'Carmen Soto', telefono: '+1 555 111 222', correo: 'carmen@empresa.com', estado: 'Venta cancelada' },
-  { id: 15, nombre: 'Diego Reyes', telefono: '+1 555 333 444', correo: 'diego@empresa.com', estado: 'Venta pospuesta' },
-  { id: 16, nombre: 'Logística Global', telefono: '+1 555 555 666', correo: 'info@logistica.com', estado: 'Venta pendiente' },
-  { id: 17, nombre: 'Elena Vega', telefono: '+1 555 777 888', correo: 'elena@empresa.com', estado: 'Venta completada' },
-  { id: 18, nombre: 'Javier López', telefono: '+1 555 999 000', correo: 'javier@empresa.com', estado: 'Venta cancelada' },
-  { id: 19, nombre: 'Servicios Pro', telefono: '+1 555 121 212', correo: 'contacto@serviciospro.com', estado: 'Venta pospuesta' },
-  { id: 20, nombre: 'Patricia Cruz', telefono: '+1 555 343 454', correo: 'patricia@empresa.com', estado: 'Venta pendiente' },
-  { id: 21, nombre: 'Miguel Ángel', telefono: '+1 555 565 676', correo: 'miguel@empresa.com', estado: 'Venta completada' },
-  { id: 22, nombre: 'Marketing Plus', telefono: '+1 555 787 898', correo: 'info@marketingplus.com', estado: 'Venta cancelada' },
-  { id: 23, nombre: 'Isabel Navarro', telefono: '+1 555 909 010', correo: 'isabel@empresa.com', estado: 'Venta pospuesta' },
-  { id: 24, nombre: 'Francisco Jiménez', telefono: '+1 555 232 434', correo: 'francisco@empresa.com', estado: 'Venta pendiente' },
-  { id: 25, nombre: 'Desarrollo Web SA', telefono: '+1 555 656 878', correo: 'contacto@devweb.com', estado: 'Venta completada' },
+  { id: 1, nombre: 'Ana López', telefono: '+1 123 456 789', correo: 'ana@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta completada' },
+  { id: 2, nombre: 'Carlos Martinez', telefono: '+1 957 321 654', correo: 'carlos@empresa.com', vendedor: 'María López', estado: 'Venta cancelada' },
+  { id: 3, nombre: 'Empresa ABC', telefono: '+1 444 555 886', correo: 'contacto@empresaabc.com', vendedor: 'Eduardo Magno', estado: 'Venta pospuesta' },
+  { id: 4, nombre: 'Grupo Sigma', telefono: '+1 653 222 111', correo: 'info@gruposigma.com', vendedor: 'Pedro Sánchez', estado: 'Venta pendiente' },
+  { id: 5, nombre: 'María García', telefono: '+1 555 111 222', correo: 'maria@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta completada' },
+  { id: 6, nombre: 'Luis Fernández', telefono: '+1 555 333 444', correo: 'luis@empresa.com', vendedor: 'María López', estado: 'Venta cancelada' },
+  { id: 7, nombre: 'Tech Solutions', telefono: '+1 555 666 777', correo: 'contacto@techsol.com', vendedor: 'Pedro Sánchez', estado: 'Venta pospuesta' },
+  { id: 8, nombre: 'Laura Pérez', telefono: '+1 555 888 999', correo: 'laura@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta pendiente' },
+  { id: 9, nombre: 'Roberto Díaz', telefono: '+1 555 000 111', correo: 'roberto@empresa.com', vendedor: 'María López', estado: 'Venta completada' },
+  { id: 10, nombre: 'Consultores SA', telefono: '+1 555 222 333', correo: 'info@consultores.com', vendedor: 'Pedro Sánchez', estado: 'Venta cancelada' },
+  { id: 11, nombre: 'Sofia Ruiz', telefono: '+1 555 444 555', correo: 'sofia@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta pospuesta' },
+  { id: 12, nombre: 'Andrés Mora', telefono: '+1 555 666 777', correo: 'andres@empresa.com', vendedor: 'María López', estado: 'Venta pendiente' },
+  { id: 13, nombre: 'Inversiones XYZ', telefono: '+1 555 888 000', correo: 'contacto@inversiones.com', vendedor: 'Pedro Sánchez', estado: 'Venta completada' },
+  { id: 14, nombre: 'Carmen Soto', telefono: '+1 555 111 222', correo: 'carmen@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta cancelada' },
+  { id: 15, nombre: 'Diego Reyes', telefono: '+1 555 333 444', correo: 'diego@empresa.com', vendedor: 'María López', estado: 'Venta pospuesta' },
+  { id: 16, nombre: 'Logística Global', telefono: '+1 555 555 666', correo: 'info@logistica.com', vendedor: 'Pedro Sánchez', estado: 'Venta pendiente' },
+  { id: 17, nombre: 'Elena Vega', telefono: '+1 555 777 888', correo: 'elena@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta completada' },
+  { id: 18, nombre: 'Javier López', telefono: '+1 555 999 000', correo: 'javier@empresa.com', vendedor: 'María López', estado: 'Venta cancelada' },
+  { id: 19, nombre: 'Servicios Pro', telefono: '+1 555 121 212', correo: 'contacto@serviciospro.com', vendedor: 'Pedro Sánchez', estado: 'Venta pospuesta' },
+  { id: 20, nombre: 'Patricia Cruz', telefono: '+1 555 343 454', correo: 'patricia@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta pendiente' },
+  { id: 21, nombre: 'Miguel Ángel', telefono: '+1 555 565 676', correo: 'miguel@empresa.com', vendedor: 'María López', estado: 'Venta completada' },
+  { id: 22, nombre: 'Marketing Plus', telefono: '+1 555 787 898', correo: 'info@marketingplus.com', vendedor: 'Pedro Sánchez', estado: 'Venta cancelada' },
+  { id: 23, nombre: 'Isabel Navarro', telefono: '+1 555 909 010', correo: 'isabel@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta pospuesta' },
+  { id: 24, nombre: 'Francisco Jiménez', telefono: '+1 555 232 434', correo: 'francisco@empresa.com', vendedor: 'María López', estado: 'Venta pendiente' },
+  { id: 25, nombre: 'Desarrollo Web SA', telefono: '+1 555 656 878', correo: 'contacto@devweb.com', vendedor: 'Pedro Sánchez', estado: 'Venta completada' },
 ];
 
 const TOTAL_CLIENTES = clientesMock.length;
@@ -113,10 +114,11 @@ const ClientsPage = () => {
   const filasPagina = clientesMock.slice((pagina - 1) * FILAS_POR_PAGINA, pagina * FILAS_POR_PAGINA);
 
   const actionBtnBase = {
-  width: 36,
-  height: 36,
-  minWidth: 36,
-  minHeight: 36,
+  width: 32,
+  height: 32,
+  minWidth: 32,
+  minHeight: 32,
+  [COMPACT_MEDIA]: { width: 28, height: 28, minWidth: 28, minHeight: 28 },
   padding: 0,
   borderRadius: '8px',
   display: 'flex',
@@ -149,26 +151,51 @@ const actionBtnRed = {
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         overflow: 'hidden',
         bgcolor: 'background.paper',
-        flex: 1,
-        minHeight: 0,
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
+        [COMPACT_MEDIA]: { borderRadius: 2 },
       }}
     >
-      <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <Box
+        sx={{
+          p: { xs: 2, sm: 3 },
+          display: 'flex',
+          flexDirection: 'column',
+          [COMPACT_MEDIA]: { p: 1.5 },
+        }}
+      >
         {/* Encabezado */}
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           alignItems={{ sm: 'center' }}
           justifyContent="space-between"
           gap={2}
-          sx={{ mb: 3, flexShrink: 0 }}
+          sx={{
+            mb: 3,
+            flexShrink: 0,
+            [COMPACT_MEDIA]: { mb: 1.5, gap: 1 },
+          }}
         >
           <Box>
-            <Typography variant="h4" component="h1" fontWeight={700} color="text.primary" gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+            <Typography
+              variant="h4"
+              component="h1"
+              fontWeight={700}
+              color="text.primary"
+              gutterBottom
+              sx={{
+                letterSpacing: '-0.02em',
+                [COMPACT_MEDIA]: { fontSize: '1.25rem' },
+              }}
+            >
               Clientes
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}
+            >
               Administra tu base de clientes
             </Typography>
           </Box>
@@ -184,9 +211,8 @@ const actionBtnRed = {
               px: 2.5,
               py: 1.25,
               boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)',
-              '&:hover': {
-                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)',
-              },
+              '&:hover': { boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)' },
+              [COMPACT_MEDIA]: { px: 1.5, py: 0.75, fontSize: '0.8125rem' },
             }}
           >
             Nuevo cliente
@@ -194,7 +220,11 @@ const actionBtnRed = {
         </Stack>
 
         {/* Filtros */}
-        <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} sx={{ mb: 3, flexShrink: 0 }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          gap={2}
+          sx={{ mb: 3, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1.5, gap: 1 } }}
+        >
           <TextField
             placeholder="Buscar cliente..."
             size="small"
@@ -207,9 +237,9 @@ const actionBtnRed = {
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: { sm: 280 } }}
+            sx={{ width: '100%', minWidth: { xs: 0, sm: 280 } }}
           />
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: { xs: 0, sm: 220 } }}>
             <InputLabel id="filtro-estado-label">Estado</InputLabel>
             <Select
               labelId="filtro-estado-label"
@@ -225,24 +255,24 @@ const actionBtnRed = {
           </FormControl>
         </Stack>
 
-        {/* Tabla: sin scroll interno, solo 5 filas por página; el bloque ocupa el espacio para vista grande */}
+        {/* Tabla: 5 filas por página, tamaños compactos sin scroll */}
         <TableContainer
           sx={{
             borderRadius: 2,
             border: '1px solid rgba(0,0,0,0.06)',
-            flex: 1,
-            minHeight: 200,
             overflow: 'visible',
+            [COMPACT_MEDIA]: { borderRadius: 1 },
           }}
         >
-          <Table size="medium">
+          <Table size="small" sx={{ minWidth: 500 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Correo</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }} align="center">Opciones</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Correo</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Vendedor</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 0.5 } }} align="center">Opciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -255,10 +285,11 @@ const actionBtnRed = {
                     '&:hover': { bgcolor: 'action.hover' },
                   }}
                 >
-                  <TableCell sx={{ py: 1.75, fontWeight: 500 }}>{row.nombre}</TableCell>
-                  <TableCell sx={{ py: 1.75, color: 'text.secondary' }}>{row.telefono}</TableCell>
-                  <TableCell sx={{ py: 1.75, color: 'text.secondary' }}>{row.correo}</TableCell>
-                  <TableCell sx={{ py: 1.75 }}>
+                  <TableCell sx={{ py: 1, fontWeight: 500, [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.nombre}</TableCell>
+                  <TableCell sx={{ py: 1, color: 'text.secondary', [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.telefono}</TableCell>
+                  <TableCell sx={{ py: 1, color: 'text.secondary', [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.correo}</TableCell>
+                  <TableCell sx={{ py: 1, color: 'text.secondary', [COMPACT_MEDIA]: { py: 0.5, fontSize: '0.8125rem' } }}>{row.vendedor ?? '-'}</TableCell>
+                  <TableCell sx={{ py: 1, [COMPACT_MEDIA]: { py: 0.5 } }}>
                     <Chip
                       label={row.estado}
                       size="small"
@@ -270,10 +301,11 @@ const actionBtnRed = {
                         bgcolor: CHIP_ESTADOS[row.estado]?.bg ?? 'rgba(0,0,0,0.06)',
                         color: CHIP_ESTADOS[row.estado]?.color ?? 'text.secondary',
                         '& .MuiChip-label': { px: 0.5 },
+                        [COMPACT_MEDIA]: { fontSize: '0.6875rem', px: 0.75, height: 20 },
                       }}
                     />
                   </TableCell>
-                  <TableCell align="center" sx={{ py: 1.75 }}>
+                  <TableCell align="center" sx={{ py: 1, [COMPACT_MEDIA]: { py: 0.5 } }}>
                     <Stack direction="row" justifyContent="center" spacing={0.75}>
                       <IconButton
                         size="small"
@@ -315,7 +347,7 @@ const actionBtnRed = {
           </Table>
         </TableContainer>
 
-        {/* Pie de tabla sticky: siempre visible, no se oculta */}
+        {/* Pie de tabla - siempre visible en la parte inferior */}
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           alignItems="center"
@@ -327,14 +359,16 @@ const actionBtnRed = {
             borderTop: '1px solid rgba(0,0,0,0.06)',
             bgcolor: 'background.paper',
             flexWrap: 'wrap',
-            gap: 1,
-            position: 'sticky',
-            bottom: 0,
-            zIndex: 1,
+            gap: 1.5,
             borderRadius: '0 0 12px 12px',
+            [COMPACT_MEDIA]: { py: 1, px: 1.5, gap: 1 },
           }}
         >
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ flexShrink: 0, [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}
+          >
             Mostrando {inicio}–{fin} de {TOTAL_CLIENTES} clientes
           </Typography>
           <Pagination
@@ -345,6 +379,13 @@ const actionBtnRed = {
             size="small"
             showFirstButton
             showLastButton
+            siblingCount={1}
+            boundaryCount={1}
+            sx={{
+              flexShrink: 0,
+              '& .MuiPagination-ul': { flexWrap: 'wrap', justifyContent: 'center' },
+              [COMPACT_MEDIA]: { '& .MuiPaginationItem-root': { minWidth: 28, height: 28, fontSize: '0.75rem' } },
+            }}
           />
         </Stack>
       </Box>

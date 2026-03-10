@@ -18,8 +18,12 @@ const SIDEBAR_ITEMS = [
   { to: '/configuracion', label: 'Configuración', icon: SettingsIcon },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ onNavigate }) => {
   const location = useLocation();
+
+  const handleClick = (e) => {
+    if (onNavigate) onNavigate();
+  };
 
   return (
     <Box
@@ -42,6 +46,7 @@ const Sidebar = () => {
               component={Link}
               to={to}
               selected={active}
+              onClick={handleClick}
               sx={{
                 borderRadius: 2,
                 mb: 0.5,

@@ -14,7 +14,20 @@ const palette = {
   sidebarActiveBg: '#e8f4fd',
 };
 
+/** Pantallas 14" o menos (~1400px ancho, ~800px alto) */
+const COMPACT_MEDIA = '@media (max-width: 1400px), (max-height: 800px)';
+
 const theme = createTheme({
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+      compact: 1400, // pantallas 14" o menos
+    },
+  },
   palette: {
     primary: {
       main: palette.primary,
@@ -170,4 +183,4 @@ const theme = createTheme({
 });
 
 export default theme;
-export { palette };
+export { palette, COMPACT_MEDIA };

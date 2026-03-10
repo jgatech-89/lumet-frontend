@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { COMPACT_MEDIA } from '../../utils/theme';
 import {
   Box,
   Typography,
@@ -44,7 +45,8 @@ const NewClientPage = () => {
   };
 
   const selectFieldSx = {
-    minWidth: 220,
+    width: { xs: '100%', sm: 220 },
+    minWidth: { xs: 0, sm: 220 },
     '& .MuiOutlinedInput-root': {
       borderRadius: 2,
     },
@@ -58,18 +60,24 @@ const NewClientPage = () => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         overflow: 'hidden',
         bgcolor: 'background.paper',
-        flex: 1,
-        minHeight: 0,
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'auto' }}>
-        <Box sx={{ mb: 3, flexShrink: 0 }}>
-          <Typography variant="h4" component="h1" fontWeight={700} color="text.primary" gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'auto', [COMPACT_MEDIA]: { p: 1.5 } }}>
+        <Box sx={{ mb: 3, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1.5 } }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            fontWeight={700}
+            color="text.primary"
+            gutterBottom
+            sx={{ letterSpacing: '-0.02em', [COMPACT_MEDIA]: { fontSize: '1.25rem' } }}
+          >
             Nuevo cliente
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}>
             Completa la información del cliente
           </Typography>
         </Box>
@@ -119,12 +127,12 @@ const NewClientPage = () => {
           <Typography variant="subtitle1" fontWeight={600} color="text.primary" sx={{ mb: 2 }}>
             {empresa}
           </Typography>
-          <Stack spacing={3} sx={{ maxWidth: 480 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 180 }}>
+          <Stack spacing={3} sx={{ maxWidth: 480, width: '100%' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                 CUPS luz
               </Typography>
-              <FormControl size="small" sx={{ flex: 1, maxWidth: 220 }}>
+              <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="cups-luz-label">Seleccionar</InputLabel>
                 <Select
                   labelId="cups-luz-label"
@@ -138,11 +146,11 @@ const NewClientPage = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 180 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                 Comercializadora actual luz
               </Typography>
-              <FormControl size="small" sx={{ flex: 1, maxWidth: 220 }}>
+              <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="comercializadora-luz-label">Seleccionar</InputLabel>
                 <Select
                   labelId="comercializadora-luz-label"
@@ -156,11 +164,11 @@ const NewClientPage = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 180 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                 Tarifa luz
               </Typography>
-              <FormControl size="small" sx={{ flex: 1, maxWidth: 220 }}>
+              <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="tarifa-luz-label">Seleccionar</InputLabel>
                 <Select
                   labelId="tarifa-luz-label"
@@ -174,11 +182,11 @@ const NewClientPage = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 180 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                 Mantenimiento luz
               </Typography>
-              <FormControl size="small" sx={{ flex: 1, maxWidth: 220 }}>
+              <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="mantenimiento-luz-label">Seleccionar</InputLabel>
                 <Select
                   labelId="mantenimiento-luz-label"
@@ -192,11 +200,11 @@ const NewClientPage = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 180 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                 CUPS gas
               </Typography>
-              <FormControl size="small" sx={{ flex: 1, maxWidth: 220 }}>
+              <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="cups-gas-label">Seleccionar</InputLabel>
                 <Select
                   labelId="cups-gas-label"
@@ -210,11 +218,11 @@ const NewClientPage = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 180 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                 Comercializadora actual gas
               </Typography>
-              <FormControl size="small" sx={{ flex: 1, maxWidth: 220 }}>
+              <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="comercializadora-gas-label">Seleccionar</InputLabel>
                 <Select
                   labelId="comercializadora-gas-label"
@@ -228,11 +236,11 @@ const NewClientPage = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 180 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                 Mantenimiento gas
               </Typography>
-              <FormControl size="small" sx={{ flex: 1, maxWidth: 220 }}>
+              <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="mantenimiento-gas-label">Seleccionar</InputLabel>
                 <Select
                   labelId="mantenimiento-gas-label"
