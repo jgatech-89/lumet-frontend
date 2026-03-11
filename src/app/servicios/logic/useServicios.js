@@ -9,12 +9,13 @@ import { CONFIG_FILAS_POR_PAGINA } from './constants';
  * Conectado al backend.
  * @param {number} pagina - Página actual (controlada por padre)
  * @param {function} setPagina - Setter de página
+ * @param {string} busqueda - Texto de búsqueda (nombre o empresa)
  * @param {string} filtroEstado - 'todos' | 'activa' | 'inactiva'
  * @param {boolean} active - Si el tab servicios está activo
  * @param {Array} empresasParaSelect - Empresas para el selector en modales
  * @param {function} cargarEmpresasParaSelect - Recargar empresas para select
  */
-export function useServicios(pagina, setPagina, filtroEstado, active, empresasParaSelect, cargarEmpresasParaSelect) {
+export function useServicios(pagina, setPagina, busqueda, filtroEstado, active, empresasParaSelect, cargarEmpresasParaSelect) {
   const { showSnackbar } = useSnackbar();
   const lastLoadKeyRef = useRef(null);
 
@@ -42,6 +43,7 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
       setLoading(true);
       try {
         const { results, count } = await api.listarServicios(page, CONFIG_FILAS_POR_PAGINA, {
+          search: busqueda?.trim() || undefined,
           estado: estadoParam,
         });
         setServicios(results);
@@ -55,7 +57,7 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
         setLoading(false);
       }
     },
-    [showSnackbar, estadoParam]
+    [showSnackbar, estadoParam, busqueda]
   );
 
   const cargarServiciosParaSelect = useCallback(async () => {
@@ -74,11 +76,14 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
 
   useEffect(() => {
     if (!active) return;
-    const key = `${pagina}-${filtroEstado}`;
+    const key = `${pagina}-${filtroEstado}-${busqueda}`;
     if (lastLoadKeyRef.current === key) return;
     lastLoadKeyRef.current = key;
     cargarServicios(pagina);
-  }, [active, pagina, filtroEstado, cargarServicios]);
+    return () => {
+      setTimeout(() => { lastLoadKeyRef.current = null; }, 0);
+    };
+  }, [active, pagina, filtroEstado, busqueda, cargarServicios]);
 
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
