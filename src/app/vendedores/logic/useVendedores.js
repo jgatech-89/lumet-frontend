@@ -29,7 +29,7 @@ export function useVendedores(pagina, setPagina, busqueda, filtroEstado, active)
   const [aEliminar, setAEliminar] = useState(null);
 
   const estadoParam =
-    filtroEstado === 'activa' ? '1' : filtroEstado === 'inactiva' ? '0' : undefined;
+    filtroEstado === '1' || filtroEstado === '0' ? filtroEstado : undefined;
   const numeroIdentificacionValido = numeroIdentificacion.trim().length >= 5;
 
   const cargarVendedores = useCallback(

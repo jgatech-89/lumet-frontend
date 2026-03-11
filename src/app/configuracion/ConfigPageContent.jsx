@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { COMPACT_MEDIA } from '../../utils/theme';
 import {
   Box,
@@ -16,6 +16,7 @@ import {
   Tab,
 } from '@mui/material';
 import { SearchIcon } from '../../utils/icons';
+import { useChoices } from '../../context/ChoicesContext';
 import { useEmpresas, EmpresaConfigSection } from '../empresa';
 import { useServicios, ServiciosConfigSection } from '../servicios';
 import { useCampos, CamposConfigSection } from '../campos';
@@ -46,6 +47,8 @@ export function ConfigPageContent() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [pagina, setPagina] = useState(1);
+  const { getOptions, loading: choicesLoading } = useChoices();
+  const opcionesEstado = getOptions('estado');
 
   const empresa = useEmpresas(pagina, setPagina, filtroEstado, TAB_KEYS[tabActual] === 'empresa');
   const vendedores = useVendedores(
@@ -75,12 +78,8 @@ export function ConfigPageContent() {
     setPagina(1);
   };
 
-  useEffect(() => {
-    if (tabKey === 'servicios' || tabKey === 'campos') {
-      empresa.cargarEmpresasParaSelect();
-      servicios.cargarServiciosParaSelect();
-    }
-  }, [tabKey]);
+  // No cargar datos al cambiar de tab: cada hook carga solo cuando su tab está activo (active).
+  // Los selects (empresas/servicios) se cargan bajo demanda al abrir los modales (handleAbrirNueva).
 
   const handleAddClick = () => {
     if (tabKey === 'empresa') empresa.handleAbrirNueva();
@@ -199,7 +198,7 @@ export function ConfigPageContent() {
             }}
             sx={{ width: '100%', minWidth: { xs: 0, sm: 280 } }}
           />
-          <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: { xs: 0, sm: 220 } }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: { xs: 0, sm: 220 } }} disabled={choicesLoading}>
             <InputLabel id="filtro-estado-label">Estado</InputLabel>
             <Select
               labelId="filtro-estado-label"
@@ -209,8 +208,9 @@ export function ConfigPageContent() {
             >
               <MenuItem value="">Seleccionar una opción</MenuItem>
               <MenuItem value="todos">Todos los estados</MenuItem>
-              <MenuItem value="activa">Activa</MenuItem>
-              <MenuItem value="inactiva">Inactiva</MenuItem>
+              {opcionesEstado.map((o) => (
+                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Stack>

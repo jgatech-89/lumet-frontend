@@ -7,7 +7,7 @@ import { EMPRESAS_POR_PAGINA } from './constants';
  * Hook con toda la lógica del módulo Empresa: listado paginado, select para otros módulos, CRUD y modales.
  * @param {number} pagina - Página actual (controlada por padre)
  * @param {function} setPagina - Setter de página
- * @param {string} filtroEstado - 'todos' | 'activa' | 'inactiva'
+ * @param {string} filtroEstado - 'todos' | '1' | '0'
  * @param {boolean} active - Si el tab empresa está activo (para cargar solo cuando corresponde)
  */
 export function useEmpresas(pagina, setPagina, filtroEstado, active) {
@@ -31,7 +31,7 @@ export function useEmpresas(pagina, setPagina, filtroEstado, active) {
   const [aEliminar, setAEliminar] = useState(null);
 
   const estadoParam =
-    filtroEstado === 'activa' ? '1' : filtroEstado === 'inactiva' ? '0' : undefined;
+    filtroEstado === '1' || filtroEstado === '0' ? filtroEstado : undefined;
 
   const cargarEmpresas = useCallback(
     async (page = 1) => {
@@ -92,10 +92,9 @@ export function useEmpresas(pagina, setPagina, filtroEstado, active) {
     setGuardandoNuevo(true);
     try {
       await api.crearEmpresa({ nombre: nombre.trim() });
-      await cargarEmpresasParaSelect();
-      await cargarEmpresas(pagina);
-      handleCerrarNueva();
       showSnackbar('Empresa creada correctamente', 'success');
+      handleCerrarNueva();
+      await cargarEmpresas(pagina);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo crear la empresa'), 'error');
     } finally {
@@ -125,7 +124,6 @@ export function useEmpresas(pagina, setPagina, filtroEstado, active) {
       });
       showSnackbar('Empresa actualizada correctamente', 'success');
       handleCerrarEditar();
-      await cargarEmpresasParaSelect();
       await cargarEmpresas(pagina);
     } catch (e) {
       showSnackbar(
@@ -154,7 +152,6 @@ export function useEmpresas(pagina, setPagina, filtroEstado, active) {
       showSnackbar('Empresa eliminada correctamente', 'success');
       const nextPage = empresas.length === 1 && pagina > 1 ? pagina - 1 : pagina;
       setPagina(nextPage);
-      await cargarEmpresasParaSelect();
       await cargarEmpresas(nextPage);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo eliminar la empresa'), 'error');

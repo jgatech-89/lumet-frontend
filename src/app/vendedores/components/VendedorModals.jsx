@@ -17,7 +17,7 @@ import { LoadingButton } from '../../../components/loading';
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
-import { TIPOS_IDENTIFICACION } from '../logic/constants';
+import { useChoices } from '../../../context/ChoicesContext';
 
 const btnCancelSx = {
   borderRadius: 2,
@@ -57,6 +57,10 @@ export function VendedorModals({
   handleCerrarEliminar,
   handleConfirmarEliminar,
 }) {
+  const { getOptions } = useChoices();
+  const tiposIdentificacion = getOptions('tipo_identificacion');
+  const estadosVendedor = getOptions('estado_vendedor');
+
   return (
     <>
       <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
@@ -90,8 +94,8 @@ export function VendedorModals({
                 onChange={(e) => setTipoIdentificacion(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {TIPOS_IDENTIFICACION.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                {tiposIdentificacion.map((t) => (
+                  <MenuItem key={t.value} value={t.value}>{t.value} - {t.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -156,8 +160,8 @@ export function VendedorModals({
                 onChange={(e) => setTipoIdentificacion(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {TIPOS_IDENTIFICACION.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                {tiposIdentificacion.map((t) => (
+                  <MenuItem key={t.value} value={t.value}>{t.value} - {t.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -179,8 +183,10 @@ export function VendedorModals({
                 label="Estado del vendedor"
                 onChange={(e) => setEstado(e.target.value)}
               >
-                <MenuItem value="1">Activo</MenuItem>
-                <MenuItem value="0">Inactivo</MenuItem>
+                <MenuItem value="">Seleccionar una opción</MenuItem>
+                {estadosVendedor.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Stack>

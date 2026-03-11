@@ -17,6 +17,7 @@ import { LoadingButton } from '../../../components/loading';
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
+import { useChoices } from '../../../context/ChoicesContext';
 
 const btnCancelSx = {
   borderRadius: 2,
@@ -51,6 +52,9 @@ export function EmpresaModals({
   handleCerrarEliminar,
   handleConfirmarEliminar,
 }) {
+  const { getOptions } = useChoices();
+  const estadosEmpresa = getOptions('estado_empresa');
+
   return (
     <>
       <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
@@ -120,8 +124,10 @@ export function EmpresaModals({
                 label="Estado de la empresa"
                 onChange={(e) => setEstado(e.target.value)}
               >
-                <MenuItem value="1">Activa</MenuItem>
-                <MenuItem value="0">Inactiva</MenuItem>
+                <MenuItem value="">Seleccionar una opción</MenuItem>
+                {estadosEmpresa.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Stack>

@@ -16,6 +16,7 @@ import {
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
+import { useChoices } from '../../../context/ChoicesContext';
 
 const btnCancelSx = {
   borderRadius: 2,
@@ -53,6 +54,9 @@ export function ServicioModals({
   handleCerrarEliminar,
   handleConfirmarEliminar,
 }) {
+  const { getOptions } = useChoices();
+  const estadosServicio = getOptions('estado_servicio');
+
   return (
     <>
       <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
@@ -150,8 +154,10 @@ export function ServicioModals({
                 label="Estado del servicio"
                 onChange={(e) => setEstadoServicio(e.target.value)}
               >
-                <MenuItem value="1">Activa</MenuItem>
-                <MenuItem value="0">Inactiva</MenuItem>
+                <MenuItem value="">Seleccionar una opción</MenuItem>
+                {estadosServicio.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Stack>

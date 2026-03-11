@@ -9,7 +9,7 @@ import { CONFIG_FILAS_POR_PAGINA } from './constants';
  * Conectado al backend.
  * @param {number} pagina - Página actual (controlada por padre)
  * @param {function} setPagina - Setter de página
- * @param {string} filtroEstado - 'todos' | 'activa' | 'inactiva'
+ * @param {string} filtroEstado - 'todos' | '1' | '0'
  * @param {boolean} active - Si el tab servicios está activo
  * @param {Array} empresasParaSelect - Empresas para el selector en modales
  * @param {function} cargarEmpresasParaSelect - Recargar empresas para select
@@ -35,7 +35,7 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
   const [enEdicion, setEnEdicion] = useState(null);
   const [aEliminar, setAEliminar] = useState(null);
 
-  const estadoParam = filtroEstado === 'activa' ? '1' : filtroEstado === 'inactiva' ? '0' : undefined;
+  const estadoParam = filtroEstado === '1' || filtroEstado === '0' ? filtroEstado : undefined;
 
   const cargarServicios = useCallback(
     async (page = 1) => {
@@ -73,11 +73,17 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
   }, [showSnackbar]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      lastLoadKeyRef.current = null;
+      return;
+    }
     const key = `${pagina}-${filtroEstado}`;
     if (lastLoadKeyRef.current === key) return;
     lastLoadKeyRef.current = key;
     cargarServicios(pagina);
+    return () => {
+      setTimeout(() => { lastLoadKeyRef.current = null; }, 0);
+    };
   }, [active, pagina, filtroEstado, cargarServicios]);
 
   const handleAbrirNueva = useCallback(() => {
@@ -101,10 +107,9 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
         nombre: nombre.trim(),
         empresa_id: Number(empresaId),
       });
-      await cargarServiciosParaSelect();
-      await cargarServicios(pagina);
-      handleCerrarNueva();
       showSnackbar('Servicio creado correctamente', 'success');
+      handleCerrarNueva();
+      await cargarServicios(pagina);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo crear el servicio'), 'error');
     } finally {
@@ -112,17 +117,14 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
     }
   };
 
-  const handleAbrirEditar = useCallback(
-    (servicio) => {
-      setEnEdicion(servicio);
-      setNombre(servicio.servicio ?? servicio.nombre);
-      setEmpresaId(servicio.empresa_id?.toString() ?? '');
-      setEstadoServicio(servicio.estado_servicio ?? (servicio.estado === 'Activa' ? '1' : '0'));
-      cargarEmpresasParaSelect?.();
-      setModalEditar(true);
-    },
-    [cargarEmpresasParaSelect]
-  );
+  const handleAbrirEditar = useCallback((servicio) => {
+    setEnEdicion(servicio);
+    setNombre(servicio.servicio ?? servicio.nombre);
+    setEmpresaId(servicio.empresa_id?.toString() ?? '');
+    setEstadoServicio(servicio.estado_servicio ?? (servicio.estado === 'Activa' ? '1' : '0'));
+    cargarEmpresasParaSelect?.();
+    setModalEditar(true);
+  }, [cargarEmpresasParaSelect]);
 
   const handleCerrarEditar = () => {
     setModalEditar(false);
@@ -143,7 +145,6 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
       });
       showSnackbar('Servicio actualizado correctamente', 'success');
       handleCerrarEditar();
-      await cargarServiciosParaSelect();
       await cargarServicios(pagina);
     } catch (e) {
       showSnackbar(
@@ -174,7 +175,6 @@ export function useServicios(pagina, setPagina, filtroEstado, active, empresasPa
       showSnackbar('Servicio eliminado correctamente', 'success');
       const nextPage = servicios.length === 1 && pagina > 1 ? pagina - 1 : pagina;
       setPagina(nextPage);
-      await cargarServiciosParaSelect();
       await cargarServicios(nextPage);
     } catch (e) {
       showSnackbar(
