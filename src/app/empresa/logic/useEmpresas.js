@@ -7,10 +7,11 @@ import { EMPRESAS_POR_PAGINA } from './constants';
  * Hook con toda la lógica del módulo Empresa: listado paginado, select para otros módulos, CRUD y modales.
  * @param {number} pagina - Página actual (controlada por padre)
  * @param {function} setPagina - Setter de página
+ * @param {string} busqueda - Texto de búsqueda (nombre)
  * @param {string} filtroEstado - 'todos' | '1' | '0'
  * @param {boolean} active - Si el tab empresa está activo (para cargar solo cuando corresponde)
  */
-export function useEmpresas(pagina, setPagina, filtroEstado, active) {
+export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
   const { showSnackbar } = useSnackbar();
   const lastLoadKeyRef = useRef(null);
 
@@ -38,6 +39,7 @@ export function useEmpresas(pagina, setPagina, filtroEstado, active) {
       setLoading(true);
       try {
         const { results, count } = await api.listarEmpresas(page, EMPRESAS_POR_PAGINA, {
+          search: busqueda?.trim() || undefined,
           estado: estadoParam,
         });
         setEmpresas(results);
@@ -51,7 +53,7 @@ export function useEmpresas(pagina, setPagina, filtroEstado, active) {
         setLoading(false);
       }
     },
-    [showSnackbar, estadoParam]
+    [showSnackbar, estadoParam, busqueda]
   );
 
   const cargarEmpresasParaSelect = useCallback(async () => {
@@ -70,14 +72,14 @@ export function useEmpresas(pagina, setPagina, filtroEstado, active) {
 
   useEffect(() => {
     if (!active) return;
-    const key = `${pagina}-${filtroEstado}`;
+    const key = `${pagina}-${filtroEstado}-${busqueda}`;
     if (lastLoadKeyRef.current === key) return;
     lastLoadKeyRef.current = key;
     cargarEmpresas(pagina);
     return () => {
       setTimeout(() => { lastLoadKeyRef.current = null; }, 0);
     };
-  }, [active, pagina, filtroEstado, cargarEmpresas]);
+  }, [active, pagina, filtroEstado, busqueda, cargarEmpresas]);
 
   const handleAbrirNueva = () => {
     setNombre('');

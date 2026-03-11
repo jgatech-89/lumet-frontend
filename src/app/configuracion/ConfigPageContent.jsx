@@ -39,29 +39,51 @@ const SEARCH_PLACEHOLDERS = {
 };
 
 /**
- * Orquestador de la pantalla de configuración: tabs, filtros compartidos y renderizado
- * de la sección activa. La lógica de cada dominio vive en sus módulos (app/empresa, etc.).
+ * Orquestador de la pantalla de configuración: tabs, búsqueda y filtro independientes por tab,
+ * renderizado de la sección activa. La lógica de cada dominio vive en sus módulos (app/empresa, etc.).
  */
+const INIT_BUSQUEDA = { empresa: '', servicios: '', campos: '', vendedor: '' };
+const INIT_FILTRO = { empresa: 'todos', servicios: 'todos', campos: 'todos', vendedor: 'todos' };
+const INIT_PAGINA = { empresa: 1, servicios: 1, campos: 1, vendedor: 1 };
+
 export function ConfigPageContent() {
   const [tabActual, setTabActual] = useState(0);
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('todos');
-  const [pagina, setPagina] = useState(1);
+  const [busquedaPorTab, setBusquedaPorTab] = useState(INIT_BUSQUEDA);
+  const [filtroEstadoPorTab, setFiltroEstadoPorTab] = useState(INIT_FILTRO);
+  const [paginaPorTab, setPaginaPorTab] = useState(INIT_PAGINA);
+
+  const tabKey = TAB_KEYS[tabActual];
+  const busqueda = busquedaPorTab[tabKey] ?? '';
+  const filtroEstado = filtroEstadoPorTab[tabKey] ?? 'todos';
+  const pagina = paginaPorTab[tabKey] ?? 1;
+
+  const setBusqueda = (v) => {
+    setBusquedaPorTab((prev) => ({ ...prev, [tabKey]: typeof v === 'function' ? v(prev[tabKey]) : v }));
+    setPaginaPorTab((prev) => ({ ...prev, [tabKey]: 1 }));
+  };
+  const setFiltroEstado = (v) => {
+    setFiltroEstadoPorTab((prev) => ({ ...prev, [tabKey]: typeof v === 'function' ? v(prev[tabKey]) : v }));
+    setPaginaPorTab((prev) => ({ ...prev, [tabKey]: 1 }));
+  };
+  const setPagina = (v) => {
+    setPaginaPorTab((prev) => ({ ...prev, [tabKey]: typeof v === 'function' ? v(prev[tabKey]) : v }));
+  };
   const { getOptions, loading: choicesLoading } = useChoices();
   const opcionesEstado = getOptions('estado');
 
-  const empresa = useEmpresas(pagina, setPagina, filtroEstado, TAB_KEYS[tabActual] === 'empresa');
+  const empresa = useEmpresas(paginaPorTab.empresa, setPagina, busquedaPorTab.empresa, filtroEstadoPorTab.empresa, TAB_KEYS[tabActual] === 'empresa');
   const vendedores = useVendedores(
-    pagina,
+    paginaPorTab.vendedor,
     setPagina,
-    busqueda,
-    filtroEstado,
+    busquedaPorTab.vendedor,
+    filtroEstadoPorTab.vendedor,
     TAB_KEYS[tabActual] === 'vendedor'
   );
   const servicios = useServicios(
-    pagina,
+    paginaPorTab.servicios,
     setPagina,
-    filtroEstado,
+    busquedaPorTab.servicios,
+    filtroEstadoPorTab.servicios,
     TAB_KEYS[tabActual] === 'servicios',
     empresa.empresasParaSelect,
     empresa.cargarEmpresasParaSelect
@@ -72,7 +94,6 @@ export function ConfigPageContent() {
     empresa.cargarEmpresasParaSelect
   );
 
-  const tabKey = TAB_KEYS[tabActual];
   const handleChangeTab = (_, value) => {
     setTabActual(value);
     setPagina(1);
@@ -188,7 +209,7 @@ export function ConfigPageContent() {
             placeholder={SEARCH_PLACEHOLDERS[tabKey]}
             size="small"
             value={busqueda}
-            onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
+            onChange={(e) => setBusqueda(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -204,7 +225,7 @@ export function ConfigPageContent() {
               labelId="filtro-estado-label"
               value={filtroEstado}
               label="Estado"
-              onChange={(e) => { setFiltroEstado(e.target.value); setPagina(1); }}
+              onChange={(e) => setFiltroEstado(e.target.value)}
             >
               <MenuItem value="">Seleccionar una opción</MenuItem>
               <MenuItem value="todos">Todos los estados</MenuItem>
@@ -216,14 +237,14 @@ export function ConfigPageContent() {
         </Stack>
 
         {tabKey === 'empresa' && (
-          <EmpresaConfigSection empresa={empresa} pagina={pagina} setPagina={setPagina} />
+          <EmpresaConfigSection empresa={empresa} pagina={paginaPorTab.empresa} setPagina={setPagina} />
         )}
         {tabKey === 'servicios' && (
           <ServiciosConfigSection
             servicios={servicios}
             empresasParaSelect={empresa.empresasParaSelect}
             cargarEmpresasParaSelect={empresa.cargarEmpresasParaSelect}
-            pagina={pagina}
+            pagina={paginaPorTab.servicios}
             setPagina={setPagina}
           />
         )}
@@ -233,12 +254,12 @@ export function ConfigPageContent() {
             empresasParaSelect={empresa.empresasParaSelect}
             servicios={servicios.servicios}
             cargarEmpresasParaSelect={empresa.cargarEmpresasParaSelect}
-            pagina={pagina}
+            pagina={paginaPorTab.campos}
             setPagina={setPagina}
           />
         )}
         {tabKey === 'vendedor' && (
-          <VendedorConfigSection vendedores={vendedores} pagina={pagina} setPagina={setPagina} />
+          <VendedorConfigSection vendedores={vendedores} pagina={paginaPorTab.vendedor} setPagina={setPagina} />
         )}
       </Box>
     </Paper>

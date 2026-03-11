@@ -10,14 +10,15 @@ export const mapEmpresaFromApi = (item) => ({
 });
 
 /**
- * Lista empresas con paginación y filtro por estado.
+ * Lista empresas con paginación, búsqueda y filtro por estado.
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página
- * @param {{ estado?: string }} params - estado: '1' Activa, '0' Inactiva (omitir = todos)
+ * @param {{ search?: string, estado?: string }} params - search: texto (nombre), estado: '1' Activa, '0' Inactiva (omitir = todos)
  * @returns {Promise<{ results: Array, count: number }>}
  */
 export const listarEmpresas = async (page = 1, pageSize = 5, params = {}) => {
   const query = { page, page_size: pageSize };
+  if (params.search?.trim()) query.search = params.search.trim();
   if (params.estado === '1' || params.estado === '0') query.estado = params.estado;
   const { data } = await get(BASE, query);
   const results = Array.isArray(data) ? data : data?.results ?? [];
