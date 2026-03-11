@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { COMPACT_MEDIA } from '../../utils/theme';
 import {
   Box,
@@ -55,10 +55,17 @@ export function ConfigPageContent() {
     filtroEstado,
     TAB_KEYS[tabActual] === 'vendedor'
   );
-  const servicios = useServicios(empresa.empresasParaSelect, empresa.cargarEmpresasParaSelect);
+  const servicios = useServicios(
+    pagina,
+    setPagina,
+    filtroEstado,
+    TAB_KEYS[tabActual] === 'servicios',
+    empresa.empresasParaSelect,
+    empresa.cargarEmpresasParaSelect
+  );
   const campos = useCampos(
     empresa.empresasParaSelect,
-    servicios.servicios,
+    servicios.serviciosParaSelect,
     empresa.cargarEmpresasParaSelect
   );
 
@@ -67,6 +74,13 @@ export function ConfigPageContent() {
     setTabActual(value);
     setPagina(1);
   };
+
+  useEffect(() => {
+    if (tabKey === 'servicios' || tabKey === 'campos') {
+      empresa.cargarEmpresasParaSelect();
+      servicios.cargarServiciosParaSelect();
+    }
+  }, [tabKey]);
 
   const handleAddClick = () => {
     if (tabKey === 'empresa') empresa.handleAbrirNueva();

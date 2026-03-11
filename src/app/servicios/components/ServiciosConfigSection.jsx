@@ -11,6 +11,7 @@ import {
   Pagination,
 } from '@mui/material';
 import { useThemeMode } from '../../../context/ThemeContext';
+import { TableLoader } from '../../../components/loading';
 import { ServicioRow } from './ServicioRow';
 import { ServicioModals } from './ServicioModals';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
@@ -20,12 +21,9 @@ const COLUMNS = ['Servicio', 'Tipo de empresa', 'Estado', 'Opciones'];
 
 export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEmpresasParaSelect, pagina, setPagina }) {
   const { isDark } = useThemeMode();
-  const totalItems = servicios.servicios.length;
+  const totalItems = servicios.serviciosTotal ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / CONFIG_FILAS_POR_PAGINA));
-  const filasPagina = servicios.servicios.slice(
-    (pagina - 1) * CONFIG_FILAS_POR_PAGINA,
-    pagina * CONFIG_FILAS_POR_PAGINA
-  );
+  const filasPagina = servicios.servicios ?? [];
   const inicio = totalItems === 0 ? 0 : (pagina - 1) * CONFIG_FILAS_POR_PAGINA + 1;
   const fin = totalItems === 0 ? 0 : Math.min(pagina * CONFIG_FILAS_POR_PAGINA, totalItems);
   const handleChangePagina = (_, value) => setPagina(value);
@@ -63,7 +61,10 @@ export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEm
             </TableRow>
           </TableHead>
           <TableBody>
-            {filasPagina.map((row) => (
+            {servicios.loading ? (
+              <TableLoader columnCount={COLUMNS.length} message="Cargando servicios..." />
+            ) : (
+              filasPagina.map((row) => (
               <TableRow
                 key={row.id}
                 hover
@@ -78,7 +79,8 @@ export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEm
                   onDelete={servicios.handleAbrirEliminar}
                 />
               </TableRow>
-            ))}
+            ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -132,7 +134,12 @@ export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEm
         setNombre={servicios.setNombre}
         empresaId={servicios.empresaId}
         setEmpresaId={servicios.setEmpresaId}
+        estadoServicio={servicios.estadoServicio}
+        setEstadoServicio={servicios.setEstadoServicio}
         aEliminar={servicios.aEliminar}
+        guardandoNuevo={servicios.guardandoNuevo}
+        guardandoEditar={servicios.guardandoEditar}
+        eliminando={servicios.eliminando}
         handleCerrarNueva={servicios.handleCerrarNueva}
         handleGuardarNueva={servicios.handleGuardarNueva}
         handleCerrarEditar={servicios.handleCerrarEditar}

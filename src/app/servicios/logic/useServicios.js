@@ -1,25 +1,89 @@
-import { useState, useCallback } from 'react';
-import { SERVICIOS_INICIAL } from './constants';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSnackbar } from '../../../context/SnackbarContext';
+import { getErrorMessage } from '../../../utils/funciones';
+import * as api from './apiServicios';
+import { CONFIG_FILAS_POR_PAGINA } from './constants';
 
 /**
- * Hook con la lógica del módulo Servicios (estado local, CRUD y modales).
- * Depende de empresasParaSelect y cargarEmpresasParaSelect del módulo empresa.
+ * Hook con la lógica del módulo Servicios: listado paginado, select para campos, CRUD y modales.
+ * Conectado al backend.
+ * @param {number} pagina - Página actual (controlada por padre)
+ * @param {function} setPagina - Setter de página
+ * @param {string} filtroEstado - 'todos' | 'activa' | 'inactiva'
+ * @param {boolean} active - Si el tab servicios está activo
+ * @param {Array} empresasParaSelect - Empresas para el selector en modales
+ * @param {function} cargarEmpresasParaSelect - Recargar empresas para select
  */
-export function useServicios(empresasParaSelect, cargarEmpresasParaSelect) {
-  const [servicios, setServicios] = useState(SERVICIOS_INICIAL);
+export function useServicios(pagina, setPagina, filtroEstado, active, empresasParaSelect, cargarEmpresasParaSelect) {
+  const { showSnackbar } = useSnackbar();
+  const lastLoadKeyRef = useRef(null);
+
+  const [servicios, setServicios] = useState([]);
+  const [serviciosTotal, setServiciosTotal] = useState(0);
+  const [serviciosParaSelect, setServiciosParaSelect] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [guardandoNuevo, setGuardandoNuevo] = useState(false);
+  const [guardandoEditar, setGuardandoEditar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
 
   const [modalNueva, setModalNueva] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [nombre, setNombre] = useState('');
   const [empresaId, setEmpresaId] = useState('');
+  const [estadoServicio, setEstadoServicio] = useState('1');
   const [enEdicion, setEnEdicion] = useState(null);
   const [aEliminar, setAEliminar] = useState(null);
+
+  const estadoParam = filtroEstado === 'activa' ? '1' : filtroEstado === 'inactiva' ? '0' : undefined;
+
+  const cargarServicios = useCallback(
+    async (page = 1) => {
+      setLoading(true);
+      try {
+        const { results, count } = await api.listarServicios(page, CONFIG_FILAS_POR_PAGINA, {
+          estado: estadoParam,
+        });
+        setServicios(results);
+        setServiciosTotal(count);
+      } catch (e) {
+        showSnackbar(
+          getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los servicios'),
+          'error'
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showSnackbar, estadoParam]
+  );
+
+  const cargarServiciosParaSelect = useCallback(async () => {
+    try {
+      const results = await api.listarServiciosParaSelect();
+      setServiciosParaSelect(results);
+      return results;
+    } catch (e) {
+      showSnackbar(
+        getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los servicios'),
+        'error'
+      );
+      return [];
+    }
+  }, [showSnackbar]);
+
+  useEffect(() => {
+    if (!active) return;
+    const key = `${pagina}-${filtroEstado}`;
+    if (lastLoadKeyRef.current === key) return;
+    lastLoadKeyRef.current = key;
+    cargarServicios(pagina);
+  }, [active, pagina, filtroEstado, cargarServicios]);
 
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
     setEmpresaId('');
-    cargarEmpresasParaSelect();
+    cargarEmpresasParaSelect?.();
     setModalNueva(true);
   }, [cargarEmpresasParaSelect]);
 
@@ -29,28 +93,35 @@ export function useServicios(empresasParaSelect, cargarEmpresasParaSelect) {
     setEmpresaId('');
   };
 
-  const handleGuardarNueva = () => {
+  const handleGuardarNueva = async () => {
     if (!nombre.trim() || !empresaId) return;
-    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaId);
-    if (!empresa) return;
-    const nuevoId = Math.max(...servicios.map((s) => s.id), 0) + 1;
-    setServicios((prev) => [
-      ...prev,
-      { id: nuevoId, servicio: nombre.trim(), tipoEmpresa: empresa.nombre, estado: 'Activa' },
-    ]);
-    handleCerrarNueva();
+    setGuardandoNuevo(true);
+    try {
+      await api.crearServicio({
+        nombre: nombre.trim(),
+        empresa_id: Number(empresaId),
+      });
+      await cargarServiciosParaSelect();
+      await cargarServicios(pagina);
+      handleCerrarNueva();
+      showSnackbar('Servicio creado correctamente', 'success');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo crear el servicio'), 'error');
+    } finally {
+      setGuardandoNuevo(false);
+    }
   };
 
   const handleAbrirEditar = useCallback(
     (servicio) => {
       setEnEdicion(servicio);
-      setNombre(servicio.servicio);
-      const emp = empresasParaSelect.find((e) => e.nombre === servicio.tipoEmpresa);
-      setEmpresaId(emp?.id?.toString() ?? empresasParaSelect[0]?.id?.toString() ?? '');
-      cargarEmpresasParaSelect();
+      setNombre(servicio.servicio ?? servicio.nombre);
+      setEmpresaId(servicio.empresa_id?.toString() ?? '');
+      setEstadoServicio(servicio.estado_servicio ?? (servicio.estado === 'Activa' ? '1' : '0'));
+      cargarEmpresasParaSelect?.();
       setModalEditar(true);
     },
-    [empresasParaSelect, cargarEmpresasParaSelect]
+    [cargarEmpresasParaSelect]
   );
 
   const handleCerrarEditar = () => {
@@ -58,36 +129,73 @@ export function useServicios(empresasParaSelect, cargarEmpresasParaSelect) {
     setEnEdicion(null);
     setNombre('');
     setEmpresaId('');
+    setEstadoServicio('1');
   };
 
-  const handleGuardarEditar = () => {
+  const handleGuardarEditar = async () => {
     if (!enEdicion || !nombre.trim() || !empresaId) return;
-    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaId);
-    if (!empresa) return;
-    setServicios((prev) =>
-      prev.map((s) =>
-        s.id === enEdicion.id ? { ...s, servicio: nombre.trim(), tipoEmpresa: empresa.nombre } : s
-      )
-    );
-    handleCerrarEditar();
+    setGuardandoEditar(true);
+    try {
+      await api.actualizarServicio(enEdicion.id, {
+        nombre: nombre.trim(),
+        empresa_id: Number(empresaId),
+        estado_servicio: estadoServicio,
+      });
+      showSnackbar('Servicio actualizado correctamente', 'success');
+      handleCerrarEditar();
+      await cargarServiciosParaSelect();
+      await cargarServicios(pagina);
+    } catch (e) {
+      showSnackbar(
+        getErrorMessage(e, e?.status, e?.response, 'No se pudo actualizar el servicio'),
+        'error'
+      );
+    } finally {
+      setGuardandoEditar(false);
+    }
   };
 
   const handleAbrirEliminar = (servicio) => {
     setAEliminar(servicio);
     setModalEliminar(true);
   };
+
   const handleCerrarEliminar = () => {
     setModalEliminar(false);
     setAEliminar(null);
   };
-  const handleConfirmarEliminar = () => {
-    if (aEliminar) setServicios((prev) => prev.filter((s) => s.id !== aEliminar.id));
-    handleCerrarEliminar();
+
+  const handleConfirmarEliminar = async () => {
+    if (!aEliminar) return;
+    setEliminando(true);
+    try {
+      await api.eliminarServicio(aEliminar.id);
+      handleCerrarEliminar();
+      showSnackbar('Servicio eliminado correctamente', 'success');
+      const nextPage = servicios.length === 1 && pagina > 1 ? pagina - 1 : pagina;
+      setPagina(nextPage);
+      await cargarServiciosParaSelect();
+      await cargarServicios(nextPage);
+    } catch (e) {
+      showSnackbar(
+        getErrorMessage(e, e?.status, e?.response, 'No se pudo eliminar el servicio'),
+        'error'
+      );
+    } finally {
+      setEliminando(false);
+    }
   };
 
   return {
     servicios,
-    setServicios,
+    serviciosTotal,
+    serviciosParaSelect,
+    cargarServiciosParaSelect,
+    loading,
+    pageSize: CONFIG_FILAS_POR_PAGINA,
+    guardandoNuevo,
+    guardandoEditar,
+    eliminando,
     modalNueva,
     modalEditar,
     modalEliminar,
@@ -95,6 +203,8 @@ export function useServicios(empresasParaSelect, cargarEmpresasParaSelect) {
     setNombre,
     empresaId,
     setEmpresaId,
+    estadoServicio,
+    setEstadoServicio,
     enEdicion,
     aEliminar,
     handleAbrirNueva,

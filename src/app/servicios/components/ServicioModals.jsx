@@ -40,7 +40,12 @@ export function ServicioModals({
   setNombre,
   empresaId,
   setEmpresaId,
+  estadoServicio = '1',
+  setEstadoServicio,
   aEliminar,
+  guardandoNuevo = false,
+  guardandoEditar = false,
+  eliminando = false,
   handleCerrarNueva,
   handleGuardarNueva,
   handleCerrarEditar,
@@ -89,14 +94,14 @@ export function ServicioModals({
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
-          <Button variant="outlined" onClick={handleCerrarNueva} sx={btnCancelSx}>Cancelar</Button>
+          <Button variant="outlined" onClick={handleCerrarNueva} disabled={guardandoNuevo} sx={btnCancelSx}>Cancelar</Button>
           <Button
             variant="contained"
             onClick={handleGuardarNueva}
-            disabled={!nombre.trim() || !empresaId}
+            disabled={!nombre.trim() || !empresaId || guardandoNuevo}
             sx={btnPrimarySx}
           >
-            Guardar servicio
+            {guardandoNuevo ? 'Guardando...' : 'Guardar servicio'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -137,17 +142,29 @@ export function ServicioModals({
                 ))}
               </Select>
             </FormControl>
+            <FormControl size="small" fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+              <InputLabel id="editar-servicio-estado-label">Estado del servicio</InputLabel>
+              <Select
+                labelId="editar-servicio-estado-label"
+                value={estadoServicio}
+                label="Estado del servicio"
+                onChange={(e) => setEstadoServicio(e.target.value)}
+              >
+                <MenuItem value="1">Activa</MenuItem>
+                <MenuItem value="0">Inactiva</MenuItem>
+              </Select>
+            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
-          <Button variant="outlined" onClick={handleCerrarEditar} sx={btnCancelSx}>Cerrar</Button>
+          <Button variant="outlined" onClick={handleCerrarEditar} disabled={guardandoEditar} sx={btnCancelSx}>Cerrar</Button>
           <Button
             variant="contained"
             onClick={handleGuardarEditar}
-            disabled={!nombre.trim() || !empresaId}
+            disabled={!nombre.trim() || !empresaId || guardandoEditar}
             sx={btnPrimarySx}
           >
-            Guardar
+            {guardandoEditar ? 'Guardando...' : 'Guardar'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -158,7 +175,9 @@ export function ServicioModals({
         onConfirm={() => { handleConfirmarEliminar(); return Promise.resolve(); }}
         title="Eliminar servicio"
         message="¿Está seguro que desea eliminar este servicio?"
-        itemName={aEliminar?.servicio}
+        itemName={aEliminar?.servicio ?? aEliminar?.nombre}
+        loading={eliminando}
+        confirmLabel="Eliminar"
       />
     </>
   );
