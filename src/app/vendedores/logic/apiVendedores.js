@@ -1,4 +1,4 @@
-import { get, post, patch, del } from './funciones';
+import { get, post, patch, del } from '../../../utils/funciones';
 
 const BASE = '/api/vendedores/';
 
@@ -15,7 +15,7 @@ export const mapVendedorFromApi = (item) => ({
  * Lista vendedores con paginación, búsqueda y filtro por estado.
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página
- * @param {{ search?: string, estado?: string }} filters - search: texto (nombre o nº identificación), estado: '1' activo, '0' inactivo (omitir = todos)
+ * @param {{ search?: string, estado?: string }} filters
  * @returns {Promise<{ results: Array, count: number }>}
  */
 export const listarVendedores = async (page = 1, pageSize = 5, filters = {}) => {

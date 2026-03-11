@@ -1,0 +1,1 @@
+export { ConfigPageContent } from './ConfigPageContent';

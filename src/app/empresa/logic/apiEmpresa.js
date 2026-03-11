@@ -1,4 +1,4 @@
-import { get, post, patch, del } from './funciones';
+import { get, post, patch, del } from '../../../utils/funciones';
 
 const BASE = '/api/empresas/';
 
@@ -10,7 +10,7 @@ export const mapEmpresaFromApi = (item) => ({
 });
 
 /**
- * Lista empresas con paginación y filtro por estado (igual que vendedores).
+ * Lista empresas con paginación y filtro por estado.
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página
  * @param {{ estado?: string }} params - estado: '1' Activa, '0' Inactiva (omitir = todos)
@@ -41,7 +41,6 @@ export const listarEmpresasParaSelect = async () => {
 /**
  * Crea una empresa.
  * @param {{ nombre: string }} payload
- * @returns {Promise<object>}
  */
 export const crearEmpresa = async (payload) => {
   const { data } = await post(BASE, payload);
@@ -51,8 +50,7 @@ export const crearEmpresa = async (payload) => {
 /**
  * Actualiza una empresa.
  * @param {number|string} id
- * @param {{ nombre?: string }} payload
- * @returns {Promise<object>}
+ * @param {{ nombre?: string, estado_empresa?: string }} payload
  */
 export const actualizarEmpresa = async (id, payload) => {
   const { data } = await patch(`${BASE}${id}/`, payload);

@@ -6,7 +6,7 @@ import routeConfig from './routeConfig';
 import RouteRenderer from './RouteRenderer';
 import RouteErrorFallback from './RouteErrorFallback';
 import RootLayout from './RootLayout';
-import DashboardLayout from '../layouts/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { NotFound } from './routeConfig';
 import { useAuth } from '../context/AuthContext';
 import { setLogoutCallback } from '../utils/api';

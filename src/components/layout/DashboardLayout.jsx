@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Box, Drawer, useMediaQuery, useTheme } from '@mui/material';
-import { COMPACT_MEDIA } from '../utils/theme';
-import AppNavbar from '../components/layout/AppNavbar';
-import Sidebar from '../components/layout/Sidebar';
+import { COMPACT_MEDIA } from '../../utils/theme';
+import AppNavbar from './AppNavbar';
+import Sidebar from './Sidebar';
 
 const APP_BAR_HEIGHT = 64;
 const SIDEBAR_WIDTH = 240;

@@ -8,7 +8,7 @@ import LoginForm from '../components/login/LoginForm';
 import ConfirmCodeForm from '../components/login/ConfirmCodeForm';
 import { post, getErrorMessage } from '../utils/funciones';
 import { setTokens, parseAuthResponse } from '../utils/api';
-import { CheckIcon } from '../theme/iconos.jsx';
+import { CheckIcon } from '../utils/icons';
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);

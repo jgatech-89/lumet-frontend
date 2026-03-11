@@ -1,8 +1,8 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import { Box, CircularProgress, Skeleton } from '@mui/material';
-import DashboardLayout from '../layouts/DashboardLayout';
-import AuthLayout from '../layouts/AuthLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import AuthLayout from '../components/layout/AuthLayout';
 import ProtectedRoute from './ProtectedRoute';
 import RoleRoute from './RoleRoute';
 import PublicRoute from './PublicRoute';

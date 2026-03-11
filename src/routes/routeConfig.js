@@ -2,20 +2,22 @@ import { lazy } from 'react';
 
 /**
  * Configuración centralizada de rutas.
- * Añadir una nueva ruta = añadir un objeto a este array.
+ * Solo importa páginas desde src/pages. Las páginas son el punto de entrada hacia los módulos en app.
  *
  * path: ruta URL
- * element: componente (lazy o no)
+ * element: componente (página, lazy)
  * private: si true, requiere autenticación (ProtectedRoute)
  * roles: array de roles permitidos (ej. ['admin', 'user']). Si no se define, no se valida rol.
  * layout: 'main' | 'auth' (DashboardLayout o AuthLayout)
  *
+ * Flujo: Router → Page → Feature Module (app)
+ *
  * IMPORTANTE: Las rutas protegidas y por rol son solo una capa de UX.
  * La seguridad real debe implementarse en el backend (validar token y permisos en cada request).
  */
-const ClientsPage = lazy(() => import('../pages/dashboard/ClientsPage'));
-const ConfigurationPage = lazy(() => import('../pages/dashboard/ConfigurationPage'));
-const NewClientPage = lazy(() => import('../pages/dashboard/NewClientPage'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const NewClientPage = lazy(() => import('../pages/NewClientPage'));
+const ConfigurationPage = lazy(() => import('../pages/ConfigurationPage'));
 const Admin = lazy(() => import('../pages/Admin'));
 const Login = lazy(() => import('../pages/Login'));
 const NotFound = lazy(() => import('../pages/NotFound'));
@@ -29,7 +31,7 @@ const routeConfig = [
   },
   {
     path: '/dashboard',
-    element: ClientsPage,
+    element: Dashboard,
     private: true,
     roles: ['admin', 'user'],
     layout: 'main',
@@ -58,7 +60,7 @@ const routeConfig = [
   // Ruta raíz: misma lógica que dashboard (ordenada al final para no pisar rutas más específicas)
   {
     path: '/',
-    element: ClientsPage,
+    element: Dashboard,
     private: true,
     roles: ['admin', 'user'],
     layout: 'main',
@@ -66,4 +68,4 @@ const routeConfig = [
 ];
 
 export default routeConfig;
-export { ClientsPage, ConfigurationPage, NewClientPage, Admin, Login, NotFound };
+export { Dashboard, NewClientPage, ConfigurationPage, Admin, Login, NotFound };

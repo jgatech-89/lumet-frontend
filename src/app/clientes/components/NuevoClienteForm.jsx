@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { COMPACT_MEDIA } from '../../utils/theme';
-import { LoadingButton } from '../../components/loading';
+import { COMPACT_MEDIA } from '../../../utils/theme';
+import { LoadingButton } from '../../../components/loading';
+import { useNuevoCliente } from '../logic/useNuevoCliente';
 import {
   Box,
   Typography,
@@ -14,51 +14,25 @@ import {
   Stack,
 } from '@mui/material';
 
-const NewClientPage = () => {
+const selectFieldSx = {
+  width: { xs: '100%', sm: 220 },
+  minWidth: { xs: 0, sm: 220 },
+  '& .MuiOutlinedInput-root': { borderRadius: 2 },
+};
+
+export function NuevoClienteForm() {
   const navigate = useNavigate();
-  const [tipoCliente, setTipoCliente] = useState('');
-  const [empresa, setEmpresa] = useState('');
-  const [formData, setFormData] = useState({
-    cupsLuz: '',
-    comercializadoraLuz: '',
-    tarifaLuz: '',
-    mantenimientoLuz: '',
-    cupsGas: '',
-    comercializadoraGas: '',
-    mantenimientoGas: '',
-  });
-
-  const handleLimpiar = () => {
-    setTipoCliente('');
-    setEmpresa('');
-    setFormData({
-      cupsLuz: '',
-      comercializadoraLuz: '',
-      tarifaLuz: '',
-      mantenimientoLuz: '',
-      cupsGas: '',
-      comercializadoraGas: '',
-      mantenimientoGas: '',
-    });
-  };
-
-  const [guardando, setGuardando] = useState(false);
-  const handleGuardar = async () => {
-    setGuardando(true);
-    try {
-      // TODO: llamar API para crear cliente cuando exista el endpoint
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  const selectFieldSx = {
-    width: { xs: '100%', sm: 220 },
-    minWidth: { xs: 0, sm: 220 },
-    '& .MuiOutlinedInput-root': {
-      borderRadius: 2,
-    },
-  };
+  const {
+    tipoCliente,
+    setTipoCliente,
+    empresa,
+    setEmpresa,
+    formData,
+    setFormData,
+    guardando,
+    handleLimpiar,
+    handleGuardar,
+  } = useNuevoCliente();
 
   return (
     <Paper
@@ -139,17 +113,10 @@ const NewClientPage = () => {
           </Typography>
           <Stack spacing={3} sx={{ maxWidth: 480, width: '100%' }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                CUPS luz
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>CUPS luz</Typography>
               <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="cups-luz-label">Seleccionar</InputLabel>
-                <Select
-                  labelId="cups-luz-label"
-                  value={formData.cupsLuz}
-                  label="Seleccionar"
-                  onChange={(e) => setFormData((p) => ({ ...p, cupsLuz: e.target.value }))}
-                >
+                <Select labelId="cups-luz-label" value={formData.cupsLuz} label="Seleccionar" onChange={(e) => setFormData((p) => ({ ...p, cupsLuz: e.target.value }))}>
                   <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
@@ -157,17 +124,10 @@ const NewClientPage = () => {
               </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                Comercializadora actual luz
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>Comercializadora actual luz</Typography>
               <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="comercializadora-luz-label">Seleccionar</InputLabel>
-                <Select
-                  labelId="comercializadora-luz-label"
-                  value={formData.comercializadoraLuz}
-                  label="Seleccionar"
-                  onChange={(e) => setFormData((p) => ({ ...p, comercializadoraLuz: e.target.value }))}
-                >
+                <Select labelId="comercializadora-luz-label" value={formData.comercializadoraLuz} label="Seleccionar" onChange={(e) => setFormData((p) => ({ ...p, comercializadoraLuz: e.target.value }))}>
                   <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
@@ -175,17 +135,10 @@ const NewClientPage = () => {
               </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                Tarifa luz
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>Tarifa luz</Typography>
               <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="tarifa-luz-label">Seleccionar</InputLabel>
-                <Select
-                  labelId="tarifa-luz-label"
-                  value={formData.tarifaLuz}
-                  label="Seleccionar"
-                  onChange={(e) => setFormData((p) => ({ ...p, tarifaLuz: e.target.value }))}
-                >
+                <Select labelId="tarifa-luz-label" value={formData.tarifaLuz} label="Seleccionar" onChange={(e) => setFormData((p) => ({ ...p, tarifaLuz: e.target.value }))}>
                   <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
@@ -193,17 +146,10 @@ const NewClientPage = () => {
               </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                Mantenimiento luz
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>Mantenimiento luz</Typography>
               <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="mantenimiento-luz-label">Seleccionar</InputLabel>
-                <Select
-                  labelId="mantenimiento-luz-label"
-                  value={formData.mantenimientoLuz}
-                  label="Seleccionar"
-                  onChange={(e) => setFormData((p) => ({ ...p, mantenimientoLuz: e.target.value }))}
-                >
+                <Select labelId="mantenimiento-luz-label" value={formData.mantenimientoLuz} label="Seleccionar" onChange={(e) => setFormData((p) => ({ ...p, mantenimientoLuz: e.target.value }))}>
                   <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
@@ -211,17 +157,10 @@ const NewClientPage = () => {
               </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                CUPS gas
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>CUPS gas</Typography>
               <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="cups-gas-label">Seleccionar</InputLabel>
-                <Select
-                  labelId="cups-gas-label"
-                  value={formData.cupsGas}
-                  label="Seleccionar"
-                  onChange={(e) => setFormData((p) => ({ ...p, cupsGas: e.target.value }))}
-                >
+                <Select labelId="cups-gas-label" value={formData.cupsGas} label="Seleccionar" onChange={(e) => setFormData((p) => ({ ...p, cupsGas: e.target.value }))}>
                   <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
@@ -229,17 +168,10 @@ const NewClientPage = () => {
               </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                Comercializadora actual gas
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>Comercializadora actual gas</Typography>
               <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="comercializadora-gas-label">Seleccionar</InputLabel>
-                <Select
-                  labelId="comercializadora-gas-label"
-                  value={formData.comercializadoraGas}
-                  label="Seleccionar"
-                  onChange={(e) => setFormData((p) => ({ ...p, comercializadoraGas: e.target.value }))}
-                >
+                <Select labelId="comercializadora-gas-label" value={formData.comercializadoraGas} label="Seleccionar" onChange={(e) => setFormData((p) => ({ ...p, comercializadoraGas: e.target.value }))}>
                   <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
@@ -247,17 +179,10 @@ const NewClientPage = () => {
               </FormControl>
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} justifyContent="space-between" gap={2}>
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                Mantenimiento gas
-              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>Mantenimiento gas</Typography>
               <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 220 } }}>
                 <InputLabel id="mantenimiento-gas-label">Seleccionar</InputLabel>
-                <Select
-                  labelId="mantenimiento-gas-label"
-                  value={formData.mantenimientoGas}
-                  label="Seleccionar"
-                  onChange={(e) => setFormData((p) => ({ ...p, mantenimientoGas: e.target.value }))}
-                >
+                <Select labelId="mantenimiento-gas-label" value={formData.mantenimientoGas} label="Seleccionar" onChange={(e) => setFormData((p) => ({ ...p, mantenimientoGas: e.target.value }))}>
                   <MenuItem value="">Seleccionar una opción</MenuItem>
                   <MenuItem value="opcion1">Opción 1</MenuItem>
                   <MenuItem value="opcion2">Opción 2</MenuItem>
@@ -266,12 +191,7 @@ const NewClientPage = () => {
             </Stack>
           </Stack>
 
-          <Stack
-            direction="row"
-            justifyContent="flex-end"
-            gap={2}
-            sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(0,0,0,0.06)' }}
-          >
+          <Stack direction="row" justifyContent="flex-end" gap={2} sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
             <Button
               variant="outlined"
               onClick={() => navigate(-1)}
@@ -281,10 +201,7 @@ const NewClientPage = () => {
                 fontWeight: 600,
                 borderColor: 'rgba(0,0,0,0.12)',
                 color: 'text.primary',
-                '&:hover': {
-                  borderColor: 'rgba(0,0,0,0.25)',
-                  bgcolor: 'action.hover',
-                },
+                '&:hover': { borderColor: 'rgba(0,0,0,0.25)', bgcolor: 'action.hover' },
               }}
             >
               Atrás
@@ -298,10 +215,7 @@ const NewClientPage = () => {
                 fontWeight: 600,
                 borderColor: 'primary.main',
                 color: 'primary.main',
-                '&:hover': {
-                  borderColor: 'primary.dark',
-                  bgcolor: 'rgba(33, 150, 243, 0.08)',
-                },
+                '&:hover': { borderColor: 'primary.dark', bgcolor: 'rgba(33, 150, 243, 0.08)' },
               }}
             >
               Limpiar
@@ -318,9 +232,7 @@ const NewClientPage = () => {
                 px: 2.5,
                 py: 1.25,
                 boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)',
-                '&:hover': {
-                  boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)',
-                },
+                '&:hover': { boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)' },
               }}
             >
               Guardar cliente
@@ -330,6 +242,4 @@ const NewClientPage = () => {
       </Box>
     </Paper>
   );
-};
-
-export default NewClientPage;
+}

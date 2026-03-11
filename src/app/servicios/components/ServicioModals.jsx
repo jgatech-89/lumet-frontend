@@ -1,0 +1,165 @@
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+} from '@mui/material';
+import { CloseIcon } from '../../../utils/icons';
+import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
+import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
+
+const btnCancelSx = {
+  borderRadius: 2,
+  textTransform: 'none',
+  fontWeight: 600,
+  borderColor: 'rgba(0,0,0,0.12)',
+  color: 'text.primary',
+};
+const btnPrimarySx = {
+  borderRadius: 2,
+  textTransform: 'none',
+  fontWeight: 600,
+  boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)',
+};
+
+export function ServicioModals({
+  empresasParaSelect,
+  modalNueva,
+  modalEditar,
+  modalEliminar,
+  nombre,
+  setNombre,
+  empresaId,
+  setEmpresaId,
+  aEliminar,
+  handleCerrarNueva,
+  handleGuardarNueva,
+  handleCerrarEditar,
+  handleGuardarEditar,
+  handleCerrarEliminar,
+  handleConfirmarEliminar,
+}) {
+  return (
+    <>
+      <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+          <Typography variant="h6" fontWeight={600}>Nuevo servicio</Typography>
+          <IconButton size="small" onClick={handleCerrarNueva} aria-label="Cerrar">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Completa la información para registrar un servicio.
+          </Typography>
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Nombre del servicio"
+              placeholder="Introduce el nombre..."
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+              <InputLabel id="servicio-empresa-label">Empresa</InputLabel>
+              <Select
+                labelId="servicio-empresa-label"
+                value={empresaId}
+                label="Empresa"
+                onChange={(e) => setEmpresaId(e.target.value)}
+              >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
+                {empresasParaSelect.map((e) => (
+                  <MenuItem key={e.id} value={e.id.toString()}>{e.nombre}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
+          <Button variant="outlined" onClick={handleCerrarNueva} sx={btnCancelSx}>Cancelar</Button>
+          <Button
+            variant="contained"
+            onClick={handleGuardarNueva}
+            disabled={!nombre.trim() || !empresaId}
+            sx={btnPrimarySx}
+          >
+            Guardar servicio
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={modalEditar} onClose={handleCerrarEditar} PaperProps={{ sx: modalPaperSx }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+          <Typography variant="h6" fontWeight={600}>Editar servicio</Typography>
+          <IconButton size="small" onClick={handleCerrarEditar} aria-label="Cerrar">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Modifica los datos del servicio.
+          </Typography>
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Nombre del servicio"
+              placeholder="Introduce el nombre..."
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
+              <InputLabel id="editar-servicio-empresa-label">Empresa</InputLabel>
+              <Select
+                labelId="editar-servicio-empresa-label"
+                value={empresaId}
+                label="Empresa"
+                onChange={(e) => setEmpresaId(e.target.value)}
+              >
+                <MenuItem value="">Seleccionar una opción</MenuItem>
+                {empresasParaSelect.map((e) => (
+                  <MenuItem key={e.id} value={e.id.toString()}>{e.nombre}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
+          <Button variant="outlined" onClick={handleCerrarEditar} sx={btnCancelSx}>Cerrar</Button>
+          <Button
+            variant="contained"
+            onClick={handleGuardarEditar}
+            disabled={!nombre.trim() || !empresaId}
+            sx={btnPrimarySx}
+          >
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDeleteDialog
+        open={modalEliminar}
+        onClose={handleCerrarEliminar}
+        onConfirm={() => { handleConfirmarEliminar(); return Promise.resolve(); }}
+        title="Eliminar servicio"
+        message="¿Está seguro que desea eliminar este servicio?"
+        itemName={aEliminar?.servicio}
+      />
+    </>
+  );
+}
