@@ -89,9 +89,11 @@ export function ConfigPageContent() {
     empresa.cargarEmpresasParaSelect
   );
   const campos = useCampos(
-    empresa.empresasParaSelect,
-    servicios.serviciosParaSelect,
-    empresa.cargarEmpresasParaSelect
+    tabKey === 'campos',
+    paginaPorTab.campos,
+    setPagina,
+    busquedaPorTab.campos,
+    filtroEstadoPorTab.campos
   );
 
   const handleChangeTab = (_, value) => {
@@ -251,9 +253,6 @@ export function ConfigPageContent() {
         {tabKey === 'campos' && (
           <CamposConfigSection
             campos={campos}
-            empresasParaSelect={empresa.empresasParaSelect}
-            servicios={servicios.servicios}
-            cargarEmpresasParaSelect={empresa.cargarEmpresasParaSelect}
             pagina={paginaPorTab.campos}
             setPagina={setPagina}
           />

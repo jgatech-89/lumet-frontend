@@ -18,14 +18,11 @@ import { COMPACT_MEDIA } from '../../../utils/theme';
 
 const COLUMNS = ['Campo', 'Empresa', 'Servicio', 'Tipo de campo', 'Estado', 'Opciones'];
 
-export function CamposConfigSection({ campos, empresasParaSelect, servicios, cargarEmpresasParaSelect, pagina, setPagina }) {
+export function CamposConfigSection({ campos, pagina, setPagina }) {
   const { isDark } = useThemeMode();
-  const totalItems = campos.campos.length;
+  const totalItems = campos.totalItems ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / CONFIG_FILAS_POR_PAGINA));
-  const filasPagina = campos.campos.slice(
-    (pagina - 1) * CONFIG_FILAS_POR_PAGINA,
-    pagina * CONFIG_FILAS_POR_PAGINA
-  );
+  const filasPagina = campos.campos ?? [];
   const inicio = totalItems === 0 ? 0 : (pagina - 1) * CONFIG_FILAS_POR_PAGINA + 1;
   const fin = totalItems === 0 ? 0 : Math.min(pagina * CONFIG_FILAS_POR_PAGINA, totalItems);
   const handleChangePagina = (_, value) => setPagina(value);
@@ -125,8 +122,11 @@ export function CamposConfigSection({ campos, empresasParaSelect, servicios, car
       </Stack>
 
       <CampoModals
-        empresasParaSelect={empresasParaSelect}
+        tipoCampoOptions={campos.tipoCampoOptions}
+        empresasParaSelect={campos.empresasParaSelect}
         serviciosFiltrados={campos.serviciosFiltrados}
+        handleChangeEmpresa={campos.handleChangeEmpresa}
+        cargandoServicios={campos.cargandoServicios}
         modalNueva={campos.modalNueva}
         modalEditar={campos.modalEditar}
         modalEliminar={campos.modalEliminar}
@@ -139,11 +139,30 @@ export function CamposConfigSection({ campos, empresasParaSelect, servicios, car
         setServicioId={campos.setServicioId}
         tipoCampo={campos.tipoCampo}
         setTipoCampo={campos.setTipoCampo}
+        orden={campos.orden}
+        setOrden={campos.setOrden}
+        activo={campos.activo}
+        setActivo={campos.setActivo}
+        requerido={campos.requerido}
+        setRequerido={campos.setRequerido}
+        placeholder={campos.placeholder}
+        setPlaceholder={campos.setPlaceholder}
+        help_text={campos.help_text}
+        setHelp_text={campos.setHelp_text}
+        default_value={campos.default_value}
+        setDefault_value={campos.setDefault_value}
+        visible_si={campos.visible_si}
+        setVisible_si={campos.setVisible_si}
         opciones={campos.opciones}
         opcionInput={campos.opcionInput}
         setOpcionInput={campos.setOpcionInput}
         aEliminar={campos.aEliminar}
         campoAVer={campos.campoAVer}
+        errors={campos.errors}
+        canSave={campos.canSave}
+        guardandoNueva={campos.guardandoNueva}
+        guardandoEditar={campos.guardandoEditar}
+        eliminando={campos.eliminando}
         handleCerrarNueva={campos.handleCerrarNueva}
         handleGuardarNueva={campos.handleGuardarNueva}
         handleAñadirOpcion={campos.handleAñadirOpcion}

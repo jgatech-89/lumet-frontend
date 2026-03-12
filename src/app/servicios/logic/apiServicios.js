@@ -13,16 +13,17 @@ export const mapServicioFromApi = (item) => ({
 });
 
 /**
- * Lista servicios con paginación, búsqueda y filtro por estado.
+ * Lista servicios con paginación, búsqueda y filtro por estado/empresa.
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página
- * @param {{ search?: string, estado?: string }} params - search: texto (nombre o empresa), estado: '1' Activa, '0' Inactiva (omitir = todos)
+ * @param {{ search?: string, estado?: string, empresa?: number }} params - empresa: ID empresa para filtrar
  * @returns {Promise<{ results: Array, count: number }>}
  */
 export const listarServicios = async (page = 1, pageSize = 5, params = {}) => {
   const query = { page, page_size: pageSize };
   if (params.search?.trim()) query.search = params.search.trim();
   if (params.estado === '1' || params.estado === '0') query.estado = params.estado;
+  if (params.empresa != null) query.empresa = params.empresa;
   const { data } = await get(BASE, query);
   const results = Array.isArray(data) ? data : data?.results ?? [];
   const count = data?.count ?? results.length;
@@ -30,6 +31,16 @@ export const listarServicios = async (page = 1, pageSize = 5, params = {}) => {
     results: results.map(mapServicioFromApi),
     count,
   };
+};
+
+/**
+ * Lista servicios de una empresa para select. Una sola consulta.
+ * @param {number} empresaId
+ * @returns {Promise<Array>}
+ */
+export const listarServiciosPorEmpresa = async (empresaId) => {
+  const { results } = await listarServicios(1, 100, { empresa: Number(empresaId), estado: '1' });
+  return results;
 };
 
 /**

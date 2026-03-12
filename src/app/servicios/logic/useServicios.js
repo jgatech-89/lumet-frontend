@@ -91,9 +91,9 @@ export function useServicios(pagina, setPagina, busqueda, filtroEstado, active, 
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
     setEmpresaId('');
-    cargarEmpresasParaSelect?.();
+    if (!empresasParaSelect?.length) cargarEmpresasParaSelect?.();
     setModalNueva(true);
-  }, [cargarEmpresasParaSelect]);
+  }, [empresasParaSelect?.length, cargarEmpresasParaSelect]);
 
   const handleCerrarNueva = () => {
     setModalNueva(false);
@@ -124,9 +124,9 @@ export function useServicios(pagina, setPagina, busqueda, filtroEstado, active, 
     setNombre(servicio.servicio ?? servicio.nombre);
     setEmpresaId(servicio.empresa_id?.toString() ?? '');
     setEstadoServicio(servicio.estado_servicio ?? (servicio.estado === 'Activa' ? '1' : '0'));
-    cargarEmpresasParaSelect?.();
+    if (!empresasParaSelect?.length) cargarEmpresasParaSelect?.();
     setModalEditar(true);
-  }, [cargarEmpresasParaSelect]);
+  }, [empresasParaSelect?.length, cargarEmpresasParaSelect]);
 
   const handleCerrarEditar = () => {
     setModalEditar(false);

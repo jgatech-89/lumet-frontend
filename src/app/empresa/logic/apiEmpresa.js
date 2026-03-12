@@ -34,9 +34,22 @@ export const listarEmpresas = async (page = 1, pageSize = 5, params = {}) => {
  * @returns {Promise<Array>}
  */
 export const listarEmpresasParaSelect = async () => {
-  const { data } = await get(BASE, { page_size: 100 });
+  const { data } = await get(BASE, { page: 1, page_size: 100 });
   const results = Array.isArray(data) ? data : data?.results ?? [];
   return results.map(mapEmpresaFromApi);
+};
+
+/**
+ * Lista empresas activas para select (solo id y nombre). Usa endpoint ligero.
+ * @returns {Promise<Array<{ id: number, nombre: string }>>}
+ */
+export const listarEmpresasActivasParaSelect = async () => {
+  const { data } = await get(`${BASE}activas/`);
+  const raw = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+  return raw.map((item) => ({
+    id: item?.id ?? item?.pk,
+    nombre: String(item?.nombre ?? ''),
+  }));
 };
 
 /**
