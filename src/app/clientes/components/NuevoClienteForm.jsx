@@ -19,11 +19,15 @@ import {
   FormControlLabel,
   Checkbox,
   CircularProgress,
+  Grid,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 
 const selectFieldSx = {
-  width: { xs: '100%', sm: 280 },
-  minWidth: { xs: 0, sm: 280 },
+  width: '100%',
+  maxWidth: { xs: '100%', sm: 320 },
+  minWidth: 0,
   '& .MuiOutlinedInput-root': { borderRadius: 2 },
 };
 
@@ -47,7 +51,7 @@ function CampoDinamicoInput({ campo, value, onChange }) {
 
   if (tipo === 'select') {
     return (
-      <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 280 } }} required={requerido}>
+      <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { sm: 320 } }} required={requerido}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
         <Select
           labelId={`${id}-label`}
@@ -96,7 +100,7 @@ function CampoDinamicoInput({ campo, value, onChange }) {
         required={requerido}
         helperText={help_text}
         fullWidth
-        sx={{ maxWidth: { xs: '100%', sm: 400 } }}
+        sx={{ width: '100%', maxWidth: { sm: 400 } }}
       />
     );
   }
@@ -115,7 +119,7 @@ function CampoDinamicoInput({ campo, value, onChange }) {
       required={requerido}
       helperText={help_text}
       fullWidth
-      sx={{ maxWidth: { xs: '100%', sm: 280 } }}
+      sx={{ width: '100%', maxWidth: { sm: 320 } }}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
     />
   );
@@ -123,6 +127,8 @@ function CampoDinamicoInput({ campo, value, onChange }) {
 
 export function NuevoClienteForm() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const {
     paso,
     tipoCliente,
@@ -190,43 +196,72 @@ export function NuevoClienteForm() {
         [COMPACT_MEDIA]: { borderRadius: 2 },
       }}
     >
-      <Box sx={{ p: { xs: 3, sm: 4 }, pb: { xs: 4, sm: 5 }, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', [COMPACT_MEDIA]: { p: 2, pb: 3 } }}>
-        <Box sx={{ mb: 3, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1.5 } }}>
+      <Box
+        sx={{
+          p: { xs: 1.5, sm: 3, md: 4 },
+          pb: { xs: 2, sm: 4, md: 5 },
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isMobile ? 'auto' : 'hidden',
+          width: '100%',
+          minWidth: 0,
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <Box sx={{ mb: { xs: 2, sm: 3 }, flexShrink: 0 }}>
           <Typography
             variant="h4"
             component="h1"
             fontWeight={700}
             color="text.primary"
             gutterBottom
-            sx={{ letterSpacing: '-0.02em', [COMPACT_MEDIA]: { fontSize: '1.25rem' } }}
+            sx={{ letterSpacing: '-0.02em', fontSize: { xs: '1.2rem', sm: '1.5rem' } }}
           >
             Nuevo cliente
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}>
-            Completa la información en 4 pasos
-          </Typography>
+          {isMobile ? (
+            <Typography variant="body1" color="primary.main" fontWeight={600} sx={{ fontSize: '0.9375rem' }}>
+              Paso {paso} de 4 — {STEPS[paso - 1]}
+            </Typography>
+          ) : (
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.8125rem', sm: '1rem' } }}>
+              Completa la información en 4 pasos
+            </Typography>
+          )}
         </Box>
 
-        <Stepper activeStep={paso - 1} sx={{ mb: 3 }}>
-          {STEPS.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+        {!isMobile && (
+          <Stepper
+            activeStep={paso - 1}
+            sx={{
+              mb: { xs: 2, sm: 3 },
+              '& .MuiStepLabel-label': { fontSize: '0.875rem' },
+            }}
+          >
+            {STEPS.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        )}
 
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             borderRadius: 2,
             border: '1px solid rgba(0,0,0,0.06)',
             bgcolor: 'background.paper',
             flex: 1,
-            minHeight: 0,
+            minHeight: isMobile ? 'auto' : 0,
+            minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
+            overflow: isMobile ? 'visible' : 'hidden',
+            width: '100%',
           }}
         >
           {paso === 1 && (
@@ -240,7 +275,7 @@ export function NuevoClienteForm() {
                   <Typography variant="body2" color="text.secondary">Cargando tipo de cliente...</Typography>
                 </Box>
               ) : campoTipoCliente ? (
-                <Box sx={{ width: '100%', maxWidth: { xs: '100%', sm: 280 } }}>
+                <Box sx={{ width: '100%', maxWidth: { sm: 320 } }}>
                   <CampoDinamicoInput
                     campo={campoTipoCliente}
                     value={respuestas[campoTipoCliente.nombre]}
@@ -320,66 +355,88 @@ export function NuevoClienteForm() {
           )}
 
           {paso === 2 && (
-            <Stack spacing={3}>
-              <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+            <Box sx={{ width: '100%', minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={600} color="text.primary" sx={{ mb: 2 }}>
                 Datos base del cliente
               </Typography>
-              <TextField
-                size="small"
-                label="Nombre"
-                value={baseData.nombre}
-                onChange={(e) => setBaseData((p) => ({ ...p, nombre: e.target.value }))}
-                required
-                fullWidth
-                sx={{ maxWidth: 400 }}
-              />
-              <FormControl size="small" sx={{ width: { xs: '100%', sm: 280 }, minWidth: { xs: 0, sm: 280 } }}>
-                <InputLabel id="tipo-identificacion-label">Tipo de identificación</InputLabel>
-                <Select
-                  labelId="tipo-identificacion-label"
-                  value={baseData.tipo_identificacion}
-                  label="Tipo de identificación"
-                  onChange={(e) => setBaseData((p) => ({ ...p, tipo_identificacion: e.target.value }))}
-                >
-                  <MenuItem value="">Seleccionar</MenuItem>
-                  {tiposIdentificacion.map((o) => (
-                    <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                label="Número de identificación"
-                value={baseData.numero_identificacion}
-                onChange={(e) => setBaseData((p) => ({ ...p, numero_identificacion: e.target.value }))}
-                fullWidth
-                required
-                sx={{ maxWidth: 400 }}
-              />
-              <TextField
-                size="small"
-                label="Teléfono"
-                value={baseData.telefono}
-                onChange={(e) => setBaseData((p) => ({ ...p, telefono: e.target.value }))}
-                fullWidth
-                required
-                sx={{ maxWidth: 400 }}
-                error={!!baseData.telefono && !validarTelefono(baseData.telefono)}
-                helperText={!baseData.telefono?.trim() ? 'Obligatorio' : !validarTelefono(baseData.telefono) ? 'Mínimo 5 dígitos' : ''}
-              />
-              <TextField
-                size="small"
-                type="email"
-                label="Correo"
-                value={baseData.correo}
-                onChange={(e) => setBaseData((p) => ({ ...p, correo: e.target.value }))}
-                fullWidth
-                required
-                sx={{ maxWidth: 400 }}
-                error={!!baseData.correo && !validarCorreo(baseData.correo)}
-                helperText={!baseData.correo?.trim() ? 'Obligatorio' : !validarCorreo(baseData.correo) ? 'Correo no válido' : ''}
-              />
-            </Stack>
+              <Grid container spacing={2} sx={{ width: '100%' }}>
+                <Grid item xs={12} sm={6} md={6} sx={{ minWidth: 0 }}>
+                  <TextField
+                    size="small"
+                    label="Nombre"
+                    value={baseData.nombre}
+                    onChange={(e) => setBaseData((p) => ({ ...p, nombre: e.target.value }))}
+                    required
+                    fullWidth
+                    sx={{ width: '100%' }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={6} sx={{ minWidth: 0 }}>
+                  <TextField
+                    select
+                    size="small"
+                    label="Tipo de identificación"
+                    value={baseData.tipo_identificacion}
+                    onChange={(e) => setBaseData((p) => ({ ...p, tipo_identificacion: e.target.value }))}
+                    required
+                    fullWidth
+                    sx={{
+                      width: '100%',
+                      minWidth: { xs: 0, sm: 280 },
+                      boxSizing: 'border-box',
+                      '& .MuiInputBase-root': { width: '100%', minWidth: '100%' },
+                      '& .MuiSelect-select': { width: '100%', minWidth: '100%' },
+                    }}
+                    SelectProps={{
+                      MenuProps: { PaperProps: { sx: { maxHeight: 320 } } },
+                    }}
+                  >
+                    <MenuItem value="">Seleccionar</MenuItem>
+                    {tiposIdentificacion.map((o) => (
+                      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6} md={6} sx={{ minWidth: 0 }}>
+                  <TextField
+                    size="small"
+                    label="Número de identificación"
+                    value={baseData.numero_identificacion}
+                    onChange={(e) => setBaseData((p) => ({ ...p, numero_identificacion: e.target.value }))}
+                    fullWidth
+                    required
+                    sx={{ width: '100%' }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={6} sx={{ minWidth: 0 }}>
+                  <TextField
+                    size="small"
+                    label="Teléfono"
+                    value={baseData.telefono}
+                    onChange={(e) => setBaseData((p) => ({ ...p, telefono: e.target.value }))}
+                    fullWidth
+                    required
+                    error={!!baseData.telefono && !validarTelefono(baseData.telefono)}
+                    helperText={!baseData.telefono?.trim() ? 'Obligatorio' : !validarTelefono(baseData.telefono) ? 'Mínimo 5 dígitos' : ''}
+                    sx={{ width: '100%' }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={6} sx={{ minWidth: 0 }}>
+                  <TextField
+                    size="small"
+                    type="email"
+                    label="Correo"
+                    value={baseData.correo}
+                    onChange={(e) => setBaseData((p) => ({ ...p, correo: e.target.value }))}
+                    fullWidth
+                    required
+                    error={!!baseData.correo && !validarCorreo(baseData.correo)}
+                    helperText={!baseData.correo?.trim() ? 'Obligatorio' : !validarCorreo(baseData.correo) ? 'Correo no válido' : ''}
+                    sx={{ width: '100%' }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
           )}
 
           {paso === 3 && (
@@ -417,13 +474,13 @@ export function NuevoClienteForm() {
                         No hay campos configurados para este producto. Puede continuar al siguiente paso.
                       </Typography>
                     ) : (
-                      <Stack spacing={2} sx={{ maxWidth: 480 }}>
+                      <Stack spacing={2} sx={{ width: '100%', maxWidth: { sm: 520 } }}>
                         {camposFormularioSinTipoCliente.map((c) => (
-                          <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2}>
-                            <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
+                          <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 160 }, flexShrink: 0 }}>
                               {labelConAsterisco(c.nombre, c.requerido)}
                             </Typography>
-                            <Box sx={{ flex: 1, width: '100%' }}>
+                            <Box sx={{ flex: 1, width: '100%', minWidth: 0 }}>
                               <CampoDinamicoInput
                                 campo={c}
                                 value={respuestas[c.nombre]}
@@ -451,13 +508,13 @@ export function NuevoClienteForm() {
                     No hay campos configurados. Puede continuar al siguiente paso.
                   </Typography>
                 ) : (
-                  <Stack spacing={2} sx={{ maxWidth: 480 }}>
+                  <Stack spacing={2} sx={{ width: '100%', maxWidth: { sm: 520 } }}>
                     {camposFormularioSinTipoCliente.map((c) => (
-                      <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2}>
-                        <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
+                      <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 160 }, flexShrink: 0 }}>
                           {labelConAsterisco(c.nombre, c.requerido)}
                         </Typography>
-                        <Box sx={{ flex: 1, width: '100%' }}>
+                        <Box sx={{ flex: 1, width: '100%', minWidth: 0 }}>
                           <CampoDinamicoInput
                             campo={c}
                             value={respuestas[c.nombre]}
@@ -471,7 +528,7 @@ export function NuevoClienteForm() {
               )}
 
               {campoTitular && (
-                <Stack spacing={2} sx={{ maxWidth: 480 }}>
+                <Stack spacing={2} sx={{ width: '100%', maxWidth: { sm: 520 } }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -483,7 +540,7 @@ export function NuevoClienteForm() {
                     label={labelConAsterisco(campoTitular.nombre, campoTitular.requerido)}
                   />
                   {cambioTitularMarcado && camposTitularDependientes.map((c) => (
-                    <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2}>
+                    <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
                       <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
                         {labelConAsterisco(c.nombre, c.requerido)}
                       </Typography>
@@ -536,8 +593,8 @@ export function NuevoClienteForm() {
             </Stack>
           )}
 
-          <Stack direction="row" justifyContent="space-between" gap={2} sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-            <Stack direction="row" gap={2}>
+          <Stack direction="row" justifyContent="space-between" flexWrap="wrap" gap={2} sx={{ mt: { xs: 3, sm: 4 }, pt: { xs: 2, sm: 3 }, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <Stack direction="row" gap={2} flexWrap="wrap">
               <Button
                 variant="outlined"
                 onClick={paso === 1 ? () => navigate(-1) : handleAnterior}

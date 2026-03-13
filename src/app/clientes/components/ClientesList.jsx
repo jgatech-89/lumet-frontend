@@ -32,6 +32,8 @@ import {
   TableRow,
   Stack,
   Pagination,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 
 const DownloadExcelIcon = () => (
@@ -41,6 +43,8 @@ const DownloadExcelIcon = () => (
 );
 
 export function ClientesList() {
+  const theme = useTheme();
+  const isCompactView = useMediaQuery(theme.breakpoints.down('sm'));
   const { isDark } = useThemeMode();
   const { showSnackbar } = useSnackbar();
   const CHIP_ESTADOS = getChipEstadosVenta(isDark);
@@ -218,14 +222,14 @@ export function ClientesList() {
     >
       <Box
         sx={{
-          p: { xs: 3, sm: 4 },
-          pb: { xs: 4, sm: 5 },
+          p: { xs: 2, sm: 4 },
+          pb: { xs: 3, sm: 5 },
           flex: 1,
           minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          [COMPACT_MEDIA]: { p: 2, pb: 3 },
+          [COMPACT_MEDIA]: { p: 1.5, pb: 2, overflowY: 'auto', overflowX: 'hidden' },
         }}
       >
         <Stack
@@ -274,6 +278,8 @@ export function ClientesList() {
           direction={{ xs: 'column', sm: 'row' }}
           gap={2}
           alignItems={{ sm: 'center' }}
+          flexWrap="wrap"
+          useFlexGap
           sx={{ mb: 4, flexShrink: 0, [COMPACT_MEDIA]: { mb: 2.5, gap: 1 } }}
         >
           <TextField
@@ -288,9 +294,9 @@ export function ClientesList() {
                 </InputAdornment>
               ),
             }}
-            sx={{ width: '100%', minWidth: { xs: 0, sm: 280 } }}
+            sx={{ width: '100%', minWidth: { xs: 0, sm: 280 }, flex: { xs: 'none', sm: 1 }, maxWidth: { sm: 420 } }}
           />
-          <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: { xs: 0, sm: 220 } }}>
+          <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: { xs: 0, sm: 220 }, flexShrink: 0 }}>
             <InputLabel id="filtro-estado-label">Estado venta</InputLabel>
             <Select
               labelId="filtro-estado-label"
@@ -316,29 +322,35 @@ export function ClientesList() {
               textTransform: 'none',
               fontWeight: 600,
               py: 0.75,
+              px: 2.5,
               minHeight: 40,
-              fontSize: '0.8125rem',
+              minWidth: { xs: '100%', sm: 160 },
+              flexShrink: 0,
+              fontSize: '0.875rem',
             }}
           >
-            {exportando ? 'Exportando...' : 'Exportar'}
+            {exportando ? 'Exportando...' : 'Exportar Excel'}
           </Button>
         </Stack>
 
-        <TableContainer
-          sx={{
-            flexShrink: 0,
-            borderRadius: 2,
-            border: 1,
-            borderColor: 'divider',
-            [COMPACT_MEDIA]: { borderRadius: 1 },
-          }}
-        >
-          <Table size="small" sx={{ minWidth: 500 }}>
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <TableContainer
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+              borderRadius: 2,
+              border: 1,
+              borderColor: 'divider',
+              [COMPACT_MEDIA]: { borderRadius: 1 },
+            }}
+          >
+            <Table size="small" sx={{ minWidth: isCompactView ? 280 : 500 }} stickyHeader>
             <TableHead>
               <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Correo</TableCell>
+                {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Teléfono</TableCell>}
+                {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Correo</TableCell>}
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Estado venta</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Vendedor</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }} align="center">Opciones</TableCell>
@@ -363,6 +375,7 @@ export function ClientesList() {
                     onCambiarEstado={handleAbrirEstado}
                     onEliminar={handleAbrirEliminar}
                     onAgregarProducto={handleAbrirAgregarProducto}
+                    compact={isCompactView}
                   />
                 </TableRow>
               ))}
@@ -370,7 +383,7 @@ export function ClientesList() {
           </Table>
         </TableContainer>
 
-        <Box sx={{ flex: 1, minHeight: 0 }} />
+        <Box sx={{ flexShrink: 0 }} />
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
@@ -408,6 +421,7 @@ export function ClientesList() {
             }}
           />
         </Stack>
+        </Box>
       </Box>
 
       <ClienteEditModal
