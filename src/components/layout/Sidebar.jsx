@@ -1,5 +1,7 @@
 import { useLocation, Link } from 'react-router-dom';
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, SvgIcon } from '@mui/material';
+import { usePermissions } from '../../hooks/usePermissions';
+import { PERMISSIONS } from '../../utils/permissions';
 
 const PeopleIcon = () => (
   <SvgIcon fontSize="small">
@@ -15,11 +17,16 @@ const SettingsIcon = () => (
 
 const SIDEBAR_ITEMS = [
   { to: '/dashboard', label: 'Clientes', icon: PeopleIcon },
-  { to: '/configuracion', label: 'Configuración', icon: SettingsIcon },
+  { to: '/configuracion', label: 'Configuración', icon: SettingsIcon, permission: PERMISSIONS.ACCESS_SETTINGS },
 ];
 
 const Sidebar = ({ onNavigate }) => {
   const location = useLocation();
+  const { hasPermission } = usePermissions();
+
+  const visibleItems = SIDEBAR_ITEMS.filter(
+    (item) => !item.permission || hasPermission(item.permission)
+  );
 
   const handleClick = (e) => {
     if (onNavigate) onNavigate();
@@ -38,7 +45,7 @@ const Sidebar = ({ onNavigate }) => {
       }}
     >
       <List disablePadding sx={{ py: 1.5, px: 1 }}>
-        {SIDEBAR_ITEMS.map(({ to, label, icon: Icon }) => {
+        {visibleItems.map(({ to, label, icon: Icon }) => {
           const active = location.pathname === to || (to === '/dashboard' && location.pathname === '/');
           return (
             <ListItemButton
