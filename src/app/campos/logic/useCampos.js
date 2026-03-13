@@ -188,46 +188,31 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     };
   }, [active, pagina, filtroEstado, busqueda, filtroEmpresa, filtroServicio, filtroProducto, cargarCampos]);
 
-  /** Cargar opciones de producto:
-   *  - Si aplicarTodosEmpresas/servicios: cargar opciones globales (obtenerOpcionesCampoPorNombre sin params)
-   *  - Si empresa+servicio concretos: cargar desde obtenerCamposFormulario
+  /** Cargar opciones de producto: siempre mostrar el listado según servicio/empresa seleccionados.
+   *  - aplicarTodosEmpresas: opciones globales (sin params)
+   *  - aplicarTodosServicios + empresaId: productos de esa empresa (todos los contratistas)
+   *  - empresaId + servicioId: productos de ese servicio concreto
    */
   useEffect(() => {
     if (!active && !modalNueva && !modalEditar) return;
     let cancelled = false;
-    if (aplicarTodosEmpresas || !empresaId || (!servicioId && !aplicarTodosServicios)) {
-      api.obtenerOpcionesCampoPorNombre('producto', {})
-        .then((opciones) => {
-          if (cancelled) return;
-          const list = Array.isArray(opciones) ? opciones : [];
-          setOpcionesProducto(list.map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })).filter((o) => o.value || o.label));
-          if (list.length === 0) setProductoId('');
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setOpcionesProducto([]);
-            setProductoId('');
-          }
-        });
-    } else {
-      const servicioParam = aplicarTodosServicios ? null : (servicioId || null);
-        obtenerCamposFormulario(empresaId, servicioParam)
-        .then((campos) => {
-          if (cancelled) return;
-          const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_').trim();
-          const esCampoProducto = (c) => ['producto', 'productos', 'tipo_producto'].includes(norm(c.nombre));
-          const campoProducto = (campos || []).find(esCampoProducto);
-          const opciones = (campoProducto?.opciones || []).map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })).filter((o) => o.value || o.label);
-          setOpcionesProducto(opciones);
-          if (opciones.length === 0) setProductoId('');
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setOpcionesProducto([]);
-            setProductoId('');
-          }
-        });
-    }
+    const params = {};
+    if (empresaId && !aplicarTodosEmpresas) params.empresaId = Number(empresaId);
+    if (servicioId && !aplicarTodosServicios) params.servicioId = Number(servicioId);
+    api.obtenerOpcionesCampoPorNombre('producto', params)
+      .then((opciones) => {
+        if (cancelled) return;
+        const list = Array.isArray(opciones) ? opciones : [];
+        const mapped = list.map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })).filter((o) => o.value || o.label);
+        setOpcionesProducto(mapped);
+        if (mapped.length === 0) setProductoId('');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOpcionesProducto([]);
+          setProductoId('');
+        }
+      });
     return () => { cancelled = true; };
   }, [active, modalNueva, modalEditar, empresaId, servicioId, aplicarTodosEmpresas, aplicarTodosServicios]);
 

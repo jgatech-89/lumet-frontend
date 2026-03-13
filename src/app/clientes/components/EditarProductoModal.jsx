@@ -29,6 +29,10 @@ import { useChoices } from '../../../context/ChoicesContext';
 
 const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
 const NOMBRES_VENDEDOR = ['vendedor', 'Vendedor'];
+const NOMBRES_TIPO_ID_CAMPO = ['tipo de identificación', 'tipo identificación', 'tipo ident', 'tipo_id'];
+const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
+  (x) => (n || '').toLowerCase().replace(/\s+/g, '_').includes((x || '').toLowerCase().replace(/\s+/g, '_'))
+);
 const CAMBIO_TITULAR_NAMES = ['cambio de titular', 'Cambio de titular', 'cambio titular', 'Cambio titular'];
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esTipoCliente = (c) => NOMBRES_TIPO_CLIENTE.some((n) => norm(c?.nombre) === norm(n));
@@ -43,12 +47,14 @@ function labelBase(nombre) {
   return (nombre || '').replace(/\s*\*+\s*$/g, '').trim();
 }
 
-function CampoDinamicoInput({ campo, value, onChange }) {
+function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, opciones = [] } = campo;
   const id = `editar-prod-${nombre}`;
   const label = labelBase(nombre);
+  const usarChoicesTipoId = opcionesTipoIdentificacion?.length && esCampoTipoIdentificacion(nombre);
+  const opcionesSelect = usarChoicesTipoId ? opcionesTipoIdentificacion : opciones;
 
-  if (tipo === 'select' || opciones?.length > 0) {
+  if (tipo === 'select' || opcionesSelect?.length > 0) {
     return (
       <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: 280 }}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
@@ -60,8 +66,8 @@ function CampoDinamicoInput({ campo, value, onChange }) {
           onChange={(e) => onChange(e.target.value)}
         >
           <MenuItem value="">Seleccionar</MenuItem>
-          {opciones.map((o) => (
-            <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+          {(opcionesSelect || []).map((o) => (
+            <MenuItem key={String(o.value ?? o.label)} value={o.value ?? o.label ?? ''}>{o.label ?? o.value ?? ''}</MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -141,8 +147,7 @@ export function EditarProductoModal({
   const [empresas, setEmpresas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [opcionesProducto, setOpcionesProducto] = useState([]);
-
-  const tipoClienteOptions = getOptions('tipo_cliente') || [];
+  const [tipoClienteOptions, setTipoClienteOptions] = useState([]);
 
   useEffect(() => {
     if (!open || !cliente || !producto) return;
@@ -191,6 +196,22 @@ export function EditarProductoModal({
       .then((list) => setOpcionesProducto(Array.isArray(list) ? list : []))
       .catch(() => setOpcionesProducto([]));
   }, [open, empresaId, servicioId]);
+
+  /** Tipo de cliente: opciones desde config campos; fallback a choices */
+  useEffect(() => {
+    const fallback = getOptions('tipo_cliente') || [];
+    if (!open || !empresaId || !servicioId) {
+      setTipoClienteOptions(fallback);
+      return;
+    }
+    const params = { empresaId: Number(empresaId), servicioId: Number(servicioId) };
+    apiCampos.obtenerOpcionesCampoPorNombre('tipo_cliente', params)
+      .then((list) => {
+        const opts = Array.isArray(list) ? list.map((o) => ({ value: o.value ?? o.label ?? '', label: o.label ?? o.value ?? '' })).filter((o) => o.value || o.label) : [];
+        setTipoClienteOptions(opts.length > 0 ? opts : fallback);
+      })
+      .catch(() => setTipoClienteOptions(fallback));
+  }, [open, empresaId, servicioId, getOptions]);
 
   useEffect(() => {
     if (!open || !empresaId || !servicioId) {
@@ -386,6 +407,7 @@ export function EditarProductoModal({
                     campo={c}
                     value={respuestas[c.nombre]}
                     onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                    opcionesTipoIdentificacion={getOptions('tipo_identificacion') || []}
                   />
                 ))}
                 {campoTitular && (
@@ -406,6 +428,7 @@ export function EditarProductoModal({
                         campo={c}
                         value={respuestas[c.nombre]}
                         onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                        opcionesTipoIdentificacion={getOptions('tipo_identificacion') || []}
                       />
                     ))}
                   </>

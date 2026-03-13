@@ -324,55 +324,64 @@ export function CampoModals({
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, mb: 1.5, display: 'block' }}>
             Úsalo cuando el campo deba mostrarse para todos los productos de este servicio.
           </Typography>
-          {!aplicarTodosProductos && (
-            <Box sx={{ position: 'relative', minWidth: 0 }}>
-              <FormControl size="small" fullWidth sx={formControlSx}>
-                <InputLabel id={`${prefix}campo-producto-label`} shrink>Producto al que pertenece</InputLabel>
-                <Select
-                  labelId={`${prefix}campo-producto-label`}
-                  value={productoId ?? ''}
-                  label="Producto al que pertenece"
-                  onChange={(e) => setProductoId?.(e.target.value)}
-                  displayEmpty
-                  renderValue={(v) => {
-                    if (!v) return 'Seleccionar producto';
-                    const opt = (opcionesProducto ?? []).find((o) => o.value === v);
-                    return opt?.label ?? v;
-                  }}
-                  MenuProps={selectMenuProps}
-                  sx={{ width: '100%' }}
+          <Box sx={{ position: 'relative', minWidth: 0 }}>
+            <FormControl size="small" fullWidth sx={formControlSx}>
+              <InputLabel id={`${prefix}campo-producto-label`} shrink>Producto al que pertenece</InputLabel>
+              <Select
+                labelId={`${prefix}campo-producto-label`}
+                value={aplicarTodosProductos ? '__todos__' : (productoId ?? '')}
+                label="Producto al que pertenece"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '__todos__') {
+                    setAplicarTodosProductos?.(true);
+                    setProductoId?.('');
+                  } else {
+                    setAplicarTodosProductos?.(false);
+                    setProductoId?.(v);
+                  }
+                }}
+                displayEmpty
+                renderValue={(v) => {
+                  if (aplicarTodosProductos) return 'Todos los productos';
+                  if (!v) return 'Seleccionar producto';
+                  const opt = (opcionesProducto ?? []).find((o) => o.value === v);
+                  return opt?.label ?? v;
+                }}
+                MenuProps={selectMenuProps}
+                sx={{ width: '100%' }}
                 >
                   <MenuItem value="">Seleccionar producto</MenuItem>
+                  <MenuItem value="__todos__">Todos los productos</MenuItem>
                   {(opcionesProducto ?? []).map((o) => (
-                    <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              {productoId && (
-                <Box
-                  aria-label="Limpiar producto"
-                  onClick={() => setProductoId?.('')}
-                  sx={{
-                    position: 'absolute',
-                    right: 34,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 1,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'text.disabled',
-                    '&:hover': {
-                      color: 'text.primary',
-                    },
-                  }}
-                >
-                  <CloseIcon fontSize="small" />
-                </Box>
-              )}
-            </Box>
-          )}
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {productoId && !aplicarTodosProductos && (
+              <Box
+                aria-label="Limpiar producto"
+                onClick={() => setProductoId?.('')}
+                sx={{
+                  position: 'absolute',
+                  right: 34,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 1,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'text.disabled',
+                  '&:hover': {
+                    color: 'text.primary',
+                  },
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </Box>
+            )}
+          </Box>
         </Box>
         )}
       </Box>
