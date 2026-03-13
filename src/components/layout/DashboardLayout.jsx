@@ -9,7 +9,7 @@ const SIDEBAR_WIDTH = 240;
 
 const DashboardLayout = ({ children }) => {
   const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleCloseSidebar = () => setSidebarOpen(false);
@@ -38,7 +38,7 @@ const DashboardLayout = ({ children }) => {
             onClose={handleCloseSidebar}
             ModalProps={{ keepMounted: true }}
             sx={{
-              display: { xs: 'block', md: 'none' },
+              display: { xs: 'block', sm: 'none' },
               '& .MuiDrawer-paper': {
                 width: SIDEBAR_WIDTH,
                 boxSizing: 'border-box',
@@ -57,7 +57,7 @@ const DashboardLayout = ({ children }) => {
             flex: 1,
             minWidth: 0,
             minHeight: 0,
-            p: { xs: 4, sm: 5 },
+            p: { xs: 2, sm: 4, md: 5 },
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',

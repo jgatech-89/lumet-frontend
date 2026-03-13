@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { LoadingButton } from '../../../components/loading';
+import { useChoices } from '../../../context/ChoicesContext';
 import { useAgregarProducto } from '../logic/useAgregarProducto';
 
 const selectFieldSx = {
@@ -40,12 +41,17 @@ function labelConAsterisco(nombre, requerido) {
   return requerido ? `${base} *` : base;
 }
 
-function CampoDinamicoInput({ campo, value, onChange }) {
+const ES_TIPO_IDENTIFICACION = (n) => /tipo\s*(de)?\s*identificaci[oó]n/i.test(n || '');
+
+function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, help_text, requerido, opciones = [] } = campo;
   const id = `agregar-campo-${nombre}`;
   const label = labelBase(nombre);
+  const opcionesSelect = (opcionesTipoIdentificacion?.length && ES_TIPO_IDENTIFICACION(nombre))
+    ? opcionesTipoIdentificacion
+    : opciones;
 
-  if (tipo === 'select') {
+  if (tipo === 'select' || (opcionesSelect?.length && ES_TIPO_IDENTIFICACION(nombre))) {
     return (
       <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: 280 }} required={requerido}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
@@ -57,7 +63,7 @@ function CampoDinamicoInput({ campo, value, onChange }) {
           onChange={(e) => onChange(e.target.value)}
         >
           <MenuItem value="">Seleccionar</MenuItem>
-          {opciones.map((o) => (
+          {opcionesSelect.map((o) => (
             <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
           ))}
         </Select>
@@ -122,6 +128,8 @@ function CampoDinamicoInput({ campo, value, onChange }) {
 }
 
 export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
+  const { getOptions } = useChoices();
+  const tiposIdentificacion = getOptions('tipo_identificacion') || [];
   const {
     paso,
     tipoCliente,
@@ -213,6 +221,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                   campo={campoTipoCliente}
                   value={respuestas[campoTipoCliente.nombre]}
                   onChange={(v) => actualizarRespuesta(campoTipoCliente.nombre, v)}
+                  opcionesTipoIdentificacion={tiposIdentificacion}
                 />
               </Box>
             ) : (
@@ -331,6 +340,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                               campo={c}
                               value={respuestas[c.nombre]}
                               onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                              opcionesTipoIdentificacion={tiposIdentificacion}
                             />
                           </Box>
                         </Stack>
@@ -365,6 +375,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                           campo={c}
                           value={respuestas[c.nombre]}
                           onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                          opcionesTipoIdentificacion={tiposIdentificacion}
                         />
                       </Box>
                     </Stack>
@@ -394,6 +405,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                         campo={c}
                         value={respuestas[c.nombre]}
                         onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                        opcionesTipoIdentificacion={tiposIdentificacion}
                       />
                     </Box>
                   </Stack>

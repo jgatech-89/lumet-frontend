@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 import { LoadingButton } from '../../../components/loading';
+import { useChoices } from '../../../context/ChoicesContext';
 import { useNuevoCliente } from '../logic/useNuevoCliente';
 import {
   Box,
@@ -44,12 +45,19 @@ function labelConAsterisco(nombre, requerido) {
   return requerido ? `${base} *` : base;
 }
 
-function CampoDinamicoInput({ campo, value, onChange }) {
+const NOMBRES_TIPO_ID_CAMPO = ['tipo de identificación', 'tipo identificación', 'tipo ident', 'tipo_id'];
+const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
+  (x) => (n || '').toLowerCase().replace(/\s+/g, '_').includes((x || '').toLowerCase().replace(/\s+/g, '_'))
+);
+
+function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, help_text, requerido, opciones = [] } = campo;
   const id = `campo-${nombre}`;
   const label = labelBase(nombre);
+  const usarChoicesTipoId = opcionesTipoIdentificacion?.length && esCampoTipoIdentificacion(nombre);
+  const opcionesSelect = usarChoicesTipoId ? opcionesTipoIdentificacion : opciones;
 
-  if (tipo === 'select') {
+  if (tipo === 'select' || usarChoicesTipoId) {
     return (
       <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { sm: 320 } }} required={requerido}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
@@ -61,7 +69,7 @@ function CampoDinamicoInput({ campo, value, onChange }) {
           onChange={(e) => onChange(e.target.value)}
         >
           <MenuItem value="">Seleccionar</MenuItem>
-          {opciones.map((o) => (
+          {(opcionesSelect || opciones).map((o) => (
             <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
           ))}
         </Select>
@@ -171,9 +179,11 @@ export function NuevoClienteForm() {
     camposTitularDependientes,
   } = useNuevoCliente();
 
-  const tiposIdentificacion = [
+  const { getOptions } = useChoices();
+  const tiposIdentificacion = getOptions('tipo_identificacion') || [
     { value: 'CC', label: 'Cédula de ciudadanía' },
     { value: 'CE', label: 'Cédula de extranjería' },
+    { value: 'DNI', label: 'DNI' },
     { value: 'NIT', label: 'NIT' },
     { value: 'PAS', label: 'Pasaporte' },
     { value: 'PPT', label: 'Permiso provisional de trabajo' },

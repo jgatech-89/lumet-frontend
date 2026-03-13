@@ -6,7 +6,7 @@ import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { useClientes } from '../logic/useClientes';
 import { ClienteRow } from './ClienteRow';
 import { ClienteEditModal } from './ClienteEditModal';
-import { CambiarEstadoModal } from './CambiarEstadoModal';
+import { ClienteDetalleModal } from './ClienteDetalleModal';
 import { AgregarProductoModal } from './AgregarProductoModal';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
 import { SearchIcon } from '../../../utils/icons';
@@ -66,11 +66,9 @@ export function ClientesList() {
 
   const [modalEditar, setModalEditar] = useState(false);
   const [clienteEditar, setClienteEditar] = useState(null);
-  const [modalEstado, setModalEstado] = useState(false);
-  const [clienteEstado, setClienteEstado] = useState(null);
-  const [nuevoEstado, setNuevoEstado] = useState('');
+  const [modalVerDetalle, setModalVerDetalle] = useState(false);
+  const [clienteVerDetalle, setClienteVerDetalle] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const [guardandoEstado, setGuardandoEstado] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
@@ -108,31 +106,31 @@ export function ClientesList() {
     }
   }, [clienteEditar?.id, showSnackbar, recargar]);
 
-  const handleAbrirEstado = useCallback((row) => {
-    setClienteEstado(row);
-    setNuevoEstado((row.estado_venta || '').trim() || 'pendiente');
-    setModalEstado(true);
-  }, []);
-
-  const handleCerrarEstado = useCallback(() => {
-    setModalEstado(false);
-    setClienteEstado(null);
-  }, []);
-
-  const handleGuardarEstado = useCallback(async () => {
-    if (!clienteEstado?.id) return;
-    setGuardandoEstado(true);
+  const handleAbrirVer = useCallback(async (row) => {
     try {
-      await apiCliente.cambiarEstadoCliente(clienteEstado.id, nuevoEstado);
+      const cliente = await apiCliente.obtenerCliente(row.id);
+      setClienteVerDetalle(cliente);
+      setModalVerDetalle(true);
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar detalle'), 'error');
+    }
+  }, [showSnackbar]);
+
+  const handleCerrarVer = useCallback(() => {
+    setModalVerDetalle(false);
+    setClienteVerDetalle(null);
+  }, []);
+
+  const handleCambiarEstado = useCallback(async (clienteId, nuevoEstado) => {
+    try {
+      await apiCliente.cambiarEstadoCliente(clienteId, nuevoEstado);
       showSnackbar('Estado actualizado correctamente.', 'success');
-      handleCerrarEstado();
       recargar();
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al actualizar estado'), 'error');
-    } finally {
-      setGuardandoEstado(false);
+      throw e;
     }
-  }, [clienteEstado?.id, nuevoEstado, showSnackbar, recargar]);
+  }, [showSnackbar, recargar]);
 
   const handleAbrirEliminar = useCallback((row) => {
     setClienteAEliminar(row);
@@ -283,7 +281,7 @@ export function ClientesList() {
           sx={{ mb: 4, flexShrink: 0, [COMPACT_MEDIA]: { mb: 2.5, gap: 1 } }}
         >
           <TextField
-            placeholder="Buscar cliente..."
+            placeholder="Buscar por nombre o nº identificación..."
             size="small"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -336,22 +334,21 @@ export function ClientesList() {
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <TableContainer
             sx={{
-              flex: 1,
-              minHeight: 0,
+              maxHeight: 'calc(10 * 48px + 52px)',
               overflow: 'auto',
               borderRadius: 2,
               border: 1,
               borderColor: 'divider',
-              [COMPACT_MEDIA]: { borderRadius: 1 },
+              [COMPACT_MEDIA]: { borderRadius: 1, maxHeight: 'calc(10 * 44px + 48px)' },
             }}
           >
             <Table size="small" sx={{ minWidth: isCompactView ? 280 : 500 }} stickyHeader>
             <TableHead>
               <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Nombre</TableCell>
+                {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Nº identificación</TableCell>}
                 {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Teléfono</TableCell>}
                 {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Correo</TableCell>}
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Estado venta</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Vendedor</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }} align="center">Opciones</TableCell>
               </TableRow>
@@ -372,9 +369,9 @@ export function ClientesList() {
                     opcionesEstadoVenta={opcionesEstadoVenta}
                     onEdit={handleAbrirEditar}
                     onDescargar={handleDescargarPdf}
-                    onCambiarEstado={handleAbrirEstado}
                     onEliminar={handleAbrirEliminar}
                     onAgregarProducto={handleAbrirAgregarProducto}
+                    onVer={handleAbrirVer}
                     compact={isCompactView}
                   />
                 </TableRow>
@@ -432,16 +429,13 @@ export function ClientesList() {
         guardando={guardando}
       />
 
-      <CambiarEstadoModal
-        open={modalEstado}
-        cliente={clienteEstado}
+      <ClienteDetalleModal
+        open={modalVerDetalle}
+        cliente={clienteVerDetalle}
+        onClose={handleCerrarVer}
         opcionesEstadoVenta={opcionesEstadoVenta}
-        estadoActual={clienteEstado?.estado_venta}
-        nuevoEstado={nuevoEstado}
-        setNuevoEstado={setNuevoEstado}
-        onClose={handleCerrarEstado}
-        onGuardar={handleGuardarEstado}
-        guardando={guardandoEstado}
+        onCambiarEstado={handleCambiarEstado}
+        onExito={recargar}
       />
 
       <ConfirmDeleteDialog

@@ -20,8 +20,16 @@ import {
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
+import { useChoices } from '../../../context/ChoicesContext';
 import * as apiCliente from '../logic/apiCliente';
 import * as apiCampos from '../../campos/logic/apiCampos';
+
+const CAMBIO_TITULAR_NAMES = ['cambio de titular', 'Cambio de titular', 'cambio titular', 'Cambio titular'];
+const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
+const esVisibleSiCambioTitular = (c) => {
+  const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
+  return vs.includes('cambio') && vs.includes('titular');
+};
 
 const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto'];
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
@@ -36,12 +44,17 @@ function labelConAsterisco(nombre, requerido) {
   return requerido ? `${base} *` : base;
 }
 
-function CampoDinamicoInput({ campo, value, onChange }) {
+const ES_TIPO_IDENTIFICACION = (n) => /tipo\s*(de)?\s*identificaci[oó]n/i.test(n || '');
+
+function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, help_text, requerido, opciones = [] } = campo;
   const id = `edit-campo-${nombre}`;
   const label = labelBase(nombre);
+  const opcionesSelect = (opcionesTipoIdentificacion?.length && ES_TIPO_IDENTIFICACION(nombre))
+    ? opcionesTipoIdentificacion
+    : opciones;
 
-  if (tipo === 'select') {
+  if (tipo === 'select' || (opcionesSelect?.length && ES_TIPO_IDENTIFICACION(nombre))) {
     return (
       <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: { xs: '100%', sm: 280 } }} required={requerido}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
@@ -53,7 +66,7 @@ function CampoDinamicoInput({ campo, value, onChange }) {
           onChange={(e) => onChange(e.target.value)}
         >
           <MenuItem value="">Seleccionar</MenuItem>
-          {opciones.map((o) => (
+          {opcionesSelect.map((o) => (
             <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
           ))}
         </Select>
@@ -135,6 +148,8 @@ export function ClienteEditModal({
   const [cargandoCampos, setCargandoCampos] = useState(false);
   const [producto, setProducto] = useState('');
   const [opcionesProducto, setOpcionesProducto] = useState([]);
+  const { getOptions } = useChoices();
+  const tiposIdentificacion = getOptions('tipo_identificacion') || [];
 
   useEffect(() => {
     if (!cliente || !open) return;
@@ -148,7 +163,6 @@ export function ClienteEditModal({
     (cliente.respuestas || []).forEach((item) => {
       r[item.nombre_campo] = item.respuesta_campo ?? '';
     });
-    if (cliente.estado_venta) r.estado_venta = cliente.estado_venta;
     setRespuestas(r);
   }, [cliente, open]);
 
@@ -190,7 +204,14 @@ export function ClienteEditModal({
     return () => { cancelled = true; };
   }, [cliente?.servicio_id, cliente?.servicio_empresa_id, open, producto]);
 
-  const camposFormularioSinProducto = camposFormulario.filter((c) => !esCampoProducto(c));
+  const respuestasNombres = new Set((cliente?.respuestas || []).map((r) => r.nombre_campo).filter(Boolean));
+  const campoTitular = [...camposFormulario, ...camposGlobales].find(esCambioTitular);
+  const camposTitularDependientes = [...camposFormulario, ...camposGlobales]
+    .filter((c) => !esCampoProducto(c) && !esCambioTitular(c) && esVisibleSiCambioTitular(c));
+  const cambioTitularMarcado = campoTitular ? (respuestas[campoTitular.nombre] === '1' || respuestas[campoTitular.nombre] === 'si' || respuestas[campoTitular.nombre] === true) : false;
+  const camposEnviados = [...camposFormulario, ...camposGlobales]
+    .filter((c) => !esCampoProducto(c) && respuestasNombres.has(c.nombre));
+  const camposParaEditar = camposEnviados.filter((c) => !esCambioTitular(c) && !esVisibleSiCambioTitular(c));
 
   const actualizarRespuesta = useCallback((nombreCampo, valor) => {
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
@@ -199,13 +220,10 @@ export function ClienteEditModal({
   const handleSubmit = () => {
     if (!nombre?.trim()) return;
     const respuestasList = [];
-    camposFormularioSinProducto.forEach((c) => {
-      const v = respuestas[c.nombre];
-      if (v != null && String(v).trim() !== '') {
-        respuestasList.push({ nombre_campo: c.nombre, respuesta_campo: String(v).trim() });
-      }
-    });
-    camposGlobales.filter((c) => !esCampoProducto(c) && !camposFormulario.some((f) => f.nombre === c.nombre)).forEach((c) => {
+    const todosCamposEditar = [...camposParaEditar];
+    if (campoTitular) todosCamposEditar.push(campoTitular);
+    if (cambioTitularMarcado) todosCamposEditar.push(...camposTitularDependientes);
+    todosCamposEditar.forEach((c) => {
       const v = respuestas[c.nombre];
       if (v != null && String(v).trim() !== '') {
         respuestasList.push({ nombre_campo: c.nombre, respuesta_campo: String(v).trim() });
@@ -259,11 +277,9 @@ export function ClienteEditModal({
                 onChange={(e) => setTipoIdentificacion(e.target.value)}
               >
                 <MenuItem value="">-</MenuItem>
-                <MenuItem value="CC">Cédula</MenuItem>
-                <MenuItem value="CE">Cédula extranjería</MenuItem>
-                <MenuItem value="NIT">NIT</MenuItem>
-                <MenuItem value="PAS">Pasaporte</MenuItem>
-                <MenuItem value="OTRO">Otro</MenuItem>
+                {tiposIdentificacion.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
             <TextField
@@ -292,10 +308,10 @@ export function ClienteEditModal({
             />
           </Stack>
 
-          {(camposFormulario.length > 0 || camposGlobales.length > 0 || opcionesProducto?.length > 0) && (
+          {(camposParaEditar.length > 0 || campoTitular || opcionesProducto?.length > 0) && (
             <>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Campos del formulario</Typography>
-              {opcionesProducto?.length > 0 && (
+              <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Campos del formulario (enviados)</Typography>
+              {opcionesProducto?.length > 0 && respuestasNombres.size > 0 && (
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                   <InputLabel>Producto</InputLabel>
                   <Select
@@ -309,7 +325,7 @@ export function ClienteEditModal({
                     ))}
                   </Select>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                    Seleccione el producto para ver solo los campos que aplican.
+                    Solo se muestran los campos que fueron enviados al crear el registro.
                   </Typography>
                 </FormControl>
               )}
@@ -319,14 +335,38 @@ export function ClienteEditModal({
                 </Box>
               ) : (
                 <Stack spacing={2}>
-                  {camposFormularioSinProducto.map((c) => (
+                  {camposParaEditar.map((c) => (
                     <CampoDinamicoInput
                       key={c.nombre}
                       campo={c}
                       value={respuestas[c.nombre]}
                       onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                      opcionesTipoIdentificacion={tiposIdentificacion}
                     />
                   ))}
+                  {campoTitular && (
+                    <>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={!!cambioTitularMarcado}
+                            onChange={(e) => actualizarRespuesta(campoTitular.nombre, e.target.checked ? '1' : '0')}
+                            size="small"
+                          />
+                        }
+                        label={campoTitular.nombre}
+                      />
+                      {cambioTitularMarcado && camposTitularDependientes.map((c) => (
+                        <CampoDinamicoInput
+                          key={c.nombre}
+                          campo={c}
+                          value={respuestas[c.nombre]}
+                          onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                          opcionesTipoIdentificacion={tiposIdentificacion}
+                        />
+                      ))}
+                    </>
+                  )}
                 </Stack>
               )}
             </>

@@ -84,12 +84,15 @@ export const actualizarCliente = async (id, payload) => {
 };
 
 /**
- * Cambia el estado de venta del cliente.
- * @param {number|string} id
+ * Cambia el estado de venta del cliente (o de un producto específico).
+ * @param {number|string} id - ID del cliente
  * @param {string} estado
+ * @param {number|null} [clienteEmpresaId] - ID del ClienteEmpresa (producto). Si se envía, el estado se aplica a ese producto.
  */
-export const cambiarEstadoCliente = async (id, estado) => {
-  const { data } = await post(`${BASE}${id}/cambiar-estado/`, { estado: estado || 'pendiente' });
+export const cambiarEstadoCliente = async (id, estado, clienteEmpresaId = null) => {
+  const payload = { estado: estado || 'pendiente' };
+  if (clienteEmpresaId != null) payload.cliente_empresa_id = clienteEmpresaId;
+  const { data } = await post(`${BASE}${id}/cambiar-estado/`, payload);
   return data;
 };
 
