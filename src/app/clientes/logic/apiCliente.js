@@ -158,3 +158,13 @@ export const agregarProductoCliente = async (clienteId, payload) => {
   const { data } = await post(`${BASE}${clienteId}/agregar-producto/`, payload);
   return data;
 };
+
+/**
+ * Actualiza un producto (ClienteEmpresa) existente. No modifica estado de venta.
+ * @param {number|string} clienteId
+ * @param {Object} payload - cliente_empresa_id, tipo_cliente?, servicio_id?, producto?, respuestas?
+ */
+export const actualizarProductoCliente = async (clienteId, payload) => {
+  const { data } = await post(`${BASE}${clienteId}/actualizar-producto/`, payload);
+  return data;
+};

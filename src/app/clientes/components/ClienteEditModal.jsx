@@ -136,6 +136,8 @@ export function ClienteEditModal({
   onClose,
   onGuardar,
   guardando,
+  productoPreSeleccionado,
+  soloDatosBase = false,
 }) {
   const [nombre, setNombre] = useState('');
   const [tipoIdentificacion, setTipoIdentificacion] = useState('');
@@ -158,13 +160,13 @@ export function ClienteEditModal({
     setNumeroIdentificacion(cliente.numero_identificacion || '');
     setTelefono(cliente.telefono || '');
     setCorreo(cliente.correo || '');
-    setProducto(cliente.producto || '');
+    setProducto(productoPreSeleccionado ?? cliente.producto ?? '');
     const r = {};
     (cliente.respuestas || []).forEach((item) => {
       r[item.nombre_campo] = item.respuesta_campo ?? '';
     });
     setRespuestas(r);
-  }, [cliente, open]);
+  }, [cliente, open, productoPreSeleccionado]);
 
   useEffect(() => {
     if (!cliente?.servicio_id || !open) return;
@@ -219,16 +221,19 @@ export function ClienteEditModal({
 
   const handleSubmit = () => {
     if (!nombre?.trim()) return;
-    const respuestasList = [];
-    const todosCamposEditar = [...camposParaEditar];
-    if (campoTitular) todosCamposEditar.push(campoTitular);
-    if (cambioTitularMarcado) todosCamposEditar.push(...camposTitularDependientes);
-    todosCamposEditar.forEach((c) => {
-      const v = respuestas[c.nombre];
-      if (v != null && String(v).trim() !== '') {
-        respuestasList.push({ nombre_campo: c.nombre, respuesta_campo: String(v).trim() });
-      }
-    });
+    const respuestasList = soloDatosBase ? [] : (() => {
+      const list = [];
+      const todosCamposEditar = [...camposParaEditar];
+      if (campoTitular) todosCamposEditar.push(campoTitular);
+      if (cambioTitularMarcado) todosCamposEditar.push(...camposTitularDependientes);
+      todosCamposEditar.forEach((c) => {
+        const v = respuestas[c.nombre];
+        if (v != null && String(v).trim() !== '') {
+          list.push({ nombre_campo: c.nombre, respuesta_campo: String(v).trim() });
+        }
+      });
+      return list;
+    })();
 
     onGuardar({
       nombre: nombre.trim(),
@@ -247,7 +252,7 @@ export function ClienteEditModal({
   return (
     <Dialog open={open} onClose={onClose} PaperProps={{ sx: { ...modalPaperSx, maxWidth: 560 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-        <Typography variant="h6" fontWeight={600}>Editar cliente</Typography>
+        <Typography variant="h6" fontWeight={600}>{soloDatosBase ? 'Editar datos del cliente' : 'Editar cliente'}</Typography>
         <IconButton size="small" onClick={onClose} aria-label="Cerrar">
           <CloseIcon />
         </IconButton>
@@ -308,7 +313,7 @@ export function ClienteEditModal({
             />
           </Stack>
 
-          {(camposParaEditar.length > 0 || campoTitular || opcionesProducto?.length > 0) && (
+          {!soloDatosBase && (camposParaEditar.length > 0 || campoTitular || opcionesProducto?.length > 0) && (
             <>
               <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Campos del formulario (enviados)</Typography>
               {opcionesProducto?.length > 0 && respuestasNombres.size > 0 && (

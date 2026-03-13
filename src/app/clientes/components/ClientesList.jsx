@@ -5,9 +5,7 @@ import { useThemeMode } from '../../../context/ThemeContext';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { useClientes } from '../logic/useClientes';
 import { ClienteRow } from './ClienteRow';
-import { ClienteEditModal } from './ClienteEditModal';
 import { ClienteDetalleModal } from './ClienteDetalleModal';
-import { AgregarProductoModal } from './AgregarProductoModal';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
 import { SearchIcon } from '../../../utils/icons';
 import { useSnackbar } from '../../../context/SnackbarContext';
@@ -64,47 +62,12 @@ export function ClientesList() {
     recargar,
   } = useClientes();
 
-  const [modalEditar, setModalEditar] = useState(false);
-  const [clienteEditar, setClienteEditar] = useState(null);
   const [modalVerDetalle, setModalVerDetalle] = useState(false);
   const [clienteVerDetalle, setClienteVerDetalle] = useState(null);
-  const [guardando, setGuardando] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
   const [exportando, setExportando] = useState(false);
-  const [modalAgregarProducto, setModalAgregarProducto] = useState(false);
-  const [clienteAgregarProducto, setClienteAgregarProducto] = useState(null);
-
-  const handleAbrirEditar = useCallback(async (row) => {
-    try {
-      const cliente = await apiCliente.obtenerCliente(row.id);
-      setClienteEditar(cliente);
-      setModalEditar(true);
-    } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar cliente'), 'error');
-    }
-  }, [showSnackbar]);
-
-  const handleCerrarEditar = useCallback(() => {
-    setModalEditar(false);
-    setClienteEditar(null);
-  }, []);
-
-  const handleGuardarEditar = useCallback(async (payload) => {
-    if (!clienteEditar?.id) return;
-    setGuardando(true);
-    try {
-      await apiCliente.actualizarCliente(clienteEditar.id, payload);
-      showSnackbar('Cliente actualizado correctamente.', 'success');
-      handleCerrarEditar();
-      recargar();
-    } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al actualizar cliente'), 'error');
-    } finally {
-      setGuardando(false);
-    }
-  }, [clienteEditar?.id, showSnackbar, recargar]);
 
   const handleAbrirVer = useCallback(async (row) => {
     try {
@@ -156,16 +119,6 @@ export function ClientesList() {
       setEliminando(false);
     }
   }, [clienteAEliminar?.id, showSnackbar, recargar]);
-
-  const handleAbrirAgregarProducto = useCallback((row) => {
-    setClienteAgregarProducto(row);
-    setModalAgregarProducto(true);
-  }, []);
-
-  const handleCerrarAgregarProducto = useCallback(() => {
-    setModalAgregarProducto(false);
-    setClienteAgregarProducto(null);
-  }, []);
 
   const handleDescargarPdf = useCallback(async (row) => {
     try {
@@ -349,7 +302,6 @@ export function ClientesList() {
                 {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Nº identificación</TableCell>}
                 {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Teléfono</TableCell>}
                 {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Correo</TableCell>}
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Vendedor</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }} align="center">Opciones</TableCell>
               </TableRow>
             </TableHead>
@@ -367,10 +319,8 @@ export function ClientesList() {
                     row={row}
                     chipEstados={CHIP_ESTADOS}
                     opcionesEstadoVenta={opcionesEstadoVenta}
-                    onEdit={handleAbrirEditar}
                     onDescargar={handleDescargarPdf}
                     onEliminar={handleAbrirEliminar}
-                    onAgregarProducto={handleAbrirAgregarProducto}
                     onVer={handleAbrirVer}
                     compact={isCompactView}
                   />
@@ -421,14 +371,6 @@ export function ClientesList() {
         </Box>
       </Box>
 
-      <ClienteEditModal
-        open={modalEditar}
-        cliente={clienteEditar}
-        onClose={handleCerrarEditar}
-        onGuardar={handleGuardarEditar}
-        guardando={guardando}
-      />
-
       <ClienteDetalleModal
         open={modalVerDetalle}
         cliente={clienteVerDetalle}
@@ -446,13 +388,6 @@ export function ClientesList() {
         message="¿Está seguro que desea eliminar este cliente?"
         itemName={clienteAEliminar?.nombre}
         loading={eliminando}
-      />
-
-      <AgregarProductoModal
-        open={modalAgregarProducto}
-        onClose={handleCerrarAgregarProducto}
-        cliente={clienteAgregarProducto}
-        onExito={recargar}
       />
     </Paper>
   );

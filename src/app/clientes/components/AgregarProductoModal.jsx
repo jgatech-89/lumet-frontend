@@ -179,12 +179,13 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
     <Dialog
       open={open}
       onClose={handleCerrar}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 2,
-          maxHeight: '90vh',
+          maxHeight: '92vh',
+          maxWidth: 720,
         },
       }}
     >

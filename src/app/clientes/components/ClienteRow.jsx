@@ -8,7 +8,7 @@ import { useThemeMode } from '../../../context/ThemeContext';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { getActionBtnBlue, getActionBtnRed } from '../../../components/shared/actionButtonStyles';
 import { compactCellSx, compactChipSx } from '../../../components/shared/actionButtonStyles';
-import { EditIcon, DeleteIcon, AddIcon, EyeIcon } from '../../../utils/icons';
+import { DeleteIcon, EyeIcon } from '../../../utils/icons';
 
 const DownloadIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" fontSize="small">
@@ -16,7 +16,7 @@ const DownloadIcon = () => (
   </svg>
 );
 
-export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], onEdit, onDescargar, onCambiarEstado, onEliminar, onAgregarProducto, onVer, compact = false }) {
+export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], onDescargar, onCambiarEstado, onEliminar, onVer, compact = false }) {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -31,7 +31,6 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.numero_identificacion || '-'}</TableCell>}
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.telefono}</TableCell>}
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.correo}</TableCell>}
-      <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{compact ? (row.vendedor ?? '-') : (row.vendedor ?? '-')}</TableCell>
       <TableCell align="center" sx={compactCellSx}>
         {isSmallScreen ? (
           <>
@@ -54,12 +53,6 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               PaperProps={{ sx: { minWidth: 200 } }}
             >
-              <MenuItem onClick={() => { onAgregarProducto?.(row); handleCloseMenu(); }}>
-                Agregar producto
-              </MenuItem>
-              <MenuItem onClick={() => { onEdit?.(row); handleCloseMenu(); }}>
-                Editar
-              </MenuItem>
               <MenuItem onClick={() => { onDescargar?.(row); handleCloseMenu(); }}>
                 Descargar PDF
               </MenuItem>
@@ -75,12 +68,6 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
           <Stack direction="row" justifyContent="center" spacing={0.75}>
             <IconButton size="small" aria-label="Ver detalle" title="Ver detalle" sx={actionBtnBlue} onClick={() => onVer?.(row)}>
               <EyeIcon />
-            </IconButton>
-            <IconButton size="small" aria-label="Agregar producto" title="Agregar producto" sx={actionBtnBlue} onClick={() => onAgregarProducto?.(row)}>
-              <AddIcon />
-            </IconButton>
-            <IconButton size="small" aria-label="Editar" title="Editar" sx={actionBtnBlue} onClick={() => onEdit?.(row)}>
-              <EditIcon />
             </IconButton>
             <IconButton size="small" aria-label="Descargar" title="Descargar" sx={actionBtnBlue} onClick={() => onDescargar?.(row)}>
               <DownloadIcon />
