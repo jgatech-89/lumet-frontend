@@ -7,6 +7,7 @@ import { useClientes } from '../logic/useClientes';
 import { ClienteRow } from './ClienteRow';
 import { ClienteDetalleModal } from './ClienteDetalleModal';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
+import { TableLoader } from '../../../components/loading';
 import { SearchIcon } from '../../../utils/icons';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import { getErrorMessage } from '../../../utils/funciones';
@@ -49,6 +50,7 @@ export function ClientesList() {
   const {
     clientes,
     total,
+    loading,
     pagina,
     inicio,
     fin,
@@ -287,52 +289,109 @@ export function ClientesList() {
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <TableContainer
             sx={{
-              maxHeight: 'calc(10 * 48px + 52px)',
-              overflow: 'auto',
+              flexShrink: 0,
               borderRadius: 2,
               border: 1,
               borderColor: 'divider',
-              [COMPACT_MEDIA]: { borderRadius: 1, maxHeight: 'calc(10 * 44px + 48px)' },
+              [COMPACT_MEDIA]: { borderRadius: 1 },
             }}
           >
-            <Table size="small" sx={{ minWidth: isCompactView ? 280 : 500 }} stickyHeader>
-            <TableHead>
-              <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Nombre</TableCell>
-                {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Nº identificación</TableCell>}
-                {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Teléfono</TableCell>}
-                {!isCompactView && <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5 }}>Correo</TableCell>}
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }} align="center">Opciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {clientes.map((row) => (
-                <TableRow
-                  key={row.id}
-                  hover
-                  sx={{
-                    '&:last-child td': { borderBottom: 0 },
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  <ClienteRow
-                    row={row}
-                    chipEstados={CHIP_ESTADOS}
-                    opcionesEstadoVenta={opcionesEstadoVenta}
-                    onDescargar={handleDescargarPdf}
-                    onEliminar={handleAbrirEliminar}
-                    onVer={handleAbrirVer}
-                    compact={isCompactView}
-                  />
+            <Table size="small" sx={{ minWidth: 400 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 600,
+                      color: 'text.secondary',
+                      fontSize: '0.8125rem',
+                      py: 1.5,
+                      [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 },
+                    }}
+                  >
+                    Nombre
+                  </TableCell>
+                  {!isCompactView && (
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        fontSize: '0.8125rem',
+                        py: 1.5,
+                      }}
+                    >
+                      Nº identificación
+                    </TableCell>
+                  )}
+                  {!isCompactView && (
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        fontSize: '0.8125rem',
+                        py: 1.5,
+                      }}
+                    >
+                      Teléfono
+                    </TableCell>
+                  )}
+                  {!isCompactView && (
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        fontSize: '0.8125rem',
+                        py: 1.5,
+                      }}
+                    >
+                      Correo
+                    </TableCell>
+                  )}
+                  <TableCell
+                    sx={{
+                      fontWeight: 600,
+                      color: 'text.secondary',
+                      fontSize: '0.8125rem',
+                      py: 1.5,
+                      [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 },
+                    }}
+                    align="center"
+                  >
+                    Opciones
+                  </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableLoader columnCount={isCompactView ? 2 : 5} message="Cargando clientes..." />
+                ) : (
+                  clientes.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      hover
+                      sx={{
+                        '&:last-child td': { borderBottom: 0 },
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <ClienteRow
+                        row={row}
+                        chipEstados={CHIP_ESTADOS}
+                        opcionesEstadoVenta={opcionesEstadoVenta}
+                        onDescargar={handleDescargarPdf}
+                        onEliminar={handleAbrirEliminar}
+                        onVer={handleAbrirVer}
+                        compact={isCompactView}
+                      />
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        <Box sx={{ flexShrink: 0 }} />
+          <Box sx={{ flex: 1, minHeight: 0 }} />
 
-        <Stack
+          <Stack
           direction={{ xs: 'column', sm: 'row' }}
           alignItems="center"
           justifyContent="space-between"
@@ -340,7 +399,8 @@ export function ClientesList() {
             flexShrink: 0,
             px: 2,
             py: 1.5,
-            borderTop: '1px solid rgba(0,0,0,0.06)',
+            borderTop: '1px solid',
+            borderColor: 'divider',
             bgcolor: 'background.paper',
             flexWrap: 'wrap',
             gap: 1.5,

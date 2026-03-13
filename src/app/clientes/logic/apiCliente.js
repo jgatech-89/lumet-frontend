@@ -6,13 +6,20 @@ const BASE = '/api/clientes/';
 const BASE_FORMULARIO = '/api/formulario/';
 const BASE_OPCIONES_ESTADO_VENTA = '/api/campos/opciones-estado-venta/';
 
+/** Cache de la promesa para evitar peticiones duplicadas (p. ej. por React Strict Mode). */
+let promiseOpcionesEstadoVenta = null;
+
 /**
  * Obtiene las opciones del campo estado de venta (desde API o fallback).
+ * Reutiliza la misma petición si se llama varias veces.
  * @returns {Promise<Array<{ value: string, label: string }>>}
  */
 export const obtenerOpcionesEstadoVenta = async () => {
-  const { data } = await get(BASE_OPCIONES_ESTADO_VENTA);
-  return Array.isArray(data) ? data : [];
+  if (promiseOpcionesEstadoVenta) return promiseOpcionesEstadoVenta;
+  promiseOpcionesEstadoVenta = get(BASE_OPCIONES_ESTADO_VENTA).then(({ data }) =>
+    Array.isArray(data) ? data : []
+  );
+  return promiseOpcionesEstadoVenta;
 };
 
 /**
