@@ -16,7 +16,7 @@ import { CampoModals } from './CampoModals';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
-const COLUMNS = ['Campo', 'Empresa', 'Servicio', 'Tipo de campo', 'Estado', 'Opciones'];
+const COLUMNS = ['Campo', 'Empresa', 'Servicio', 'Producto', 'Tipo de campo', 'Estado', 'Opciones'];
 
 export function CamposConfigSection({ campos, pagina, setPagina }) {
   const { isDark } = useThemeMode();
@@ -71,7 +71,7 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
               >
                 <CampoRow
                 row={row}
-                onVer={campos.handleAbrirVer}
+                opcionesProducto={campos.opcionesProducto}
                 onEdit={campos.handleAbrirEditar}
                 onDelete={campos.handleAbrirEliminar}
               />
@@ -130,7 +130,6 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         modalNueva={campos.modalNueva}
         modalEditar={campos.modalEditar}
         modalEliminar={campos.modalEliminar}
-        modalVer={campos.modalVer}
         nombre={campos.nombre}
         setNombre={campos.setNombre}
         empresaId={campos.empresaId}
@@ -153,11 +152,17 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         setDefault_value={campos.setDefault_value}
         visible_si={campos.visible_si}
         setVisible_si={campos.setVisible_si}
+        productoId={campos.productoId}
+        setProductoId={campos.setProductoId}
+        opcionesProducto={campos.opcionesProducto}
         opciones={campos.opciones}
         opcionInput={campos.opcionInput}
         setOpcionInput={campos.setOpcionInput}
+        aplicarTodosServicios={campos.aplicarTodosServicios}
+        setAplicarTodosServicios={campos.setAplicarTodosServicios}
+        aplicarTodosEmpresas={campos.aplicarTodosEmpresas}
+        setAplicarTodosEmpresas={campos.setAplicarTodosEmpresas}
         aEliminar={campos.aEliminar}
-        campoAVer={campos.campoAVer}
         errors={campos.errors}
         canSave={campos.canSave}
         guardandoNueva={campos.guardandoNueva}
@@ -171,8 +176,6 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         handleGuardarEditar={campos.handleGuardarEditar}
         handleCerrarEliminar={campos.handleCerrarEliminar}
         handleConfirmarEliminar={campos.handleConfirmarEliminar}
-        handleCerrarVer={campos.handleCerrarVer}
-        handleAbrirEditar={campos.handleAbrirEditar}
       />
     </>
   );

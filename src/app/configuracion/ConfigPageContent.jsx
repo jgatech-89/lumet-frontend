@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { COMPACT_MEDIA } from '../../utils/theme';
 import {
   Box,
@@ -21,6 +21,8 @@ import { useEmpresas, EmpresaConfigSection } from '../empresa';
 import { useServicios, ServiciosConfigSection } from '../servicios';
 import { useCampos, CamposConfigSection } from '../campos';
 import { useVendedores, VendedorConfigSection } from '../vendedores';
+import { listarEmpresasActivasParaSelect } from '../empresa/logic/apiEmpresa';
+import { listarServiciosPorEmpresa } from '../servicios/logic/apiServicios';
 
 const TAB_KEYS = ['empresa', 'servicios', 'campos', 'vendedor'];
 
@@ -44,12 +46,16 @@ const SEARCH_PLACEHOLDERS = {
  */
 const INIT_BUSQUEDA = { empresa: '', servicios: '', campos: '', vendedor: '' };
 const INIT_FILTRO = { empresa: 'todos', servicios: 'todos', campos: 'todos', vendedor: 'todos' };
+const INIT_FILTRO_EMPRESA_CAMPOS = '';
+const INIT_FILTRO_SERVICIO_CAMPOS = '';
 const INIT_PAGINA = { empresa: 1, servicios: 1, campos: 1, vendedor: 1 };
 
 export function ConfigPageContent() {
   const [tabActual, setTabActual] = useState(0);
   const [busquedaPorTab, setBusquedaPorTab] = useState(INIT_BUSQUEDA);
   const [filtroEstadoPorTab, setFiltroEstadoPorTab] = useState(INIT_FILTRO);
+  const [filtroEmpresaCampos, setFiltroEmpresaCampos] = useState(INIT_FILTRO_EMPRESA_CAMPOS);
+  const [filtroServicioCampos, setFiltroServicioCampos] = useState(INIT_FILTRO_SERVICIO_CAMPOS);
   const [paginaPorTab, setPaginaPorTab] = useState(INIT_PAGINA);
 
   const tabKey = TAB_KEYS[tabActual];
@@ -93,13 +99,41 @@ export function ConfigPageContent() {
     paginaPorTab.campos,
     setPagina,
     busquedaPorTab.campos,
-    filtroEstadoPorTab.campos
+    filtroEstadoPorTab.campos,
+    filtroEmpresaCampos,
+    filtroServicioCampos,
+    ''
   );
 
   const handleChangeTab = (_, value) => {
     setTabActual(value);
     setPagina(1);
   };
+
+  const [empresasParaFiltroCampos, setEmpresasParaFiltroCampos] = useState([]);
+  const [serviciosParaFiltroCampos, setServiciosParaFiltroCampos] = useState([]);
+
+  useEffect(() => {
+    if (tabKey !== 'campos') return;
+    let cancelled = false;
+    listarEmpresasActivasParaSelect()
+      .then((list) => { if (!cancelled) setEmpresasParaFiltroCampos(Array.isArray(list) ? list : []); })
+      .catch(() => { if (!cancelled) setEmpresasParaFiltroCampos([]); });
+    return () => { cancelled = true; };
+  }, [tabKey]);
+
+  useEffect(() => {
+    if (!filtroEmpresaCampos) {
+      setServiciosParaFiltroCampos([]);
+      setFiltroServicioCampos('');
+      return;
+    }
+    let cancelled = false;
+    listarServiciosPorEmpresa(filtroEmpresaCampos)
+      .then((list) => { if (!cancelled) setServiciosParaFiltroCampos(Array.isArray(list) ? list : []); })
+      .catch(() => { if (!cancelled) setServiciosParaFiltroCampos([]); });
+    return () => { cancelled = true; };
+  }, [filtroEmpresaCampos]);
 
   // No cargar datos al cambiar de tab: cada hook carga solo cuando su tab está activo (active).
   // Los selects (empresas/servicios) se cargan bajo demanda al abrir los modales (handleAbrirNueva).
@@ -236,6 +270,45 @@ export function ConfigPageContent() {
               ))}
             </Select>
           </FormControl>
+          {tabKey === 'campos' && (
+            <>
+              <FormControl size="small" sx={{ width: { xs: '100%', sm: 200 }, minWidth: { xs: 0, sm: 200 } }}>
+                <InputLabel id="filtro-empresa-campos-label">Empresa</InputLabel>
+                <Select
+                  labelId="filtro-empresa-campos-label"
+                  value={filtroEmpresaCampos}
+                  label="Empresa"
+                  onChange={(e) => {
+                    setFiltroEmpresaCampos(e.target.value);
+                    setPaginaPorTab((p) => ({ ...p, campos: 1 }));
+                  }}
+                >
+                  <MenuItem value="">Todas</MenuItem>
+                  {empresasParaFiltroCampos.map((e) => (
+                    <MenuItem key={e.id} value={String(e.id)}>{e.nombre}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ width: { xs: '100%', sm: 200 }, minWidth: { xs: 0, sm: 200 } }}>
+                <InputLabel id="filtro-servicio-campos-label">Servicio</InputLabel>
+                <Select
+                  labelId="filtro-servicio-campos-label"
+                  value={filtroServicioCampos}
+                  label="Servicio"
+                  onChange={(e) => {
+                    setFiltroServicioCampos(e.target.value);
+                    setPaginaPorTab((p) => ({ ...p, campos: 1 }));
+                  }}
+                  disabled={!filtroEmpresaCampos}
+                >
+                  <MenuItem value="">Todos</MenuItem>
+                  {serviciosParaFiltroCampos.map((s) => (
+                    <MenuItem key={s.id} value={String(s.id)}>{s.nombre ?? s.servicio}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </>
+          )}
         </Stack>
 
         {tabKey === 'empresa' && (

@@ -3,6 +3,7 @@ import { useSnackbar } from '../../../context/SnackbarContext';
 import { getErrorMessage } from '../../../utils/funciones';
 import { useChoices } from '../../../context/ChoicesContext';
 import * as api from './apiCampos';
+import { obtenerCamposFormulario } from '../../clientes/logic/apiCliente';
 import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa';
 import { listarServiciosPorEmpresa } from '../../servicios/logic/apiServicios';
 import { CONFIG_FILAS_POR_PAGINA } from './constants';
@@ -18,8 +19,11 @@ const TIPO_CAMPO_KEY = 'tipo_campo';
  * @param {function} setPagina - Setter de página
  * @param {string} busqueda - Texto de búsqueda (nombre)
  * @param {string} filtroEstado - 'todos' | '1' | '0'
+ * @param {number|string} filtroEmpresa - ID empresa para filtrar (opcional)
+ * @param {number|string} filtroServicio - ID servicio para filtrar (opcional)
+ * @param {string} filtroProducto - Valor producto para filtrar (opcional)
  */
-export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqueda = '', filtroEstado = 'todos') {
+export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqueda = '', filtroEstado = 'todos', filtroEmpresa = '', filtroServicio = '', filtroProducto = '') {
   const { showSnackbar } = useSnackbar();
   const { getOptions } = useChoices();
   const tipoCampoOptions = useMemo(() => getOptions(TIPO_CAMPO_KEY), [getOptions]);
@@ -48,7 +52,6 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const [modalNueva, setModalNueva] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
-  const [modalVer, setModalVer] = useState(false);
   const [nombre, setNombre] = useState('');
   const [empresaId, setEmpresaId] = useState('');
   const [servicioId, setServicioId] = useState('');
@@ -60,12 +63,15 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const [help_text, setHelp_text] = useState('');
   const [default_value, setDefault_value] = useState('');
   const [visible_si, setVisible_si] = useState('');
+  const [productoId, setProductoId] = useState('');
   /** Opciones: en crear = string[]; en editar = Array<{ id?, label, value? }> */
   const [opciones, setOpciones] = useState([]);
+  const [opcionesProducto, setOpcionesProducto] = useState([]);
   const [opcionInput, setOpcionInput] = useState('');
+  const [aplicarTodosServicios, setAplicarTodosServicios] = useState(false);
+  const [aplicarTodosEmpresas, setAplicarTodosEmpresas] = useState(false);
   const [enEdicion, setEnEdicion] = useState(null);
   const [aEliminar, setAEliminar] = useState(null);
-  const [campoAVer, setCampoAVer] = useState(null);
   const [errors, setErrors] = useState(INIT_ERRORS);
   /** Empresas activas para el select; se cargan al abrir modal añadir/editar */
   const [empresasParaSelect, setEmpresasParaSelect] = useState([]);
@@ -76,19 +82,18 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const skipServiciosLoadRef = useRef(false);
 
   useEffect(() => {
-    if (!empresaId) {
-      setServiciosFiltrados([]);
-      return;
-    }
     if (skipServiciosLoadRef.current) {
       skipServiciosLoadRef.current = false;
       return;
     }
     let cancelled = false;
     setCargandoServicios(true);
-    listarServiciosPorEmpresa(empresaId)
+    const load = empresaId
+      ? (aplicarTodosServicios ? Promise.resolve([]) : listarServiciosPorEmpresa(empresaId))
+      : Promise.resolve([]);
+    load
       .then((results) => {
-        if (!cancelled) setServiciosFiltrados(results);
+        if (!cancelled) setServiciosFiltrados(results ?? []);
       })
       .catch((e) => {
         if (!cancelled) {
@@ -103,7 +108,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         if (!cancelled) setCargandoServicios(false);
       });
     return () => { cancelled = true; };
-  }, [empresaId, showSnackbar]);
+  }, [aplicarTodosEmpresas, empresaId, showSnackbar, aplicarTodosServicios]);
 
   /** Al cambiar empresa en el select: actualizar id y limpiar servicio para que el usuario elija de la nueva lista */
   const handleChangeEmpresa = useCallback((id) => {
@@ -113,8 +118,10 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
 
   const getFormValid = useCallback(() => {
     const nextErrors = { ...INIT_ERRORS };
-    if (!empresaId) nextErrors.empresa = 'Seleccione una empresa';
-    if (!servicioId) nextErrors.servicio = 'Seleccione un servicio';
+    if (!aplicarTodosEmpresas) {
+      if (!empresaId) nextErrors.empresa = 'Seleccione una empresa';
+      if (!aplicarTodosServicios && !servicioId) nextErrors.servicio = 'Seleccione un servicio';
+    }
     if (!nombre?.trim()) nextErrors.nombre = 'El nombre del campo es obligatorio';
     if (!tipoCampo) nextErrors.tipo = 'Seleccione el tipo de campo';
     const ordenNum = parseInt(orden, 10);
@@ -123,7 +130,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     }
     const valid = Object.values(nextErrors).every((v) => !v);
     return { valid, errors: nextErrors };
-  }, [empresaId, servicioId, nombre, tipoCampo, orden]);
+  }, [aplicarTodosEmpresas, aplicarTodosServicios, empresaId, servicioId, nombre, tipoCampo, orden]);
 
   const canSave = useMemo(() => {
     const { valid } = getFormValid();
@@ -138,10 +145,14 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       if (!active) return;
       setLoading(true);
       try {
-        const { results, count } = await api.listarCampos(page, CONFIG_FILAS_POR_PAGINA, {
+        const params = {
           search: busqueda?.trim() || undefined,
           activo: activoParam,
-        });
+        };
+        if (filtroEmpresa) params.empresa = Number(filtroEmpresa);
+        if (filtroServicio) params.servicio = Number(filtroServicio);
+        if (filtroProducto?.trim()) params.producto = filtroProducto.trim();
+        const { results, count } = await api.listarCampos(page, CONFIG_FILAS_POR_PAGINA, params);
         const mapped = results.map((item) => api.mapCampoFromApi(item, getTipoLabel));
         setCampos(mapped);
         setCamposTotal(count);
@@ -154,7 +165,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         setLoading(false);
       }
     },
-    [active, pagina, busqueda, activoParam, getTipoLabel, showSnackbar]
+    [active, pagina, busqueda, activoParam, filtroEmpresa, filtroServicio, getTipoLabel, showSnackbar]
   );
 
   useEffect(() => {
@@ -162,19 +173,49 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       lastLoadKeyRef.current = null;
       return;
     }
-    const key = `${pagina}-${filtroEstado}-${busqueda}`;
+    const key = `${pagina}-${filtroEstado}-${busqueda}-${filtroEmpresa}-${filtroServicio}-${filtroProducto}`;
     if (lastLoadKeyRef.current === key) return;
     lastLoadKeyRef.current = key;
     cargarCampos(pagina);
     return () => {
       setTimeout(() => { lastLoadKeyRef.current = null; }, 0);
     };
-  }, [active, pagina, filtroEstado, busqueda, cargarCampos]);
+  }, [active, pagina, filtroEstado, busqueda, filtroEmpresa, filtroServicio, filtroProducto, cargarCampos]);
+
+  /** Cargar opciones de producto solo cuando empresa y servicio están seleccionados y tienen productos relacionados. */
+  useEffect(() => {
+    if (!active && !modalNueva && !modalEditar) return;
+    if (aplicarTodosEmpresas || !empresaId || !servicioId) {
+      setOpcionesProducto([]);
+      setProductoId('');
+      return;
+    }
+    let cancelled = false;
+    obtenerCamposFormulario(empresaId, servicioId)
+      .then((campos) => {
+        if (cancelled) return;
+        const norm = (s) => (s || '').toLowerCase().trim();
+        const campoProducto = (campos || []).find((c) => norm(c.nombre) === 'producto');
+        const opciones = (campoProducto?.opciones || []).map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })).filter((o) => o.value || o.label);
+        setOpcionesProducto(opciones);
+        if (opciones.length === 0) setProductoId('');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOpcionesProducto([]);
+          setProductoId('');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [active, modalNueva, modalEditar, empresaId, servicioId, aplicarTodosEmpresas]);
 
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
     setEmpresaId('');
     setServicioId('');
+    setProductoId('');
+    setAplicarTodosServicios(false);
+    setAplicarTodosEmpresas(false);
     setTipoCampo('');
     setOrden('0');
     setActivo(true);
@@ -218,6 +259,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setNombre('');
     setEmpresaId('');
     setServicioId('');
+    setProductoId('');
+    setAplicarTodosServicios(false);
+    setAplicarTodosEmpresas(false);
     setTipoCampo('');
     setOrden('0');
     setActivo(true);
@@ -253,9 +297,10 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setErrors(nextErrors);
     if (!valid) return;
     if (tipoCampo === 'select' && opciones.length === 0) return;
-    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaId);
-    const servicio = serviciosFiltrados.find((s) => s.id.toString() === servicioId);
-    if (!empresa || !servicio) return;
+    const empresa = aplicarTodosEmpresas ? null : empresasParaSelect.find((e) => e.id.toString() === empresaId);
+    if (!aplicarTodosEmpresas && !empresa) return;
+    const servicio = !aplicarTodosEmpresas && !aplicarTodosServicios ? serviciosFiltrados.find((s) => s.id.toString() === servicioId) : null;
+    if (!aplicarTodosEmpresas && !aplicarTodosServicios && !servicio) return;
 
     setGuardandoNueva(true);
     try {
@@ -263,8 +308,6 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       const payload = {
         nombre: nombre.trim(),
         tipo: tipoCampo,
-        empresa_id: Number(empresa.id),
-        servicio_id: Number(servicio.id),
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
         help_text: help_text.trim() || '',
@@ -273,7 +316,18 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         requerido: !!requerido,
         activo: !!activo,
         estado: '1',
+        producto: productoId?.trim() || '',
       };
+      if (aplicarTodosEmpresas) {
+        payload.aplicar_todos_empresas = true;
+      } else {
+        payload.empresa_id = Number(empresa.id);
+        if (aplicarTodosServicios) {
+          payload.aplicar_todos_servicios = true;
+        } else {
+          payload.servicio_id = Number(servicio.id);
+        }
+      }
       const data = await api.crearCampo(payload);
       if (tipoCampo === 'select' && opciones.length > 0) {
         await api.crearOpcionesCampoBulk(data.id, opciones);
@@ -295,6 +349,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     opciones,
     empresaId,
     servicioId,
+    productoId,
     nombre,
     orden,
     placeholder,
@@ -303,6 +358,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     visible_si,
     requerido,
     activo,
+    aplicarTodosEmpresas,
+    aplicarTodosServicios,
     empresasParaSelect,
     serviciosFiltrados,
     cargarCampos,
@@ -316,14 +373,26 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       setNombre(campo.campo ?? '');
       const list = await listarEmpresasActivasParaSelect();
       setEmpresasParaSelect(list);
+      const esTodosEmpresas = campo.empresa === 'Todas las empresas' || campo.servicio === 'Todas las empresas y servicios';
+      setAplicarTodosEmpresas(esTodosEmpresas);
+      const esTodosServicios = !esTodosEmpresas && (campo.servicio === 'Todos los servicios');
+      setAplicarTodosServicios(esTodosServicios);
       const emp = list.find((e) => e.nombre === campo.empresa);
       const empId = emp?.id?.toString() ?? list[0]?.id?.toString() ?? '';
       skipServiciosLoadRef.current = true;
       setEmpresaId(empId);
-      const servs = empId ? await listarServiciosPorEmpresa(empId) : [];
-      setServiciosFiltrados(servs);
-      const serv = servs.find((s) => (s.nombre ?? s.servicio) === campo.servicio);
-      setServicioId(serv?.id?.toString() ?? '');
+      if (esTodosEmpresas) {
+        setServiciosFiltrados([]);
+        setServicioId('');
+      } else if (esTodosServicios) {
+        setServiciosFiltrados([]);
+        setServicioId('');
+      } else {
+        const servs = empId ? await listarServiciosPorEmpresa(empId) : [];
+        setServiciosFiltrados(servs);
+        const serv = servs.find((s) => (s.nombre ?? s.servicio) === campo.servicio);
+        setServicioId(serv?.id?.toString() ?? '');
+      }
       setTipoCampo(getTipoValueFromCampo(campo));
       setOrden(String(campo.orden ?? 0));
       setActivo(campo.activo ?? true);
@@ -332,6 +401,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       setHelp_text(campo.help_text ?? '');
       setDefault_value(campo.default_value ?? '');
       setVisible_si(campo.visible_si ?? '');
+      setProductoId(campo.producto ?? '');
 
       if (campo.tipo === 'select' && campo.id) {
         try {
@@ -358,6 +428,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setNombre('');
     setEmpresaId('');
     setServicioId('');
+    setProductoId('');
+    setAplicarTodosServicios(false);
+    setAplicarTodosEmpresas(false);
     setTipoCampo('');
     setOrden('0');
     setActivo(true);
@@ -377,9 +450,10 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setErrors(nextErrors);
     if (!valid) return;
     if (tipoCampo === 'select' && opciones.length === 0) return;
-    const empresa = empresasParaSelect.find((e) => e.id.toString() === empresaId);
-    const servicio = serviciosFiltrados.find((s) => s.id.toString() === servicioId);
-    if (!empresa || !servicio) return;
+    const empresa = aplicarTodosEmpresas ? null : empresasParaSelect.find((e) => e.id.toString() === empresaId);
+    if (!aplicarTodosEmpresas && !empresa) return;
+    const servicio = !aplicarTodosEmpresas && !aplicarTodosServicios ? serviciosFiltrados.find((s) => s.id.toString() === servicioId) : null;
+    if (!aplicarTodosEmpresas && !aplicarTodosServicios && !servicio) return;
 
     setGuardandoEditar(true);
     try {
@@ -387,8 +461,6 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       const payload = {
         nombre: nombre.trim(),
         tipo: tipoCampo,
-        empresa_id: Number(empresa.id),
-        servicio_id: Number(servicio.id),
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
         help_text: help_text.trim() || '',
@@ -396,7 +468,18 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         visible_si: visible_si.trim() || '',
         requerido: !!requerido,
         activo: !!activo,
+        producto: productoId?.trim() || '',
       };
+      if (aplicarTodosEmpresas) {
+        payload.aplicar_todos_empresas = true;
+      } else {
+        payload.empresa_id = Number(empresa.id);
+        if (aplicarTodosServicios) {
+          payload.aplicar_todos_servicios = true;
+        } else {
+          payload.servicio_id = Number(servicio.id);
+        }
+      }
       await api.actualizarCampo(enEdicion.id, payload);
 
       if (tipoCampo === 'select') {
@@ -442,6 +525,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     opciones,
     empresaId,
     servicioId,
+    aplicarTodosEmpresas,
+    aplicarTodosServicios,
     nombre,
     orden,
     placeholder,
@@ -450,21 +535,13 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     visible_si,
     requerido,
     activo,
+    productoId,
     empresasParaSelect,
     serviciosFiltrados,
     cargarCampos,
     pagina,
     showSnackbar,
   ]);
-
-  const handleAbrirVer = (campo) => {
-    setCampoAVer(campo);
-    setModalVer(true);
-  };
-  const handleCerrarVer = () => {
-    setModalVer(false);
-    setCampoAVer(null);
-  };
 
   const handleAbrirEliminar = (campo) => {
     setAEliminar(campo);
@@ -507,7 +584,6 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     modalNueva,
     modalEditar,
     modalEliminar,
-    modalVer,
     nombre,
     setNombre,
     empresaId,
@@ -532,12 +608,18 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setDefault_value,
     visible_si,
     setVisible_si,
+    productoId,
+    setProductoId,
+    opcionesProducto,
     opciones,
     opcionInput,
     setOpcionInput,
+    aplicarTodosServicios,
+    setAplicarTodosServicios,
+    aplicarTodosEmpresas,
+    setAplicarTodosEmpresas,
     enEdicion,
     aEliminar,
-    campoAVer,
     serviciosFiltrados,
     empresasParaSelect,
     errors,
@@ -550,8 +632,6 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     handleAbrirEditar,
     handleCerrarEditar,
     handleGuardarEditar,
-    handleAbrirVer,
-    handleCerrarVer,
     handleAbrirEliminar,
     handleCerrarEliminar,
     handleConfirmarEliminar,

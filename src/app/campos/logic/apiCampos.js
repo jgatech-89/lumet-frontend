@@ -2,17 +2,30 @@ import { get, post, patch, del } from '../../../utils/funciones';
 
 const BASE_CAMPOS = '/api/campos/';
 const BASE_OPCIONES = '/api/campo-opciones/';
+const BASE_OPCIONES_POR_NOMBRE = '/api/campos/opciones-por-nombre/';
 
 /**
  * Convierte un item de la API (CampoReadSerializer) al formato usado en la tabla/modales.
  * @param {Object} item - Respuesta del backend
  * @param {function(string): string} getTipoLabel - Función para obtener etiqueta del tipo
  */
+/**
+ * Obtiene las opciones de un campo por su nombre (ej. Producto).
+ * @param {string} nombre - Nombre del campo
+ * @returns {Promise<Array<{ value: string, label: string }>>}
+ */
+export const obtenerOpcionesCampoPorNombre = async (nombre) => {
+  if (!nombre?.trim()) return [];
+  const { data } = await get(BASE_OPCIONES_POR_NOMBRE, { nombre: nombre.trim() });
+  return Array.isArray(data) ? data : [];
+};
+
 export const mapCampoFromApi = (item, getTipoLabel) => ({
   id: item.id,
   campo: item.nombre ?? '',
-  empresa: item.empresa_nombre ?? '',
-  servicio: item.servicio_nombre ?? '',
+  empresa: item.empresa_nombre ?? (item.empresa == null ? 'Todas las empresas' : ''),
+  servicio: item.servicio_nombre?.trim() || (item.servicio == null ? 'Todos los servicios' : ''),
+  producto: item.producto ?? '',
   tipo: item.tipo ?? '',
   tipoCampo: getTipoLabel ? getTipoLabel(item.tipo) : item.tipo,
   estado: item.activo ? 'Activa' : 'Inactiva',
@@ -31,7 +44,7 @@ export const mapCampoFromApi = (item, getTipoLabel) => ({
  * Misma firma que listarEmpresas, listarServicios, listarVendedores: page, pageSize, params.
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página (ej. 5)
- * @param {{ search?: string, empresa?: number, servicio?: number, activo?: boolean }} params
+ * @param {{ search?: string, empresa?: number, servicio?: number, activo?: boolean, producto?: string }} params
  * @returns {Promise<{ results: Array, count: number }>}
  */
 export const listarCampos = async (page = 1, pageSize = 5, params = {}) => {
@@ -40,6 +53,7 @@ export const listarCampos = async (page = 1, pageSize = 5, params = {}) => {
   if (params.empresa != null) query.empresa = params.empresa;
   if (params.servicio != null) query.servicio = params.servicio;
   if (params.activo === true || params.activo === false) query.activo = params.activo;
+  if (params.producto != null && String(params.producto).trim() !== '') query.producto = params.producto.trim();
   const { data } = await get(BASE_CAMPOS, query);
   const results = Array.isArray(data) ? data : data?.results ?? [];
   const count = data?.count ?? results.length;

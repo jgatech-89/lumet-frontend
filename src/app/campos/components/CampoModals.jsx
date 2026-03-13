@@ -16,6 +16,7 @@ import {
   Chip,
   Switch,
   FormControlLabel,
+  Checkbox,
   Divider,
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
@@ -88,7 +89,6 @@ export function CampoModals({
   modalNueva,
   modalEditar,
   modalEliminar,
-  modalVer,
   nombre,
   setNombre,
   empresaId,
@@ -111,11 +111,17 @@ export function CampoModals({
   setDefault_value,
   visible_si,
   setVisible_si,
+  productoId,
+  setProductoId,
+  opcionesProducto = [],
   opciones,
   opcionInput,
   setOpcionInput,
+  aplicarTodosServicios = false,
+  setAplicarTodosServicios,
+  aplicarTodosEmpresas = false,
+  setAplicarTodosEmpresas,
   aEliminar,
-  campoAVer,
   errors,
   canSave,
   guardandoNueva = false,
@@ -129,8 +135,6 @@ export function CampoModals({
   handleGuardarEditar,
   handleCerrarEliminar,
   handleConfirmarEliminar,
-  handleCerrarVer,
-  handleAbrirEditar,
 }) {
   const inputSx = { width: '100%', '& .MuiOutlinedInput-root': { borderRadius: 2 } };
   const formControlSx = { width: '100%', ...inputSx };
@@ -144,6 +148,28 @@ export function CampoModals({
     <>
       <Typography sx={sectionTitleSx}>Datos del campo</Typography>
       <Box sx={gridTwoColSx}>
+        {setAplicarTodosEmpresas && (
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!!aplicarTodosEmpresas}
+                  onChange={(e) => {
+                    setAplicarTodosEmpresas(e.target.checked);
+                    if (e.target.checked) {
+                      setEmpresaId?.('');
+                      setServicioId?.('');
+                      setAplicarTodosServicios?.(false);
+                    }
+                  }}
+                  size="small"
+                />
+              }
+              label="Aplicar a todas las empresas y servicios"
+            />
+          </Box>
+        )}
+        {!aplicarTodosEmpresas && (
         <Box sx={{ minWidth: 0 }}>
           <FormControl size="small" fullWidth required error={!!errors?.empresa} sx={formControlSx}>
             <InputLabel id={`${prefix}campo-empresa-label`} shrink>Empresa</InputLabel>
@@ -151,7 +177,7 @@ export function CampoModals({
               key={`empresa-select-${(empresasParaSelect ?? []).length}`}
               labelId={`${prefix}campo-empresa-label`}
               value={empresaId}
-              label="Empresa"
+              label="Empresa *"
               onChange={(e) => {
                 const v = e.target.value;
                 if (handleChangeEmpresa) handleChangeEmpresa(v);
@@ -174,17 +200,37 @@ export function CampoModals({
             {errors?.empresa && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.empresa}</Typography>}
           </FormControl>
         </Box>
+        )}
+        {!aplicarTodosEmpresas && setAplicarTodosServicios && (
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!!aplicarTodosServicios}
+                  onChange={(e) => {
+                    setAplicarTodosServicios(e.target.checked);
+                    if (e.target.checked) setServicioId?.('');
+                  }}
+                  size="small"
+                />
+              }
+              label="Aplicar a todos los servicios"
+            />
+          </Box>
+        )}
+        {!aplicarTodosEmpresas && (
         <Box sx={{ minWidth: 0 }}>
-          <FormControl size="small" fullWidth required error={!!errors?.servicio} sx={formControlSx}>
+          <FormControl size="small" fullWidth required={!aplicarTodosServicios} error={!!errors?.servicio} sx={formControlSx}>
             <InputLabel id={`${prefix}campo-servicio-label`} shrink>Servicio</InputLabel>
             <Select
               labelId={`${prefix}campo-servicio-label`}
-              value={servicioId}
+              value={aplicarTodosServicios ? '__todos__' : (servicioId ?? '')}
               label="Servicio"
-              onChange={(e) => setServicioId(e.target.value)}
-              disabled={!empresaId || cargandoServicios}
+              onChange={(e) => setServicioId(e.target.value === '__todos__' ? '' : e.target.value)}
+              disabled={!empresaId || cargandoServicios || aplicarTodosServicios}
               displayEmpty
               renderValue={(v) => {
+                if (v === '__todos__') return 'Todos los servicios';
                 if (!v) return cargandoServicios ? 'Cargando...' : 'Seleccionar';
                 const opt = (serviciosFiltrados ?? []).find((s) => String(s.id) === String(v));
                 return opt?.nombre ?? opt?.servicio ?? v;
@@ -200,6 +246,33 @@ export function CampoModals({
             {errors?.servicio && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.servicio}</Typography>}
           </FormControl>
         </Box>
+        )}
+        {opcionesProducto?.length > 0 && (
+        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
+          <FormControl size="small" fullWidth sx={formControlSx}>
+            <InputLabel id={`${prefix}campo-producto-label`} shrink>Producto al que pertenece</InputLabel>
+            <Select
+              labelId={`${prefix}campo-producto-label`}
+              value={productoId ?? ''}
+              label="Producto al que pertenece"
+              onChange={(e) => setProductoId?.(e.target.value)}
+              displayEmpty
+              renderValue={(v) => {
+                if (!v) return 'Seleccionar producto';
+                const opt = (opcionesProducto ?? []).find((o) => o.value === v);
+                return opt?.label ?? v;
+              }}
+              MenuProps={selectMenuProps}
+              sx={{ width: '100%' }}
+            >
+              <MenuItem value="">Todos los productos</MenuItem>
+              {(opcionesProducto ?? []).map((o) => (
+                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        )}
         <Box sx={{ minWidth: 0 }}>
           <TextField
             fullWidth
@@ -346,17 +419,18 @@ export function CampoModals({
             sx={inputSx}
           />
         </Box>
-        {/* <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
           <TextField
             fullWidth
             size="small"
             label="Visible si"
-            placeholder="Condición para mostrar el campo"
+            placeholder="Ej: cambio titular (mostrar solo cuando Cambio de titular = Sí)"
             value={visible_si}
             onChange={(e) => setVisible_si(e.target.value)}
             sx={inputSx}
+            helperText="Escribe 'cambio titular' para campos que solo deben mostrarse cuando el usuario marca Sí en Cambio de titular."
           />
-        </Box> */}
+        </Box>
       </Box>
     </>
   );
@@ -430,98 +504,6 @@ export function CampoModals({
         itemName={aEliminar?.campo}
         loading={eliminando}
       />
-
-      {/* Modal Ver detalles */}
-      <Dialog open={modalVer} onClose={handleCerrarVer} PaperProps={{ sx: campoModalPaperSx }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Detalles del campo</Typography>
-          <IconButton size="small" onClick={handleCerrarVer} aria-label="Cerrar">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {campoAVer && (
-            <Stack spacing={2}>
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Nombre</Typography>
-                <Typography variant="body1" fontWeight={500}>{campoAVer.campo}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Empresa</Typography>
-                <Typography variant="body1" fontWeight={500}>{campoAVer.empresa}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Servicio</Typography>
-                <Typography variant="body1" fontWeight={500}>{campoAVer.servicio}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Tipo de campo</Typography>
-                <Typography variant="body1" fontWeight={500}>{campoAVer.tipoCampo}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Estado</Typography>
-                <Typography variant="body1" fontWeight={500}>{campoAVer.estado}</Typography>
-              </Box>
-              {(campoAVer.orden !== undefined && campoAVer.orden !== '') && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Orden</Typography>
-                  <Typography variant="body1" fontWeight={500}>{campoAVer.orden}</Typography>
-                </Box>
-              )}
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Requerido en formulario</Typography>
-                <Typography variant="body1" fontWeight={500}>{campoAVer.requerido ? 'Sí' : 'No'}</Typography>
-              </Box>
-              {campoAVer.placeholder && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Placeholder</Typography>
-                  <Typography variant="body1" fontWeight={500}>{campoAVer.placeholder}</Typography>
-                </Box>
-              )}
-              {campoAVer.help_text && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Texto de ayuda</Typography>
-                  <Typography variant="body1" fontWeight={500}>{campoAVer.help_text}</Typography>
-                </Box>
-              )}
-              {campoAVer.default_value && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Valor por defecto</Typography>
-                  <Typography variant="body1" fontWeight={500}>{campoAVer.default_value}</Typography>
-                </Box>
-              )}
-              {/* {campoAVer.visible_si && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Visible si</Typography>
-                  <Typography variant="body1" fontWeight={500}>{campoAVer.visible_si}</Typography>
-                </Box>
-              )} */}
-              {campoAVer.tipoCampo === 'Select' && (campoAVer.opciones ?? []).length > 0 && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>Opciones</Typography>
-                  <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap>
-                    {campoAVer.opciones.map((opt, idx) => (
-                      <Chip key={idx} label={opt} size="small" sx={{ borderRadius: 1 }} />
-                    ))}
-                  </Stack>
-                </Box>
-              )}
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 0 }}>
-          <Button variant="outlined" onClick={handleCerrarVer} sx={btnCancelSx}>Cerrar</Button>
-          {campoAVer && (
-            <Button
-              variant="contained"
-              onClick={() => { handleCerrarVer(); handleAbrirEditar(campoAVer); }}
-              sx={btnPrimarySx}
-            >
-              Editar
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
     </>
   );
 }

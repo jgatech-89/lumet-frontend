@@ -1,10 +1,17 @@
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 import { useThemeMode } from '../../../context/ThemeContext';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { useClientes } from '../logic/useClientes';
 import { ClienteRow } from './ClienteRow';
+import { ClienteEditModal } from './ClienteEditModal';
+import { CambiarEstadoModal } from './CambiarEstadoModal';
+import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
 import { SearchIcon } from '../../../utils/icons';
+import { useSnackbar } from '../../../context/SnackbarContext';
+import { getErrorMessage } from '../../../utils/funciones';
+import * as apiCliente from '../logic/apiCliente';
 import {
   Box,
   Typography,
@@ -26,8 +33,15 @@ import {
   Pagination,
 } from '@mui/material';
 
+const DownloadExcelIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" />
+  </svg>
+);
+
 export function ClientesList() {
   const { isDark } = useThemeMode();
+  const { showSnackbar } = useSnackbar();
   const CHIP_ESTADOS = getChipEstadosVenta(isDark);
   const {
     clientes,
@@ -41,7 +55,137 @@ export function ClientesList() {
     filtroEstado,
     setFiltroEstado,
     handleChangePagina,
+    opcionesEstadoVenta,
+    recargar,
   } = useClientes();
+
+  const [modalEditar, setModalEditar] = useState(false);
+  const [clienteEditar, setClienteEditar] = useState(null);
+  const [modalEstado, setModalEstado] = useState(false);
+  const [clienteEstado, setClienteEstado] = useState(null);
+  const [nuevoEstado, setNuevoEstado] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [guardandoEstado, setGuardandoEstado] = useState(false);
+  const [modalEliminar, setModalEliminar] = useState(false);
+  const [clienteAEliminar, setClienteAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [exportando, setExportando] = useState(false);
+
+  const handleAbrirEditar = useCallback(async (row) => {
+    try {
+      const cliente = await apiCliente.obtenerCliente(row.id);
+      setClienteEditar(cliente);
+      setModalEditar(true);
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar cliente'), 'error');
+    }
+  }, [showSnackbar]);
+
+  const handleCerrarEditar = useCallback(() => {
+    setModalEditar(false);
+    setClienteEditar(null);
+  }, []);
+
+  const handleGuardarEditar = useCallback(async (payload) => {
+    if (!clienteEditar?.id) return;
+    setGuardando(true);
+    try {
+      await apiCliente.actualizarCliente(clienteEditar.id, payload);
+      showSnackbar('Cliente actualizado correctamente.', 'success');
+      handleCerrarEditar();
+      recargar();
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al actualizar cliente'), 'error');
+    } finally {
+      setGuardando(false);
+    }
+  }, [clienteEditar?.id, showSnackbar, recargar]);
+
+  const handleAbrirEstado = useCallback((row) => {
+    setClienteEstado(row);
+    setNuevoEstado((row.estado_venta || '').trim() || 'pendiente');
+    setModalEstado(true);
+  }, []);
+
+  const handleCerrarEstado = useCallback(() => {
+    setModalEstado(false);
+    setClienteEstado(null);
+  }, []);
+
+  const handleGuardarEstado = useCallback(async () => {
+    if (!clienteEstado?.id) return;
+    setGuardandoEstado(true);
+    try {
+      await apiCliente.cambiarEstadoCliente(clienteEstado.id, nuevoEstado);
+      showSnackbar('Estado actualizado correctamente.', 'success');
+      handleCerrarEstado();
+      recargar();
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al actualizar estado'), 'error');
+    } finally {
+      setGuardandoEstado(false);
+    }
+  }, [clienteEstado?.id, nuevoEstado, showSnackbar, recargar]);
+
+  const handleAbrirEliminar = useCallback((row) => {
+    setClienteAEliminar(row);
+    setModalEliminar(true);
+  }, []);
+
+  const handleCerrarEliminar = useCallback(() => {
+    setModalEliminar(false);
+    setClienteAEliminar(null);
+  }, []);
+
+  const handleConfirmarEliminar = useCallback(async () => {
+    if (!clienteAEliminar?.id) return;
+    setEliminando(true);
+    try {
+      await apiCliente.eliminarCliente(clienteAEliminar.id);
+      showSnackbar('Cliente eliminado correctamente.', 'success');
+      handleCerrarEliminar();
+      recargar();
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al eliminar cliente'), 'error');
+    } finally {
+      setEliminando(false);
+    }
+  }, [clienteAEliminar?.id, showSnackbar, recargar]);
+
+  const handleDescargarPdf = useCallback(async (row) => {
+    try {
+      const blob = await apiCliente.descargarPdfCliente(row.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cliente_${row.id}_${(row.nombre || 'contrato').replace(/\s+/g, '_')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSnackbar('PDF descargado correctamente.', 'success');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al descargar PDF'), 'error');
+    }
+  }, [showSnackbar]);
+
+  const handleExportarExcel = useCallback(async () => {
+    setExportando(true);
+    try {
+      const filters = { search: busqueda?.trim() || undefined };
+      if (filtroEstado && filtroEstado !== 'todos') filters.estado_venta = filtroEstado;
+      const blob = await apiCliente.exportarExcelClientes(filters);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'clientes.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+      showSnackbar('Exportación completada.', 'success');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al exportar'), 'error');
+    } finally {
+      setExportando(false);
+    }
+  }, [busqueda, filtroEstado, showSnackbar]);
 
   return (
     <Paper
@@ -116,6 +260,7 @@ export function ClientesList() {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           gap={2}
+          alignItems={{ sm: 'center' }}
           sx={{ mb: 4, flexShrink: 0, [COMPACT_MEDIA]: { mb: 2.5, gap: 1 } }}
         >
           <TextField
@@ -133,20 +278,37 @@ export function ClientesList() {
             sx={{ width: '100%', minWidth: { xs: 0, sm: 280 } }}
           />
           <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: { xs: 0, sm: 220 } }}>
-            <InputLabel id="filtro-estado-label">Estado</InputLabel>
+            <InputLabel id="filtro-estado-label">Estado venta</InputLabel>
             <Select
               labelId="filtro-estado-label"
               value={filtroEstado}
-              label="Estado"
+              label="Estado venta"
               onChange={(e) => setFiltroEstado(e.target.value)}
             >
               <MenuItem value="">Seleccionar una opción</MenuItem>
               <MenuItem value="todos">Todos los estados</MenuItem>
-              {Object.keys(CHIP_ESTADOS).map((est) => (
-                <MenuItem key={est} value={est}>{est}</MenuItem>
+              {opcionesEstadoVenta.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
               ))}
             </Select>
           </FormControl>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<DownloadExcelIcon />}
+            onClick={handleExportarExcel}
+            disabled={exportando}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 0.75,
+              minHeight: 40,
+              fontSize: '0.8125rem',
+            }}
+          >
+            {exportando ? 'Exportando...' : 'Exportar'}
+          </Button>
         </Stack>
 
         <TableContainer
@@ -164,8 +326,8 @@ export function ClientesList() {
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Nombre</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Teléfono</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Correo</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Estado venta</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Vendedor</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.5, [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 } }} align="center">Opciones</TableCell>
               </TableRow>
             </TableHead>
@@ -179,7 +341,15 @@ export function ClientesList() {
                     '&:hover': { bgcolor: 'action.hover' },
                   }}
                 >
-                  <ClienteRow row={row} chipEstados={CHIP_ESTADOS} />
+                  <ClienteRow
+                    row={row}
+                    chipEstados={CHIP_ESTADOS}
+                    opcionesEstadoVenta={opcionesEstadoVenta}
+                    onEdit={handleAbrirEditar}
+                    onDescargar={handleDescargarPdf}
+                    onCambiarEstado={handleAbrirEstado}
+                    onEliminar={handleAbrirEliminar}
+                  />
                 </TableRow>
               ))}
             </TableBody>
@@ -225,6 +395,36 @@ export function ClientesList() {
           />
         </Stack>
       </Box>
+
+      <ClienteEditModal
+        open={modalEditar}
+        cliente={clienteEditar}
+        onClose={handleCerrarEditar}
+        onGuardar={handleGuardarEditar}
+        guardando={guardando}
+      />
+
+      <CambiarEstadoModal
+        open={modalEstado}
+        cliente={clienteEstado}
+        opcionesEstadoVenta={opcionesEstadoVenta}
+        estadoActual={clienteEstado?.estado_venta}
+        nuevoEstado={nuevoEstado}
+        setNuevoEstado={setNuevoEstado}
+        onClose={handleCerrarEstado}
+        onGuardar={handleGuardarEstado}
+        guardando={guardandoEstado}
+      />
+
+      <ConfirmDeleteDialog
+        open={modalEliminar}
+        onClose={handleCerrarEliminar}
+        onConfirm={handleConfirmarEliminar}
+        title="Eliminar cliente"
+        message="¿Está seguro que desea eliminar este cliente?"
+        itemName={clienteAEliminar?.nombre}
+        loading={eliminando}
+      />
     </Paper>
   );
 }

@@ -4,6 +4,10 @@
  */
 
 export const getChipEstadosVenta = (isDark) => ({
+  'Venta iniciada': {
+    bg: isDark ? 'rgba(129, 199, 132, 0.28)' : 'rgba(56, 142, 60, 0.12)',
+    color: isDark ? '#66bb6a' : '#2e7d32',
+  },
   'Venta completada': {
     bg: isDark ? 'rgba(102, 187, 106, 0.28)' : 'rgba(46, 125, 50, 0.12)',
     color: isDark ? '#81c784' : '#1b5e20',

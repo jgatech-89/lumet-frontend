@@ -1,4 +1,4 @@
-export const FILAS_POR_PAGINA = 5;
+export const FILAS_POR_PAGINA = 20;
 
 export const CLIENTES_INICIAL = [
   { id: 1, nombre: 'Ana López', telefono: '+1 123 456 789', correo: 'ana@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta completada' },
