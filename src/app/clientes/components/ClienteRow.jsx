@@ -1,5 +1,6 @@
 import { TableCell, Chip, IconButton, Stack } from '@mui/material';
 import { useThemeMode } from '../../../context/ThemeContext';
+import { usePermissions } from '../../../hooks/usePermissions';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { getActionBtnBlue, getActionBtnRed } from '../../../components/shared/actionButtonStyles';
 import { compactCellSx, compactChipSx } from '../../../components/shared/actionButtonStyles';
@@ -18,6 +19,7 @@ const DownloadIcon = () => (
 
 export function ClienteRow({ row, chipEstados }) {
   const { isDark } = useThemeMode();
+  const { canDeleteClient } = usePermissions();
   const actionBtnBlue = getActionBtnBlue(isDark);
   const actionBtnRed = getActionBtnRed(isDark);
   const chipStyle = chipEstados[row.estado] ?? {
@@ -58,9 +60,11 @@ export function ClienteRow({ row, chipEstados }) {
           <IconButton size="small" aria-label="Descargar" title="Descargar" sx={actionBtnBlue}>
             <DownloadIcon />
           </IconButton>
-          <IconButton size="small" aria-label="Eliminar" title="Eliminar" sx={actionBtnRed}>
-            <DeleteIcon />
-          </IconButton>
+          {canDeleteClient && (
+            <IconButton size="small" aria-label="Eliminar" title="Eliminar" sx={actionBtnRed}>
+              <DeleteIcon />
+            </IconButton>
+          )}
         </Stack>
       </TableCell>
     </>

@@ -33,21 +33,21 @@ const routeConfig = [
     path: '/dashboard',
     element: Dashboard,
     private: true,
-    roles: ['admin', 'user'],
+    roles: ['admin', 'user', 'usuario', 'cliente', 'invitado'],
     layout: 'main',
   },
   {
     path: '/nuevo-cliente',
     element: NewClientPage,
     private: true,
-    roles: ['admin', 'user'],
+    roles: ['admin', 'user', 'usuario', 'cliente', 'invitado'],
     layout: 'main',
   },
   {
     path: '/configuracion',
     element: ConfigurationPage,
     private: true,
-    roles: ['admin', 'user'],
+    roles: ['admin'],
     layout: 'main',
   },
   {
@@ -62,7 +62,7 @@ const routeConfig = [
     path: '/',
     element: Dashboard,
     private: true,
-    roles: ['admin', 'user'],
+    roles: ['admin', 'user', 'usuario', 'cliente', 'invitado'],
     layout: 'main',
   },
 ];
