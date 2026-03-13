@@ -82,6 +82,7 @@ const dialogActionsSx = {
 
 export function CampoModals({
   tipoCampoOptions = [],
+  seccionOptions = [],
   empresasParaSelect,
   serviciosFiltrados,
   handleChangeEmpresa,
@@ -97,6 +98,8 @@ export function CampoModals({
   setServicioId,
   tipoCampo,
   setTipoCampo,
+  seccion,
+  setSeccion,
   orden,
   setOrden,
   activo,
@@ -456,6 +459,35 @@ export function CampoModals({
   const renderFormConfig = () => (
     <>
       <Typography sx={sectionTitleSx}>Configuración</Typography>
+      {/* Sección del formulario (obligatorio) */}
+      <Box sx={{ mb: 2 }}>
+        <FormControl size="small" fullWidth required error={!!errors?.seccion} sx={formControlSx}>
+          <InputLabel id="campo-seccion-label" shrink>Sección</InputLabel>
+          <Select
+            labelId="campo-seccion-label"
+            value={seccion ?? ''}
+            label="Sección"
+            onChange={(e) => setSeccion(e.target.value)}
+            displayEmpty
+            renderValue={(v) => {
+              if (!v) return 'Seleccionar';
+              const opt = (seccionOptions ?? []).find((s) => s.value === v);
+              return opt?.label ?? v;
+            }}
+            MenuProps={selectMenuProps}
+            sx={{ width: '100%' }}
+          >
+            <MenuItem value="">Seleccionar</MenuItem>
+            {(seccionOptions ?? []).map((s) => (
+              <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>
+            ))}
+          </Select>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+            Indica en qué bloque del formulario aparecerá este campo (Cliente, Datos base, Campos del formulario o Vendedor).
+          </Typography>
+          {errors?.seccion && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.seccion}</Typography>}
+        </FormControl>
+      </Box>
       {/* Fila: Orden (input pequeño) | Obligatorio | Activo — flex, no grid */}
       <Box
         sx={{
@@ -476,7 +508,7 @@ export function CampoModals({
           required
           error={!!errors?.orden}
           helperText={errors?.orden}
-          inputProps={{ min: 0, step: 1 }}
+          inputProps={{ min: 1, step: 1 }}
           sx={{ ...inputSx, width: 90, minWidth: 90 }}
         />
         <FormControlLabel

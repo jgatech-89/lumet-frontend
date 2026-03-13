@@ -123,6 +123,7 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
 
       <CampoModals
         tipoCampoOptions={campos.tipoCampoOptions}
+        seccionOptions={campos.seccionOptions}
         empresasParaSelect={campos.empresasParaSelect}
         serviciosFiltrados={campos.serviciosFiltrados}
         handleChangeEmpresa={campos.handleChangeEmpresa}
@@ -138,6 +139,8 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         setServicioId={campos.setServicioId}
         tipoCampo={campos.tipoCampo}
         setTipoCampo={campos.setTipoCampo}
+        seccion={campos.seccion}
+        setSeccion={campos.setSeccion}
         orden={campos.orden}
         setOrden={campos.setOrden}
         activo={campos.activo}

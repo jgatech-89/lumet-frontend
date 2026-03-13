@@ -6,10 +6,11 @@ import * as api from './apiCampos';
 import { obtenerCamposFormulario } from '../../clientes/logic/apiCliente';
 import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa';
 import { listarServiciosPorEmpresa } from '../../servicios/logic/apiServicios';
-import { CONFIG_FILAS_POR_PAGINA } from './constants';
+import { CONFIG_FILAS_POR_PAGINA, SECCIONES_FORMULARIO } from './constants';
 
-const INIT_ERRORS = { empresa: '', servicio: '', nombre: '', tipo: '', orden: '' };
+const INIT_ERRORS = { empresa: '', servicio: '', nombre: '', tipo: '', orden: '', seccion: '' };
 const TIPO_CAMPO_KEY = 'tipo_campo';
+const SECCIONES_FORMULARIO_KEY = 'secciones_formulario';
 
 /**
  * Hook con la lógica del módulo Campos: listado paginado desde API, CRUD y modales.
@@ -27,6 +28,10 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const { showSnackbar } = useSnackbar();
   const { getOptions } = useChoices();
   const tipoCampoOptions = useMemo(() => getOptions(TIPO_CAMPO_KEY), [getOptions]);
+  const seccionOptions = useMemo(() => {
+    const opts = getOptions(SECCIONES_FORMULARIO_KEY);
+    return opts?.length ? opts : SECCIONES_FORMULARIO;
+  }, [getOptions]);
 
   const getTipoLabel = useCallback(
     (value) => (tipoCampoOptions.find((t) => t.value === value)?.label ?? value),
@@ -56,7 +61,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const [empresaId, setEmpresaId] = useState('');
   const [servicioId, setServicioId] = useState('');
   const [tipoCampo, setTipoCampo] = useState('');
-  const [orden, setOrden] = useState('0');
+  const [seccion, setSeccion] = useState('');
+  const [orden, setOrden] = useState('1');
   const [activo, setActivo] = useState(true);
   const [requerido, setRequerido] = useState(false);
   const [placeholder, setPlaceholder] = useState('');
@@ -123,13 +129,14 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     }
     if (!nombre?.trim()) nextErrors.nombre = 'El nombre del campo es obligatorio';
     if (!tipoCampo) nextErrors.tipo = 'Seleccione el tipo de campo';
+    if (!seccion) nextErrors.seccion = 'Seleccione la sección del formulario';
     const ordenNum = parseInt(orden, 10);
-    if (orden === '' || isNaN(ordenNum) || ordenNum < 0) {
-      nextErrors.orden = 'Introduzca un número entero mayor o igual a 0';
+    if (orden === '' || isNaN(ordenNum) || ordenNum < 1) {
+      nextErrors.orden = 'Introduzca un número entero mayor o igual a 1';
     }
     const valid = Object.values(nextErrors).every((v) => !v);
     return { valid, errors: nextErrors };
-  }, [aplicarTodosEmpresas, aplicarTodosServicios, empresaId, servicioId, nombre, tipoCampo, orden]);
+  }, [aplicarTodosEmpresas, aplicarTodosServicios, empresaId, servicioId, nombre, tipoCampo, seccion, orden]);
 
   const canSave = useMemo(() => {
     const { valid } = getFormValid();
@@ -221,7 +228,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
-    setOrden('0');
+    setSeccion('');
+    setOrden('1');
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
@@ -266,7 +274,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
-    setOrden('0');
+    setSeccion('');
+    setOrden('1');
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
@@ -305,10 +314,11 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
 
     setGuardandoNueva(true);
     try {
-      const ordenNum = Math.max(0, parseInt(orden, 10) || 0);
+      const ordenNum = Math.max(1, parseInt(orden, 10) || 1);
       const payload = {
         nombre: nombre.trim(),
         tipo: tipoCampo,
+        seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
         visible_si: visible_si.trim() || '',
@@ -351,6 +361,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     productoId,
     aplicarTodosProductos,
     nombre,
+    seccion,
     orden,
     placeholder,
     visible_si,
@@ -392,7 +403,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         setServicioId(serv?.id?.toString() ?? '');
       }
       setTipoCampo(getTipoValueFromCampo(campo));
-      setOrden(String(campo.orden ?? 0));
+      setSeccion(campo.seccion ?? 'campos_formulario');
+      setOrden(String(campo.orden ?? 1));
       setActivo(campo.activo ?? true);
       setRequerido(campo.requerido ?? false);
       setPlaceholder(campo.placeholder ?? '');
@@ -430,12 +442,11 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
-    setOrden('0');
+    setSeccion('');
+    setOrden('1');
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
-    setHelp_text('');
-    setDefault_value('');
     setVisible_si('');
     setOpciones([]);
     setOpcionInput('');
@@ -455,10 +466,11 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
 
     setGuardandoEditar(true);
     try {
-      const ordenNum = Math.max(0, parseInt(orden, 10) || 0);
+      const ordenNum = Math.max(1, parseInt(orden, 10) || 1);
       const payload = {
         nombre: nombre.trim(),
         tipo: tipoCampo,
+        seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
         visible_si: visible_si.trim() || '',
@@ -524,6 +536,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     aplicarTodosEmpresas,
     aplicarTodosServicios,
     nombre,
+    seccion,
     orden,
     placeholder,
     visible_si,
@@ -569,6 +582,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
 
   return {
     tipoCampoOptions,
+    seccionOptions,
     campos,
     setCampos,
     totalItems: camposTotal,
@@ -589,6 +603,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     cargandoServicios,
     tipoCampo,
     setTipoCampo,
+    seccion,
+    setSeccion,
     orden,
     setOrden,
     activo,
