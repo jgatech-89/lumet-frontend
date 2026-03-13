@@ -22,7 +22,7 @@ const VisibilityOffIcon = () => (
   </svg>
 );
 
-const LoginForm = ({ onSubmit, isLoading = false }) => {
+const LoginForm = ({ onSubmit, isLoading = false, onForgotPassword }) => {
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -171,14 +171,21 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
       </Box>
 
       <Link
-        href="#"
+        component="button"
+        type="button"
         variant="body2"
+        onClick={() => onForgotPassword?.()}
         sx={{
           display: 'block',
           mt: 2.5,
           mb: 2,
           color: 'text.secondary',
           textDecoration: 'none',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          p: 0,
+          font: 'inherit',
           '&:hover': { textDecoration: 'underline', color: '#4dabf5' },
         }}
       >
