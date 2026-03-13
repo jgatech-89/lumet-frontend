@@ -3,7 +3,7 @@ import { useThemeMode } from '../../../context/ThemeContext';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { getActionBtnBlue, getActionBtnRed } from '../../../components/shared/actionButtonStyles';
 import { compactCellSx, compactChipSx } from '../../../components/shared/actionButtonStyles';
-import { EditIcon, DeleteIcon, SettingsIcon } from '../../../utils/icons';
+import { EditIcon, DeleteIcon, SettingsIcon, AddIcon } from '../../../utils/icons';
 
 const DownloadIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" fontSize="small">
@@ -11,7 +11,7 @@ const DownloadIcon = () => (
   </svg>
 );
 
-export function ClienteRow({ row, chipEstados, opcionesEstadoVenta = [], onEdit, onDescargar, onCambiarEstado, onEliminar }) {
+export function ClienteRow({ row, chipEstados, opcionesEstadoVenta = [], onEdit, onDescargar, onCambiarEstado, onEliminar, onAgregarProducto }) {
   const { isDark } = useThemeMode();
   const actionBtnBlue = getActionBtnBlue(isDark);
   const actionBtnRed = getActionBtnRed(isDark);
@@ -45,6 +45,9 @@ export function ClienteRow({ row, chipEstados, opcionesEstadoVenta = [], onEdit,
       <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.vendedor ?? '-'}</TableCell>
       <TableCell align="center" sx={compactCellSx}>
         <Stack direction="row" justifyContent="center" spacing={0.75}>
+          <IconButton size="small" aria-label="Agregar producto" title="Agregar producto" sx={actionBtnBlue} onClick={() => onAgregarProducto?.(row)}>
+            <AddIcon />
+          </IconButton>
           <IconButton size="small" aria-label="Editar" title="Editar" sx={actionBtnBlue} onClick={() => onEdit?.(row)}>
             <EditIcon />
           </IconButton>

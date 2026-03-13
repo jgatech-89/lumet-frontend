@@ -144,3 +144,14 @@ export const crearCliente = async (payload) => {
   const { data } = await post(BASE, payload);
   return data?.data ?? data;
 };
+
+/**
+ * Agrega un nuevo producto a un cliente existente.
+ * POST /api/clientes/{id}/agregar-producto/
+ * @param {number|string} clienteId
+ * @param {Object} payload - servicio_id, producto, respuestas
+ */
+export const agregarProductoCliente = async (clienteId, payload) => {
+  const { data } = await post(`${BASE}${clienteId}/agregar-producto/`, payload);
+  return data;
+};

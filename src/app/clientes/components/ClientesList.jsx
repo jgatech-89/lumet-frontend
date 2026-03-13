@@ -7,6 +7,7 @@ import { useClientes } from '../logic/useClientes';
 import { ClienteRow } from './ClienteRow';
 import { ClienteEditModal } from './ClienteEditModal';
 import { CambiarEstadoModal } from './CambiarEstadoModal';
+import { AgregarProductoModal } from './AgregarProductoModal';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
 import { SearchIcon } from '../../../utils/icons';
 import { useSnackbar } from '../../../context/SnackbarContext';
@@ -70,6 +71,8 @@ export function ClientesList() {
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
   const [exportando, setExportando] = useState(false);
+  const [modalAgregarProducto, setModalAgregarProducto] = useState(false);
+  const [clienteAgregarProducto, setClienteAgregarProducto] = useState(null);
 
   const handleAbrirEditar = useCallback(async (row) => {
     try {
@@ -151,6 +154,16 @@ export function ClientesList() {
       setEliminando(false);
     }
   }, [clienteAEliminar?.id, showSnackbar, recargar]);
+
+  const handleAbrirAgregarProducto = useCallback((row) => {
+    setClienteAgregarProducto(row);
+    setModalAgregarProducto(true);
+  }, []);
+
+  const handleCerrarAgregarProducto = useCallback(() => {
+    setModalAgregarProducto(false);
+    setClienteAgregarProducto(null);
+  }, []);
 
   const handleDescargarPdf = useCallback(async (row) => {
     try {
@@ -349,6 +362,7 @@ export function ClientesList() {
                     onDescargar={handleDescargarPdf}
                     onCambiarEstado={handleAbrirEstado}
                     onEliminar={handleAbrirEliminar}
+                    onAgregarProducto={handleAbrirAgregarProducto}
                   />
                 </TableRow>
               ))}
@@ -424,6 +438,13 @@ export function ClientesList() {
         message="¿Está seguro que desea eliminar este cliente?"
         itemName={clienteAEliminar?.nombre}
         loading={eliminando}
+      />
+
+      <AgregarProductoModal
+        open={modalAgregarProducto}
+        onClose={handleCerrarAgregarProducto}
+        cliente={clienteAgregarProducto}
+        onExito={recargar}
       />
     </Paper>
   );

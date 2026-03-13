@@ -48,3 +48,10 @@ export const CheckIcon = ({ size = 18 }) => (
     <path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" />
   </svg>
 );
+
+/** Icono + para agregar producto a cliente existente */
+export const AddIcon = () => (
+  <SvgIcon fontSize="small">
+    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+  </SvgIcon>
+);
