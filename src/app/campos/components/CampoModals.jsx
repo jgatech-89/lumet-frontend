@@ -342,7 +342,7 @@ export function CampoModals({
                   MenuProps={selectMenuProps}
                   sx={{ width: '100%' }}
                 >
-                  <MenuItem value="">Todos los productos</MenuItem>
+                  <MenuItem value="">Seleccionar producto</MenuItem>
                   {(opcionesProducto ?? []).map((o) => (
                     <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
                   ))}

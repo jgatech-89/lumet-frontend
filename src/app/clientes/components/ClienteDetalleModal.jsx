@@ -34,11 +34,20 @@ import { AgregarProductoModal } from './AgregarProductoModal';
 
 function DataRow({ label, value }) {
   return (
-    <Stack direction="row" spacing={2} sx={{ py: 0.5 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140 }}>
+    <Stack direction="row" spacing={2} sx={{ py: 0.5, minWidth: 0 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140, flexShrink: 0 }}>
         {label}
       </Typography>
-      <Typography variant="body2">{value || '-'}</Typography>
+      <Typography
+        variant="body2"
+        sx={{
+          wordBreak: 'break-all',
+          overflowWrap: 'break-word',
+          minWidth: 0,
+        }}
+      >
+        {value || '-'}
+      </Typography>
     </Stack>
   );
 }
@@ -301,8 +310,8 @@ export function ClienteDetalleModal({
                   <TableHead>
                     <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '20%' }}>Producto</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Empresa</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Servicio</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Contratistas</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '24%' }}>Estado</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '20%' }} align="center">Opciones</TableCell>
                     </TableRow>

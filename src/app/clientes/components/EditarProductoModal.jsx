@@ -150,6 +150,10 @@ export function EditarProductoModal({
     (cliente.respuestas || []).forEach((item) => {
       r[item.nombre_campo] = item.respuesta_campo ?? '';
     });
+    if (producto?.vendedor != null && String(producto.vendedor).trim() !== '') {
+      r.vendedor = String(producto.vendedor);
+      r.Vendedor = String(producto.vendedor);
+    }
     setRespuestas(r);
     setTipoCliente(producto?.tipo_cliente ?? r['Tipo de cliente'] ?? r['tipo_cliente'] ?? '');
     setEmpresaId(producto?.empresa ?? producto?.empresa_id ?? '');
@@ -178,10 +182,15 @@ export function EditarProductoModal({
   }, [empresaId]);
 
   useEffect(() => {
-    apiCampos.obtenerOpcionesCampoPorNombre('producto')
+    if (!open || !empresaId || !servicioId) {
+      setOpcionesProducto([]);
+      return;
+    }
+    const params = { empresaId: Number(empresaId), servicioId: Number(servicioId) };
+    apiCampos.obtenerOpcionesCampoPorNombre('producto', params)
       .then((list) => setOpcionesProducto(Array.isArray(list) ? list : []))
       .catch(() => setOpcionesProducto([]));
-  }, []);
+  }, [open, empresaId, servicioId]);
 
   useEffect(() => {
     if (!open || !empresaId || !servicioId) {
@@ -271,9 +280,9 @@ export function EditarProductoModal({
         </IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ overflowY: 'auto' }}>
-        {/* 1. Empresa y producto (editable excepto estado) */}
+        {/* 1. Servicio y producto (editable excepto estado) */}
         <Typography variant="subtitle2" fontWeight={600} color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Empresa y producto
+          Servicio y producto
         </Typography>
         <Stack spacing={2} sx={{ mb: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200 }}>
@@ -290,10 +299,10 @@ export function EditarProductoModal({
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Empresa</InputLabel>
+            <InputLabel>Servicio</InputLabel>
             <Select
               value={empresaId}
-              label="Empresa"
+              label="Servicio"
               onChange={(e) => {
                 setEmpresaId(e.target.value);
                 setServicioId('');
@@ -306,10 +315,10 @@ export function EditarProductoModal({
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Servicio</InputLabel>
+            <InputLabel>Contratistas</InputLabel>
             <Select
               value={servicioId}
-              label="Servicio"
+              label="Contratistas"
               onChange={(e) => setServicioId(e.target.value)}
               disabled={!empresaId}
             >

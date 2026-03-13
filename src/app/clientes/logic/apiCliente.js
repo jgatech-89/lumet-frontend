@@ -57,15 +57,20 @@ export const listarClientes = async (page = 1, pageSize = 20, filters = {}) => {
  * @param {number} [empresaId] - ID de la empresa (opcional)
  * @param {number} [servicioId] - ID del servicio (opcional)
  * @param {string} [producto] - Valor del producto para filtrar campos (opcional)
+ * @param {boolean} [soloSinProducto] - Si true, solo campos sin restricción por producto (producto vacío)
  * @returns {Promise<Array>} Campos con id, nombre, tipo, opciones, requerido, etc.
  * Si no se pasan empresaId ni servicioId, devuelve campos globales.
- * Si se pasa producto, filtra campos que aplican a ese producto.
+ * Si soloSinProducto=true: solo campos que aplican a todos los productos.
+ * Si se pasa producto: filtra campos que aplican a ese producto o a todos.
  */
-export const obtenerCamposFormulario = async (empresaId, servicioId, producto) => {
+export const obtenerCamposFormulario = async (empresaId, servicioId, producto, soloSinProducto = false) => {
   const params = {};
   if (empresaId != null) params.empresa_id = empresaId;
   if (servicioId != null) params.servicio_id = servicioId;
-  if (producto != null && String(producto).trim() !== '') params.producto = String(producto).trim();
+  if (producto != null && String(producto).trim() !== '' && producto !== '__todos__') {
+    params.producto = String(producto).trim();
+  }
+  if (soloSinProducto) params.solo_sin_producto = 'true';
   const { data } = await get(BASE_FORMULARIO, params);
   return Array.isArray(data) ? data : [];
 };

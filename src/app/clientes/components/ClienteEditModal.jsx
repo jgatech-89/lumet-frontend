@@ -31,7 +31,7 @@ const esVisibleSiCambioTitular = (c) => {
   return vs.includes('cambio') && vs.includes('titular');
 };
 
-const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto'];
+const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo producto', 'tipo de producto'];
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c.nombre) === norm(n));
 
@@ -167,13 +167,14 @@ export function ClienteEditModal({
   }, [cliente, open, productoPreSeleccionado]);
 
   useEffect(() => {
-    if (!cliente?.servicio_id || !open) return;
+    if (!cliente?.servicio_id || !cliente?.servicio_empresa_id || !open) return;
     let cancelled = false;
-    apiCampos.obtenerOpcionesCampoPorNombre('producto')
+    const params = { empresaId: cliente.servicio_empresa_id, servicioId: cliente.servicio_id };
+    apiCampos.obtenerOpcionesCampoPorNombre('producto', params)
       .then((list) => { if (!cancelled) setOpcionesProducto(Array.isArray(list) ? list : []); })
       .catch(() => { if (!cancelled) setOpcionesProducto([]); });
     return () => { cancelled = true; };
-  }, [cliente?.servicio_id, open]);
+  }, [cliente?.servicio_id, cliente?.servicio_empresa_id, open]);
 
   useEffect(() => {
     if (!cliente?.servicio_id || !open) return;

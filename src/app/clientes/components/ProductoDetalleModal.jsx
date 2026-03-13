@@ -21,11 +21,20 @@ function formatValorSiNo(val) {
 function DataRow({ label, value, formatSiNo = false }) {
   const displayValue = formatSiNo ? formatValorSiNo(value) : (value || '-');
   return (
-    <Stack direction="row" spacing={2} sx={{ py: 0.5 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160 }}>
+    <Stack direction="row" spacing={2} sx={{ py: 0.5, minWidth: 0 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160, flexShrink: 0 }}>
         {label}
       </Typography>
-      <Typography variant="body2">{displayValue}</Typography>
+      <Typography
+        variant="body2"
+        sx={{
+          wordBreak: 'break-all',
+          overflowWrap: 'break-word',
+          minWidth: 0,
+        }}
+      >
+        {displayValue}
+      </Typography>
     </Stack>
   );
 }
@@ -79,12 +88,12 @@ export function ProductoDetalleModal({
           color="primary"
           sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}
         >
-          Empresa y producto
+          Servicio y producto
         </Typography>
         <Stack spacing={0.5} sx={{ mb: 2 }}>
           <DataRow label="Tipo de cliente" value={tipoClienteValor} />
-          <DataRow label="Empresa" value={producto.empresa_nombre} />
-          <DataRow label="Servicio" value={producto.servicio_nombre} />
+          <DataRow label="Servicio" value={producto.empresa_nombre} />
+          <DataRow label="Contratistas" value={producto.servicio_nombre} />
           <DataRow label="Producto" value={producto.producto} />
           <DataRow label="Estado de venta" value={labelEstado} />
         </Stack>
@@ -97,7 +106,7 @@ export function ProductoDetalleModal({
         >
           Vendedor
         </Typography>
-        <DataRow label="Vendedor" value={cliente?.vendedor_nombre} />
+        <DataRow label="Vendedor" value={producto?.vendedor_nombre ?? cliente?.vendedor_nombre} />
 
         {respuestasSinVendedorNiTipoCliente.length > 0 && (
           <>

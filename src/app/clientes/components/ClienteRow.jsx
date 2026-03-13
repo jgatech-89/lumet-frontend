@@ -30,7 +30,21 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
       <TableCell sx={{ ...compactCellSx, fontWeight: 500 }}>{row.nombre}</TableCell>
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.numero_identificacion || '-'}</TableCell>}
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.telefono}</TableCell>}
-      {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.correo}</TableCell>}
+      {!compact && (
+        <TableCell
+          sx={{
+            ...compactCellSx,
+            color: 'text.secondary',
+            maxWidth: 200,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            wordBreak: 'break-all',
+          }}
+          title={row.correo}
+        >
+          {row.correo || '-'}
+        </TableCell>
+      )}
       <TableCell align="center" sx={compactCellSx}>
         {isSmallScreen ? (
           <>

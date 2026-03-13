@@ -15,6 +15,7 @@ const BASE_DATA_INICIAL = {
   numero_identificacion: '',
   telefono: '',
   correo: '',
+  direccion: '',
 };
 
 /** Nombres que identifican tipo_cliente en campos dinámicos (viene de tabla campos, se muestra en paso 1; el resto en paso 3). */
@@ -23,13 +24,15 @@ const NOMBRES_TIPO_CLIENTE_CAMPO = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cli
 /** Nombres que identifican estado_venta en campos dinámicos (se muestra con el resto de campos en paso 3). */
 const NOMBRES_ESTADO_VENTA_CAMPO = ['estado_venta', 'Estado de venta', 'Estado venta', 'estado venta'];
 
-/** Campo Producto: usado para el selector de producto en paso 3, no se muestra como campo de entrada. */
-const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto'];
+/** Campo Producto: producto, Productos, Tipo producto, tipo de producto */
+const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo producto', 'tipo de producto'];
 
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoTipoCliente = (c) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoEstadoVenta = (c) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c.nombre) === norm(n));
+/** Detecta si el campo es de vendedor. Las opciones vienen de la tabla vendedores. */
+const esCampoVendedor = (n) => /vendedor/i.test(n || '');
 
 /**
  * Hook con la lógica del formulario de nuevo cliente (4 pasos).
@@ -156,12 +159,15 @@ export function useNuevoCliente() {
 
   const cargarOpcionesProducto = useCallback(async () => {
     try {
-      const list = await apiCampos.obtenerOpcionesCampoPorNombre('producto');
+      const params = servicio?.empresa_id && servicio?.id
+        ? { empresaId: servicio.empresa_id, servicioId: servicio.id }
+        : {};
+      const list = await apiCampos.obtenerOpcionesCampoPorNombre('producto', params);
       setOpcionesProducto(Array.isArray(list) ? list : []);
     } catch {
       setOpcionesProducto([]);
     }
-  }, []);
+  }, [servicio?.empresa_id, servicio?.id]);
 
   const cargarCamposFormulario = useCallback(async () => {
     if (!servicio?.empresa_id || !servicio?.id) {
@@ -170,8 +176,14 @@ export function useNuevoCliente() {
     }
     setCargandoCampos(true);
     try {
-      const productoParam = (producto && producto !== '__todos__' && producto.trim()) ? producto.trim() : undefined;
-      const campos = await apiCliente.obtenerCamposFormulario(servicio.empresa_id, servicio.id, productoParam);
+      const productoSeleccionado = (producto && producto !== '__todos__' && String(producto).trim()) ? producto.trim() : null;
+      const soloSinProducto = !productoSeleccionado;
+      const campos = await apiCliente.obtenerCamposFormulario(
+        servicio.empresa_id,
+        servicio.id,
+        productoSeleccionado || undefined,
+        soloSinProducto
+      );
       setCamposFormulario(Array.isArray(campos) ? campos : []);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');
@@ -214,9 +226,12 @@ export function useNuevoCliente() {
 
   const puedeSiguientePaso = () => {
     if (paso === 1) {
-      const valorTipo = campoTipoCliente ? respuestas[campoTipoCliente.nombre] : tipoCliente;
+      if (!campoTipoCliente) return false;
+      const valorTipo = respuestas[campoTipoCliente.nombre];
       if (!valorTipo || !String(valorTipo).trim()) return false;
       if (!empresa || !servicio) return false;
+      const prodEnCliente = campoTipoProducto && seccion(campoTipoProducto) === 'cliente';
+      if (prodEnCliente && opcionesProducto?.length > 0 && !producto) return false;
       return true;
     }
     if (paso === 2) {
@@ -226,10 +241,19 @@ export function useNuevoCliente() {
       if (!validarTelefono(baseData.telefono)) return false;
       if (!baseData.correo?.trim()) return false;
       if (!validarCorreo(baseData.correo)) return false;
+      const prodEnDatosBase = campoTipoProducto && seccion(campoTipoProducto) === 'datos_base';
+      if (prodEnDatosBase && opcionesProducto?.length > 0 && !producto) return false;
+      const requeridosDatosBase = camposSeccionDatosBase.filter((c) => c.requerido);
+      const okDatosBase = requeridosDatosBase.every((c) => {
+        const v = respuestas[c.nombre];
+        return v != null && String(v).trim() !== '';
+      });
+      if (!okDatosBase) return false;
       return true;
     }
     if (paso === 3) {
-      if (opcionesProducto?.length > 0 && !producto) return false;
+      const prodEnFormulario = campoTipoProducto && seccion(campoTipoProducto) === 'campos_formulario';
+      if (prodEnFormulario && opcionesProducto?.length > 0 && !producto) return false;
       const requeridos = camposFormularioSinTipoCliente.filter((c) => c.requerido);
       const okRequeridos = requeridos.every((c) => {
         const v = respuestas[c.nombre];
@@ -244,6 +268,15 @@ export function useNuevoCliente() {
         });
       }
       return true;
+    }
+    if (paso === 4) {
+      const prodEnVendedor = campoTipoProducto && seccion(campoTipoProducto) === 'vendedor';
+      if (prodEnVendedor && opcionesProducto?.length > 0 && !producto) return false;
+      const requeridosVendedor = camposSeccionVendedor.filter((c) => c.requerido);
+      return requeridosVendedor.every((c) => {
+        const v = esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId) : respuestas[c.nombre];
+        return v != null && String(v).trim() !== '';
+      });
     }
     return true;
   };
@@ -261,6 +294,7 @@ export function useNuevoCliente() {
     setTipoCliente('');
     setEmpresa(null);
     setServicio(null);
+    setProducto('');
     setBaseData({ ...BASE_DATA_INICIAL });
     setRespuestas({});
     setVendedorId('');
@@ -268,7 +302,7 @@ export function useNuevoCliente() {
 
   const handleGuardar = async () => {
     if (!empresa?.id || !servicio?.id) {
-      showSnackbar('Seleccione empresa y servicio', 'error');
+      showSnackbar('Seleccione servicio y contratista', 'error');
       return;
     }
     if (!baseData.nombre?.trim()) {
@@ -286,7 +320,7 @@ export function useNuevoCliente() {
       const esTipoCliente = ([k]) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(k) === norm(n));
       const esEstadoVenta = ([k]) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(k) === norm(n));
       const esProducto = ([k]) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(k) === norm(n));
-      const esVendedor = ([k]) => norm(k) === 'vendedor';
+      const esVendedor = ([k]) => /vendedor/i.test(norm(k));
 
       const nombresValidos = new Set([
         'vendedor',
@@ -315,6 +349,7 @@ export function useNuevoCliente() {
         numero_identificacion: baseData.numero_identificacion?.trim() || '',
         telefono: baseData.telefono?.trim() || '',
         correo: baseData.correo?.trim() || '',
+        direccion: baseData.direccion?.trim() || '',
         respuestas: respuestasList,
       };
 
@@ -356,10 +391,38 @@ export function useNuevoCliente() {
     return true;
   });
 
-  /** Campos del formulario excluyendo tipo_cliente, producto, cambio titular y los que dependen de cambio titular (visible_si). */
-  const camposFormularioSinTipoCliente = camposFormulario
+  const todosLosCampos = (() => {
+    const seen = new Set();
+    return [...camposFormulario, ...camposGlobales].filter((c) => {
+      const key = c.id ?? c.nombre;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
+  const seccion = (c) => (c.seccion || 'campos_formulario').toLowerCase();
+
+  /** Campo Producto: se renderiza como selector en la sección que tenga asignada */
+  const campoTipoProducto = todosLosCampos.find(esCampoProducto);
+
+  /** Sección 1 (cliente): campos con seccion=cliente, excl. tipo_cliente que se maneja aparte, excl. producto (se renderiza aparte) */
+  const camposSeccionCliente = todosLosCampos
+    .filter((c) => seccion(c) === 'cliente' && !esCampoTipoCliente(c) && !esCampoProducto(c));
+
+  /** Sección 2 (datos_base): campos con seccion=datos_base, excl. producto */
+  const camposSeccionDatosBase = todosLosCampos.filter((c) => seccion(c) === 'datos_base' && !esCampoProducto(c));
+
+  /** Sección 3 (campos_formulario): solo campos de esta sección, excl. tipo_cliente, producto, cambio titular, visible_si */
+  const camposSeccionFormulario = todosLosCampos
+    .filter((c) => seccion(c) === 'campos_formulario')
     .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c))
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
+
+  /** Sección 4 (vendedor): solo campos con seccion=vendedor */
+  const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
+
+  /** Paso 3: solo campos seccion=campos_formulario (campoTitular y dependientes se renderan aparte) */
+  const camposFormularioSinTipoCliente = camposSeccionFormulario;
 
   return {
     paso,
@@ -404,5 +467,9 @@ export function useNuevoCliente() {
     nombreCampoTitular,
     cambioTitularMarcado,
     camposTitularDependientes,
+    camposSeccionCliente,
+    camposSeccionDatosBase,
+    camposSeccionVendedor,
+    campoTipoProducto,
   };
 }

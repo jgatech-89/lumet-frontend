@@ -188,34 +188,46 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     };
   }, [active, pagina, filtroEstado, busqueda, filtroEmpresa, filtroServicio, filtroProducto, cargarCampos]);
 
-  /** Cargar opciones de producto solo cuando el campo aplica a un servicio concreto (o ya las teníamos cargadas)
-   *  y hay productos relacionados. Si se activa "aplicar a todos los contratistas" después de elegir un servicio,
-   *  conservamos las opciones ya cargadas.
+  /** Cargar opciones de producto:
+   *  - Si aplicarTodosEmpresas/servicios: cargar opciones globales (obtenerOpcionesCampoPorNombre sin params)
+   *  - Si empresa+servicio concretos: cargar desde obtenerCamposFormulario
    */
   useEffect(() => {
     if (!active && !modalNueva && !modalEditar) return;
-    if (aplicarTodosEmpresas || !empresaId || (!servicioId && !aplicarTodosServicios)) {
-      setOpcionesProducto([]);
-      setProductoId('');
-      return;
-    }
     let cancelled = false;
-    const servicioParam = aplicarTodosServicios ? null : (servicioId || null);
-    obtenerCamposFormulario(empresaId, servicioParam)
-      .then((campos) => {
-        if (cancelled) return;
-        const norm = (s) => (s || '').toLowerCase().trim();
-        const campoProducto = (campos || []).find((c) => norm(c.nombre) === 'producto');
-        const opciones = (campoProducto?.opciones || []).map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })).filter((o) => o.value || o.label);
-        setOpcionesProducto(opciones);
-        if (opciones.length === 0) setProductoId('');
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOpcionesProducto([]);
-          setProductoId('');
-        }
-      });
+    if (aplicarTodosEmpresas || !empresaId || (!servicioId && !aplicarTodosServicios)) {
+      api.obtenerOpcionesCampoPorNombre('producto', {})
+        .then((opciones) => {
+          if (cancelled) return;
+          const list = Array.isArray(opciones) ? opciones : [];
+          setOpcionesProducto(list.map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })).filter((o) => o.value || o.label));
+          if (list.length === 0) setProductoId('');
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setOpcionesProducto([]);
+            setProductoId('');
+          }
+        });
+    } else {
+      const servicioParam = aplicarTodosServicios ? null : (servicioId || null);
+        obtenerCamposFormulario(empresaId, servicioParam)
+        .then((campos) => {
+          if (cancelled) return;
+          const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_').trim();
+          const esCampoProducto = (c) => ['producto', 'productos', 'tipo_producto'].includes(norm(c.nombre));
+          const campoProducto = (campos || []).find(esCampoProducto);
+          const opciones = (campoProducto?.opciones || []).map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })).filter((o) => o.value || o.label);
+          setOpcionesProducto(opciones);
+          if (opciones.length === 0) setProductoId('');
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setOpcionesProducto([]);
+            setProductoId('');
+          }
+        });
+    }
     return () => { cancelled = true; };
   }, [active, modalNueva, modalEditar, empresaId, servicioId, aplicarTodosEmpresas, aplicarTodosServicios]);
 

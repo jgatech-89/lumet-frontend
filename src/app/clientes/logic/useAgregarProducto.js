@@ -14,8 +14,8 @@ const NOMBRES_TIPO_CLIENTE_CAMPO = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cli
 /** Nombres que identifican estado_venta en campos dinámicos. */
 const NOMBRES_ESTADO_VENTA_CAMPO = ['estado_venta', 'Estado de venta', 'Estado venta', 'estado venta'];
 
-/** Campo Producto. */
-const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto'];
+/** Campo Producto: producto, Productos, Tipo producto, tipo de producto */
+const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo producto', 'tipo de producto'];
 
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoTipoCliente = (c) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(c.nombre) === norm(n));
@@ -153,12 +153,15 @@ export function useAgregarProducto(cliente, onExito) {
 
   const cargarOpcionesProducto = useCallback(async () => {
     try {
-      const list = await apiCampos.obtenerOpcionesCampoPorNombre('producto');
+      const params = servicio?.empresa_id && servicio?.id
+        ? { empresaId: servicio.empresa_id, servicioId: servicio.id }
+        : {};
+      const list = await apiCampos.obtenerOpcionesCampoPorNombre('producto', params);
       setOpcionesProducto(Array.isArray(list) ? list : []);
     } catch {
       setOpcionesProducto([]);
     }
-  }, []);
+  }, [servicio?.empresa_id, servicio?.id]);
 
   const cargarCamposFormulario = useCallback(async () => {
     if (!servicio?.empresa_id || !servicio?.id) {
@@ -167,8 +170,14 @@ export function useAgregarProducto(cliente, onExito) {
     }
     setCargandoCampos(true);
     try {
-      const productoParam = (producto && producto !== '__todos__' && producto.trim()) ? producto.trim() : undefined;
-      const campos = await apiCliente.obtenerCamposFormulario(servicio.empresa_id, servicio.id, productoParam);
+      const productoSeleccionado = (producto && producto !== '__todos__' && String(producto).trim()) ? producto.trim() : null;
+      const soloSinProducto = !productoSeleccionado;
+      const campos = await apiCliente.obtenerCamposFormulario(
+        servicio.empresa_id,
+        servicio.id,
+        productoSeleccionado || undefined,
+        soloSinProducto
+      );
       setCamposFormulario(Array.isArray(campos) ? campos : []);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');
@@ -201,13 +210,17 @@ export function useAgregarProducto(cliente, onExito) {
 
   const puedeSiguientePaso = () => {
     if (paso === 1) {
-      const valorTipo = campoTipoCliente ? respuestas[campoTipoCliente.nombre] : tipoCliente;
+      if (!campoTipoCliente) return false;
+      const valorTipo = respuestas[campoTipoCliente.nombre];
       if (!valorTipo || !String(valorTipo).trim()) return false;
       if (!empresa || !servicio) return false;
+      const prodEnPaso1 = campoTipoProducto && ['cliente', 'datos_base'].includes(seccion(campoTipoProducto));
+      if (prodEnPaso1 && opcionesProducto?.length > 0 && !producto) return false;
       return true;
     }
     if (paso === 2) {
-      if (opcionesProducto?.length > 0 && !producto) return false;
+      const prodEnFormulario = campoTipoProducto && seccion(campoTipoProducto) === 'campos_formulario';
+      if (prodEnFormulario && opcionesProducto?.length > 0 && !producto) return false;
       const requeridos = camposFormularioSinTipoCliente.filter((c) => c.requerido);
       const okRequeridos = requeridos.every((c) => {
         const v = respuestas[c.nombre];
@@ -222,6 +235,16 @@ export function useAgregarProducto(cliente, onExito) {
         });
       }
       return true;
+    }
+    if (paso === 3) {
+      const prodEnVendedor = campoTipoProducto && seccion(campoTipoProducto) === 'vendedor';
+      if (prodEnVendedor && opcionesProducto?.length > 0 && !producto) return false;
+      const esCampoVendedor = (n) => /vendedor/i.test(n || '');
+      const requeridosVendedor = camposSeccionVendedor.filter((c) => c.requerido);
+      return requeridosVendedor.every((c) => {
+        const v = esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId) : respuestas[c.nombre];
+        return v != null && String(v).trim() !== '';
+      });
     }
     return true;
   };
@@ -260,7 +283,7 @@ export function useAgregarProducto(cliente, onExito) {
       const esTipoCliente = ([k]) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(k) === norm(n));
       const esEstadoVenta = ([k]) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(k) === norm(n));
       const esProducto = ([k]) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(k) === norm(n));
-      const esVendedor = ([k]) => norm(k) === 'vendedor';
+      const esVendedor = ([k]) => /vendedor/i.test(norm(k));
 
       const nombresValidos = new Set([
         'vendedor',
@@ -312,19 +335,33 @@ export function useAgregarProducto(cliente, onExito) {
   const nombreCampoTitular = campoTitular?.nombre ?? 'Cambio de titular';
   const cambioTitularMarcado = (respuestas[nombreCampoTitular] === '1' || respuestas[nombreCampoTitular] === 'si' || respuestas[nombreCampoTitular] === true);
 
-  const camposTitularDependientesRaw = [...camposFormulario, ...camposGlobales]
-    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && esVisibleSiCambioTitular(c));
-  const seenIds = new Set();
-  const camposTitularDependientes = camposTitularDependientesRaw.filter((c) => {
-    const key = c.id ?? c.nombre;
-    if (seenIds.has(key)) return false;
-    seenIds.add(key);
-    return true;
-  });
-
-  const camposFormularioSinTipoCliente = camposFormulario
+  const todosLosCampos = (() => {
+    const seen = new Set();
+    return [...camposFormulario, ...camposGlobales].filter((c) => {
+      const key = c.id ?? c.nombre;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
+  const seccion = (c) => (c.seccion || 'campos_formulario').toLowerCase();
+  const campoTipoProducto = todosLosCampos.find(esCampoProducto);
+  const camposSeccionFormulario = todosLosCampos
+    .filter((c) => seccion(c) === 'campos_formulario')
     .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCampoEstadoVenta(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c))
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
+  const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
+  const camposFormularioSinTipoCliente = camposSeccionFormulario;
+
+  const camposTitularDependientesRaw = todosLosCampos
+    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && esVisibleSiCambioTitular(c));
+  const seenIdsTitular = new Set();
+  const camposTitularDependientes = camposTitularDependientesRaw.filter((c) => {
+    const key = c.id ?? c.nombre;
+    if (seenIdsTitular.has(key)) return false;
+    seenIdsTitular.add(key);
+    return true;
+  });
 
   return {
     paso,
@@ -365,5 +402,7 @@ export function useAgregarProducto(cliente, onExito) {
     nombreCampoTitular,
     cambioTitularMarcado,
     camposTitularDependientes,
+    camposSeccionVendedor,
+    campoTipoProducto,
   };
 }

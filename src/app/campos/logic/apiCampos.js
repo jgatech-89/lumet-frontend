@@ -11,12 +11,17 @@ const BASE_OPCIONES_POR_NOMBRE = '/api/campos/opciones-por-nombre/';
  */
 /**
  * Obtiene las opciones de un campo por su nombre (ej. Producto).
+ * Si se pasan empresaId y servicioId, devuelve las opciones del campo más específico para ese servicio.
  * @param {string} nombre - Nombre del campo
+ * @param {{ empresaId?: number, servicioId?: number }} [params] - Opcionales para filtrar por empresa/servicio
  * @returns {Promise<Array<{ value: string, label: string }>>}
  */
-export const obtenerOpcionesCampoPorNombre = async (nombre) => {
+export const obtenerOpcionesCampoPorNombre = async (nombre, params = {}) => {
   if (!nombre?.trim()) return [];
-  const { data } = await get(BASE_OPCIONES_POR_NOMBRE, { nombre: nombre.trim() });
+  const query = { nombre: nombre.trim() };
+  if (params?.empresaId != null) query.empresa_id = params.empresaId;
+  if (params?.servicioId != null) query.servicio_id = params.servicioId;
+  const { data } = await get(BASE_OPCIONES_POR_NOMBRE, query);
   return Array.isArray(data) ? data : [];
 };
 
