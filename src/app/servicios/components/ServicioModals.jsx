@@ -32,7 +32,7 @@ const btnPrimarySx = {
   boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)',
 };
 
-export function ServicioModals({
+export function ContratistaModals({
   empresasParaSelect,
   modalNueva,
   modalEditar,
@@ -61,20 +61,20 @@ export function ServicioModals({
     <>
       <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Nuevo servicio</Typography>
+          <Typography variant="h6" fontWeight={600}>Nuevo contratista</Typography>
           <IconButton size="small" onClick={handleCerrarNueva} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Completa la información para registrar un servicio.
+            Completa la información para registrar un contratista.
           </Typography>
           <Stack spacing={2}>
             <TextField
               fullWidth
               size="small"
-              label="Nombre del servicio"
+              label="Nombre del contratista"
               placeholder="Introduce el nombre..."
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
@@ -82,11 +82,11 @@ export function ServicioModals({
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
             <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="servicio-empresa-label">Empresa</InputLabel>
+              <InputLabel id="servicio-empresa-label">Servicio</InputLabel>
               <Select
                 labelId="servicio-empresa-label"
                 value={empresaId}
-                label="Empresa"
+                label="Servicio"
                 onChange={(e) => setEmpresaId(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
@@ -105,27 +105,27 @@ export function ServicioModals({
             disabled={!nombre.trim() || !empresaId || guardandoNuevo}
             sx={btnPrimarySx}
           >
-            {guardandoNuevo ? 'Guardando...' : 'Guardar servicio'}
+            {guardandoNuevo ? 'Guardando...' : 'Guardar contratista'}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={modalEditar} onClose={handleCerrarEditar} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Editar servicio</Typography>
+          <Typography variant="h6" fontWeight={600}>Editar contratista</Typography>
           <IconButton size="small" onClick={handleCerrarEditar} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Modifica los datos del servicio.
+            Modifica los datos del contratista.
           </Typography>
           <Stack spacing={2}>
             <TextField
               fullWidth
               size="small"
-              label="Nombre del servicio"
+              label="Nombre del contratista"
               placeholder="Introduce el nombre..."
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
@@ -133,11 +133,11 @@ export function ServicioModals({
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
             <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="editar-servicio-empresa-label">Empresa</InputLabel>
+              <InputLabel id="editar-servicio-empresa-label">Servicio</InputLabel>
               <Select
                 labelId="editar-servicio-empresa-label"
                 value={empresaId}
-                label="Empresa"
+                label="Servicio"
                 onChange={(e) => setEmpresaId(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
@@ -147,11 +147,11 @@ export function ServicioModals({
               </Select>
             </FormControl>
             <FormControl size="small" fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="editar-servicio-estado-label">Estado del servicio</InputLabel>
+              <InputLabel id="editar-servicio-estado-label">Estado del contratista</InputLabel>
               <Select
                 labelId="editar-servicio-estado-label"
                 value={estadoServicio}
-                label="Estado del servicio"
+                label="Estado del contratista"
                 onChange={(e) => setEstadoServicio(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
@@ -179,8 +179,8 @@ export function ServicioModals({
         open={modalEliminar}
         onClose={handleCerrarEliminar}
         onConfirm={() => { handleConfirmarEliminar(); return Promise.resolve(); }}
-        title="Eliminar servicio"
-        message="¿Está seguro que desea eliminar este servicio?"
+        title="Eliminar contratista"
+        message="¿Está seguro que desea eliminar este contratista?"
         itemName={aEliminar?.servicio ?? aEliminar?.nombre}
         loading={eliminando}
         confirmLabel="Eliminar"

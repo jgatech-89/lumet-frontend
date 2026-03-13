@@ -60,10 +60,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const [activo, setActivo] = useState(true);
   const [requerido, setRequerido] = useState(false);
   const [placeholder, setPlaceholder] = useState('');
-  const [help_text, setHelp_text] = useState('');
-  const [default_value, setDefault_value] = useState('');
   const [visible_si, setVisible_si] = useState('');
   const [productoId, setProductoId] = useState('');
+  const [aplicarTodosProductos, setAplicarTodosProductos] = useState(false);
   /** Opciones: en crear = string[]; en editar = Array<{ id?, label, value? }> */
   const [opciones, setOpciones] = useState([]);
   const [opcionesProducto, setOpcionesProducto] = useState([]);
@@ -98,7 +97,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       .catch((e) => {
         if (!cancelled) {
           showSnackbar(
-            getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los servicios'),
+            getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los contratistas'),
             'error'
           );
           setServiciosFiltrados([]);
@@ -110,7 +109,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     return () => { cancelled = true; };
   }, [aplicarTodosEmpresas, empresaId, showSnackbar, aplicarTodosServicios]);
 
-  /** Al cambiar empresa en el select: actualizar id y limpiar servicio para que el usuario elija de la nueva lista */
+  /** Al cambiar servicio en el select: actualizar id y limpiar servicio dependiente para que el usuario elija de la nueva lista */
   const handleChangeEmpresa = useCallback((id) => {
     setEmpresaId(id);
     setServicioId('');
@@ -119,8 +118,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const getFormValid = useCallback(() => {
     const nextErrors = { ...INIT_ERRORS };
     if (!aplicarTodosEmpresas) {
-      if (!empresaId) nextErrors.empresa = 'Seleccione una empresa';
-      if (!aplicarTodosServicios && !servicioId) nextErrors.servicio = 'Seleccione un servicio';
+      if (!empresaId) nextErrors.empresa = 'Seleccione un servicio';
+      if (!aplicarTodosServicios && !servicioId) nextErrors.servicio = 'Seleccione un contratista';
     }
     if (!nombre?.trim()) nextErrors.nombre = 'El nombre del campo es obligatorio';
     if (!tipoCampo) nextErrors.tipo = 'Seleccione el tipo de campo';
@@ -182,16 +181,20 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     };
   }, [active, pagina, filtroEstado, busqueda, filtroEmpresa, filtroServicio, filtroProducto, cargarCampos]);
 
-  /** Cargar opciones de producto solo cuando empresa y servicio están seleccionados y tienen productos relacionados. */
+  /** Cargar opciones de producto solo cuando el campo aplica a un servicio concreto (o ya las teníamos cargadas)
+   *  y hay productos relacionados. Si se activa "aplicar a todos los contratistas" después de elegir un servicio,
+   *  conservamos las opciones ya cargadas.
+   */
   useEffect(() => {
     if (!active && !modalNueva && !modalEditar) return;
-    if (aplicarTodosEmpresas || !empresaId || !servicioId) {
+    if (aplicarTodosEmpresas || !empresaId || (!servicioId && !aplicarTodosServicios)) {
       setOpcionesProducto([]);
       setProductoId('');
       return;
     }
     let cancelled = false;
-    obtenerCamposFormulario(empresaId, servicioId)
+    const servicioParam = aplicarTodosServicios ? null : (servicioId || null);
+    obtenerCamposFormulario(empresaId, servicioParam)
       .then((campos) => {
         if (cancelled) return;
         const norm = (s) => (s || '').toLowerCase().trim();
@@ -207,13 +210,14 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         }
       });
     return () => { cancelled = true; };
-  }, [active, modalNueva, modalEditar, empresaId, servicioId, aplicarTodosEmpresas]);
+  }, [active, modalNueva, modalEditar, empresaId, servicioId, aplicarTodosEmpresas, aplicarTodosServicios]);
 
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
     setEmpresaId('');
     setServicioId('');
     setProductoId('');
+    setAplicarTodosProductos(false);
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
@@ -221,8 +225,6 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
-    setHelp_text('');
-    setDefault_value('');
     setVisible_si('');
     setOpciones([]);
     setOpcionInput('');
@@ -231,7 +233,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setModalNueva(true);
   }, []);
 
-  /** Cargar empresas para el select solo cuando se abre el modal (evitar múltiples llamadas) */
+  /** Cargar servicios para el select solo cuando se abre el modal (evitar múltiples llamadas) */
   useEffect(() => {
     if (!modalNueva) return;
     let cancelled = false;
@@ -245,7 +247,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       .catch((e) => {
         if (!cancelled) {
           showSnackbar(
-            getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar las empresas'),
+            getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los servicios'),
             'error'
           );
           setEmpresasParaSelect([]);
@@ -260,6 +262,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setEmpresaId('');
     setServicioId('');
     setProductoId('');
+    setAplicarTodosProductos(false);
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
@@ -267,8 +270,6 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
-    setHelp_text('');
-    setDefault_value('');
     setVisible_si('');
     setOpciones([]);
     setOpcionInput('');
@@ -310,13 +311,11 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         tipo: tipoCampo,
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        help_text: help_text.trim() || '',
-        default_value: default_value.trim() || '',
         visible_si: visible_si.trim() || '',
         requerido: !!requerido,
         activo: !!activo,
         estado: '1',
-        producto: productoId?.trim() || '',
+        producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),
       };
       if (aplicarTodosEmpresas) {
         payload.aplicar_todos_empresas = true;
@@ -350,11 +349,10 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     empresaId,
     servicioId,
     productoId,
+    aplicarTodosProductos,
     nombre,
     orden,
     placeholder,
-    help_text,
-    default_value,
     visible_si,
     requerido,
     activo,
@@ -373,9 +371,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       setNombre(campo.campo ?? '');
       const list = await listarEmpresasActivasParaSelect();
       setEmpresasParaSelect(list);
-      const esTodosEmpresas = campo.empresa === 'Todas las empresas' || campo.servicio === 'Todas las empresas y servicios';
+      const esTodosEmpresas = campo.empresa === 'Todos los servicios' || campo.servicio === 'Todos los servicios y contratistas';
       setAplicarTodosEmpresas(esTodosEmpresas);
-      const esTodosServicios = !esTodosEmpresas && (campo.servicio === 'Todos los servicios');
+      const esTodosServicios = !esTodosEmpresas && (campo.servicio === 'Todos los contratistas');
       setAplicarTodosServicios(esTodosServicios);
       const emp = list.find((e) => e.nombre === campo.empresa);
       const empId = emp?.id?.toString() ?? list[0]?.id?.toString() ?? '';
@@ -398,10 +396,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       setActivo(campo.activo ?? true);
       setRequerido(campo.requerido ?? false);
       setPlaceholder(campo.placeholder ?? '');
-      setHelp_text(campo.help_text ?? '');
-      setDefault_value(campo.default_value ?? '');
       setVisible_si(campo.visible_si ?? '');
       setProductoId(campo.producto ?? '');
+      setAplicarTodosProductos(!campo.producto);
 
       if (campo.tipo === 'select' && campo.id) {
         try {
@@ -429,6 +426,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setEmpresaId('');
     setServicioId('');
     setProductoId('');
+    setAplicarTodosProductos(false);
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
@@ -463,12 +461,10 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         tipo: tipoCampo,
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        help_text: help_text.trim() || '',
-        default_value: default_value.trim() || '',
         visible_si: visible_si.trim() || '',
         requerido: !!requerido,
         activo: !!activo,
-        producto: productoId?.trim() || '',
+        producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),
       };
       if (aplicarTodosEmpresas) {
         payload.aplicar_todos_empresas = true;
@@ -530,12 +526,11 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     nombre,
     orden,
     placeholder,
-    help_text,
-    default_value,
     visible_si,
     requerido,
     activo,
     productoId,
+    aplicarTodosProductos,
     empresasParaSelect,
     serviciosFiltrados,
     cargarCampos,
@@ -602,14 +597,12 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setRequerido,
     placeholder,
     setPlaceholder,
-    help_text,
-    setHelp_text,
-    default_value,
-    setDefault_value,
     visible_si,
     setVisible_si,
     productoId,
     setProductoId,
+    aplicarTodosProductos,
+    setAplicarTodosProductos,
     opcionesProducto,
     opciones,
     opcionInput,

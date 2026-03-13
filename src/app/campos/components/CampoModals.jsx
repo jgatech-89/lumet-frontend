@@ -105,10 +105,6 @@ export function CampoModals({
   setRequerido,
   placeholder,
   setPlaceholder,
-  help_text,
-  setHelp_text,
-  default_value,
-  setDefault_value,
   visible_si,
   setVisible_si,
   productoId,
@@ -121,6 +117,8 @@ export function CampoModals({
   setAplicarTodosServicios,
   aplicarTodosEmpresas = false,
   setAplicarTodosEmpresas,
+  aplicarTodosProductos = false,
+  setAplicarTodosProductos,
   aEliminar,
   errors,
   canSave,
@@ -146,10 +144,11 @@ export function CampoModals({
 
   const renderFormDatos = (prefix = '') => (
     <>
-      <Typography sx={sectionTitleSx}>Datos del campo</Typography>
+      {/* Sección: destino (dónde aplica el campo) */}
+      <Typography sx={sectionTitleSx}>Destino del campo</Typography>
       <Box sx={gridTwoColSx}>
         {setAplicarTodosEmpresas && (
-          <Box sx={{ gridColumn: '1 / -1' }}>
+          <Box sx={{ gridColumn: '1 / -1', mb: 1 }}>
             <FormControlLabel
               control={
                 <Switch
@@ -159,25 +158,28 @@ export function CampoModals({
                     if (e.target.checked) {
                       setEmpresaId?.('');
                       setServicioId?.('');
-                      setAplicarTodosServicios?.(false);
                     }
                   }}
                   size="small"
+                  disabled={!!empresaId || !!servicioId}
                 />
               }
-              label="Aplicar a todas las empresas y servicios"
+              label="Aplicar a todos los servicios y contratistas"
             />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Si lo activas, este campo aparecerá en todos los formularios, sin importar el servicio ni el contratista.
+            </Typography>
           </Box>
         )}
         {!aplicarTodosEmpresas && (
-        <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ minWidth: 0, position: 'relative' }}>
           <FormControl size="small" fullWidth required error={!!errors?.empresa} sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-empresa-label`} shrink>Empresa</InputLabel>
+            <InputLabel id={`${prefix}campo-empresa-label`} shrink>Servicio</InputLabel>
             <Select
               key={`empresa-select-${(empresasParaSelect ?? []).length}`}
               labelId={`${prefix}campo-empresa-label`}
               value={empresaId}
-              label="Empresa *"
+              label="Servicio *"
               onChange={(e) => {
                 const v = e.target.value;
                 if (handleChangeEmpresa) handleChangeEmpresa(v);
@@ -199,10 +201,36 @@ export function CampoModals({
             </Select>
             {errors?.empresa && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.empresa}</Typography>}
           </FormControl>
+          {empresaId && (
+            <Box
+              aria-label="Limpiar servicio"
+              onClick={() => {
+                setEmpresaId?.('');
+                setServicioId?.('');
+              }}
+              sx={{
+                position: 'absolute',
+                right: 34,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                zIndex: 1,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'text.disabled',
+                '&:hover': {
+                  color: 'text.primary',
+                },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </Box>
+          )}
         </Box>
         )}
         {!aplicarTodosEmpresas && setAplicarTodosServicios && (
-          <Box sx={{ gridColumn: '1 / -1' }}>
+          <Box sx={{ gridColumn: '1 / -1', mb: 1 }}>
             <FormControlLabel
               control={
                 <Switch
@@ -212,25 +240,29 @@ export function CampoModals({
                     if (e.target.checked) setServicioId?.('');
                   }}
                   size="small"
+                  disabled={!!servicioId}
                 />
               }
-              label="Aplicar a todos los servicios"
+              label="Aplicar a todos los contratistas"
             />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Actívalo para que el campo aplique a todos los contratistas del servicio seleccionado.
+            </Typography>
           </Box>
         )}
         {!aplicarTodosEmpresas && (
-        <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ minWidth: 0, position: 'relative' }}>
           <FormControl size="small" fullWidth required={!aplicarTodosServicios} error={!!errors?.servicio} sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-servicio-label`} shrink>Servicio</InputLabel>
+            <InputLabel id={`${prefix}campo-servicio-label`} shrink>Contratista</InputLabel>
             <Select
               labelId={`${prefix}campo-servicio-label`}
               value={aplicarTodosServicios ? '__todos__' : (servicioId ?? '')}
-              label="Servicio"
+              label="Contratista"
               onChange={(e) => setServicioId(e.target.value === '__todos__' ? '' : e.target.value)}
               disabled={!empresaId || cargandoServicios || aplicarTodosServicios}
               displayEmpty
               renderValue={(v) => {
-                if (v === '__todos__') return 'Todos los servicios';
+                if (v === '__todos__') return 'Todos los contratistas';
                 if (!v) return cargandoServicios ? 'Cargando...' : 'Seleccionar';
                 const opt = (serviciosFiltrados ?? []).find((s) => String(s.id) === String(v));
                 return opt?.nombre ?? opt?.servicio ?? v;
@@ -245,104 +277,178 @@ export function CampoModals({
             </Select>
             {errors?.servicio && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.servicio}</Typography>}
           </FormControl>
+          {!aplicarTodosServicios && servicioId && (
+            <Box
+              aria-label="Limpiar contratista"
+              onClick={() => setServicioId?.('')}
+              sx={{
+                position: 'absolute',
+                right: 34,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                zIndex: 1,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'text.disabled',
+                '&:hover': {
+                  color: 'text.primary',
+                },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </Box>
+          )}
         </Box>
         )}
-        {opcionesProducto?.length > 0 && (
+        {(aplicarTodosServicios || !!servicioId || opcionesProducto?.length > 0 || aplicarTodosProductos || aplicarTodosEmpresas) && (
         <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
-          <FormControl size="small" fullWidth sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-producto-label`} shrink>Producto al que pertenece</InputLabel>
-            <Select
-              labelId={`${prefix}campo-producto-label`}
-              value={productoId ?? ''}
-              label="Producto al que pertenece"
-              onChange={(e) => setProductoId?.(e.target.value)}
-              displayEmpty
-              renderValue={(v) => {
-                if (!v) return 'Seleccionar producto';
-                const opt = (opcionesProducto ?? []).find((o) => o.value === v);
-                return opt?.label ?? v;
-              }}
-              MenuProps={selectMenuProps}
-              sx={{ width: '100%' }}
-            >
-              <MenuItem value="">Todos los productos</MenuItem>
-              {(opcionesProducto ?? []).map((o) => (
-                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-        )}
-        <Box sx={{ minWidth: 0 }}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Nombre del campo"
-            placeholder="Introduce el nombre"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            required
-            error={!!errors?.nombre}
-            helperText={errors?.nombre}
-            sx={inputSx}
-          />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <FormControl size="small" fullWidth required error={!!errors?.tipo} sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-tipo-label`} shrink>Tipo de campo</InputLabel>
-            <Select
-              labelId={`${prefix}campo-tipo-label`}
-              value={tipoCampo}
-              label="Tipo de campo"
-              onChange={(e) => setTipoCampo(e.target.value)}
-              displayEmpty
-              renderValue={(v) => {
-                if (!v) return 'Seleccionar';
-                const opt = (tipoCampoOptions ?? []).find((t) => t.value === v);
-                return opt?.label ?? v;
-              }}
-              MenuProps={selectMenuProps}
-              sx={{ width: '100%' }}
-            >
-              <MenuItem value="">Seleccionar</MenuItem>
-              {(tipoCampoOptions ?? []).map((t) => (
-                <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
-              ))}
-            </Select>
-            {errors?.tipo && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.tipo}</Typography>}
-          </FormControl>
-        </Box>
-        {tipoCampo === 'select' && (
-          <Box sx={{ gridColumn: '1 / -1', mt: 0.5 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Opciones</Typography>
-            <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-              <TextField
+          <FormControlLabel
+            control={(
+              <Switch
                 size="small"
-                placeholder="Escribe una opción"
-                value={opcionInput}
-                onChange={(e) => setOpcionInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAñadirOpcion())}
-                sx={{ flex: 1, ...inputSx }}
+                checked={!!aplicarTodosProductos}
+                onChange={(e) => {
+                  setAplicarTodosProductos?.(e.target.checked);
+                  if (e.target.checked) setProductoId?.('');
+                }}
+                disabled={!!productoId}
               />
-              <Button variant="outlined" size="small" onClick={handleAñadirOpcion} disabled={!opcionInput.trim()}>
-                Añadir
-              </Button>
-            </Stack>
-            {opciones.length > 0 && (
-              <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap>
-                {opciones.map((opt, idx) => (
-                  <Chip
-                    key={idx}
-                    label={typeof opt === 'string' ? opt : (opt.label ?? opt.value ?? '')}
-                    size="small"
-                    onDelete={() => handleQuitarOpcion(idx)}
-                    sx={{ borderRadius: 1 }}
-                  />
-                ))}
-              </Stack>
             )}
-          </Box>
+            label="Aplicar a todos los productos"
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, mb: 1.5, display: 'block' }}>
+            Úsalo cuando el campo deba mostrarse para todos los productos de este servicio.
+          </Typography>
+          {!aplicarTodosProductos && (
+            <Box sx={{ position: 'relative', minWidth: 0 }}>
+              <FormControl size="small" fullWidth sx={formControlSx}>
+                <InputLabel id={`${prefix}campo-producto-label`} shrink>Producto al que pertenece</InputLabel>
+                <Select
+                  labelId={`${prefix}campo-producto-label`}
+                  value={productoId ?? ''}
+                  label="Producto al que pertenece"
+                  onChange={(e) => setProductoId?.(e.target.value)}
+                  displayEmpty
+                  renderValue={(v) => {
+                    if (!v) return 'Seleccionar producto';
+                    const opt = (opcionesProducto ?? []).find((o) => o.value === v);
+                    return opt?.label ?? v;
+                  }}
+                  MenuProps={selectMenuProps}
+                  sx={{ width: '100%' }}
+                >
+                  <MenuItem value="">Todos los productos</MenuItem>
+                  {(opcionesProducto ?? []).map((o) => (
+                    <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {productoId && (
+                <Box
+                  aria-label="Limpiar producto"
+                  onClick={() => setProductoId?.('')}
+                  sx={{
+                    position: 'absolute',
+                    right: 34,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    zIndex: 1,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'text.disabled',
+                    '&:hover': {
+                      color: 'text.primary',
+                    },
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
         )}
+      </Box>
+
+      {/* Sección: definición del campo (nombre, tipo y opciones) */}
+      <Box sx={{ mt: 4 }}>
+        <Typography sx={sectionTitleSx}>Definición del campo</Typography>
+        <Box sx={gridTwoColSx}>
+          <Box sx={{ minWidth: 0 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Nombre del campo"
+              placeholder="Introduce el nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+              error={!!errors?.nombre}
+              helperText={errors?.nombre}
+              sx={inputSx}
+            />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <FormControl size="small" fullWidth required error={!!errors?.tipo} sx={formControlSx}>
+              <InputLabel id={`${prefix}campo-tipo-label`} shrink>Tipo de campo</InputLabel>
+              <Select
+                labelId={`${prefix}campo-tipo-label`}
+                value={tipoCampo}
+                label="Tipo de campo"
+                onChange={(e) => setTipoCampo(e.target.value)}
+                displayEmpty
+                renderValue={(v) => {
+                  if (!v) return 'Seleccionar';
+                  const opt = (tipoCampoOptions ?? []).find((t) => t.value === v);
+                  return opt?.label ?? v;
+                }}
+                MenuProps={selectMenuProps}
+                sx={{ width: '100%' }}
+              >
+                <MenuItem value="">Seleccionar</MenuItem>
+                {(tipoCampoOptions ?? []).map((t) => (
+                  <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                ))}
+              </Select>
+              {errors?.tipo && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.tipo}</Typography>}
+            </FormControl>
+          </Box>
+          {tipoCampo === 'select' && (
+            <Box sx={{ gridColumn: '1 / -1', mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Opciones</Typography>
+              <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                <TextField
+                  size="small"
+                  placeholder="Escribe una opción"
+                  value={opcionInput}
+                  onChange={(e) => setOpcionInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAñadirOpcion())}
+                  sx={{ flex: 1, ...inputSx }}
+                />
+                <Button variant="outlined" size="small" onClick={handleAñadirOpcion} disabled={!opcionInput.trim()}>
+                  Añadir
+                </Button>
+              </Stack>
+              {opciones.length > 0 && (
+                <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap>
+                  {opciones.map((opt, idx) => (
+                    <Chip
+                      key={idx}
+                      label={typeof opt === 'string' ? opt : (opt.label ?? opt.value ?? '')}
+                      size="small"
+                      onDelete={() => handleQuitarOpcion(idx)}
+                      sx={{ borderRadius: 1 }}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          )}
+        </Box>
       </Box>
     </>
   );
@@ -394,28 +500,6 @@ export function CampoModals({
             placeholder="Texto placeholder"
             value={placeholder}
             onChange={(e) => setPlaceholder(e.target.value)}
-            sx={inputSx}
-          />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Texto de ayuda"
-            placeholder="Ayuda para el usuario"
-            value={help_text}
-            onChange={(e) => setHelp_text(e.target.value)}
-            sx={inputSx}
-          />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Valor por defecto"
-            placeholder="Valor por defecto"
-            value={default_value}
-            onChange={(e) => setDefault_value(e.target.value)}
             sx={inputSx}
           />
         </Box>

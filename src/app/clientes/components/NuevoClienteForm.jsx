@@ -51,7 +51,7 @@ const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
 );
 
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
-  const { nombre, tipo, placeholder, help_text, requerido, opciones = [] } = campo;
+  const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
   const id = `campo-${nombre}`;
   const label = labelBase(nombre);
   const usarChoicesTipoId = opcionesTipoIdentificacion?.length && esCampoTipoIdentificacion(nombre);
@@ -106,7 +106,6 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         required={requerido}
-        helperText={help_text}
         fullWidth
         sx={{ width: '100%', maxWidth: { sm: 400 } }}
       />
@@ -125,7 +124,6 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       required={requerido}
-      helperText={help_text}
       fullWidth
       sx={{ width: '100%', maxWidth: { sm: 320 } }}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}

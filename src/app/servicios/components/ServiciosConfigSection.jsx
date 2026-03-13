@@ -12,18 +12,18 @@ import {
 } from '@mui/material';
 import { useThemeMode } from '../../../context/ThemeContext';
 import { TableLoader } from '../../../components/loading';
-import { ServicioRow } from './ServicioRow';
-import { ServicioModals } from './ServicioModals';
+import { ContratistaRow } from './ServicioRow';
+import { ContratistaModals } from './ServicioModals';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
-const COLUMNS = ['Servicio', 'Tipo de empresa', 'Estado', 'Opciones'];
+const COLUMNS = ['Contratista', 'Tipo de servicio', 'Estado', 'Opciones'];
 
-export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEmpresasParaSelect, pagina, setPagina }) {
+export function ContratistasConfigSection({ contratistas, empresasParaSelect, cargarEmpresasParaSelect, pagina, setPagina }) {
   const { isDark } = useThemeMode();
-  const totalItems = servicios.serviciosTotal ?? 0;
+  const totalItems = contratistas.contratistasTotal ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / CONFIG_FILAS_POR_PAGINA));
-  const filasPagina = servicios.servicios ?? [];
+  const filasPagina = contratistas.contratistas ?? [];
   const inicio = totalItems === 0 ? 0 : (pagina - 1) * CONFIG_FILAS_POR_PAGINA + 1;
   const fin = totalItems === 0 ? 0 : Math.min(pagina * CONFIG_FILAS_POR_PAGINA, totalItems);
   const handleChangePagina = (_, value) => setPagina(value);
@@ -61,8 +61,8 @@ export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEm
             </TableRow>
           </TableHead>
           <TableBody>
-            {servicios.loading ? (
-              <TableLoader columnCount={COLUMNS.length} message="Cargando servicios..." />
+            {contratistas.loading ? (
+              <TableLoader columnCount={COLUMNS.length} message="Cargando contratistas..." />
             ) : (
               filasPagina.map((row) => (
               <TableRow
@@ -73,10 +73,10 @@ export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEm
                   '&:hover': { bgcolor: 'action.hover' },
                 }}
               >
-                <ServicioRow
+                <ContratistaRow
                   row={row}
-                  onEdit={servicios.handleAbrirEditar}
-                  onDelete={servicios.handleAbrirEliminar}
+                  onEdit={contratistas.handleAbrirEditar}
+                  onDelete={contratistas.handleAbrirEliminar}
                 />
               </TableRow>
             ))
@@ -105,7 +105,7 @@ export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEm
         }}
       >
         <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
-          Mostrando {inicio}–{fin} de {totalItems} servicios
+          Mostrando {inicio}–{fin} de {totalItems} contratistas
         </Typography>
         <Pagination
           count={totalPages}
@@ -125,27 +125,27 @@ export function ServiciosConfigSection({ servicios, empresasParaSelect, cargarEm
         />
       </Stack>
 
-      <ServicioModals
+      <ContratistaModals
         empresasParaSelect={empresasParaSelect}
-        modalNueva={servicios.modalNueva}
-        modalEditar={servicios.modalEditar}
-        modalEliminar={servicios.modalEliminar}
-        nombre={servicios.nombre}
-        setNombre={servicios.setNombre}
-        empresaId={servicios.empresaId}
-        setEmpresaId={servicios.setEmpresaId}
-        estadoServicio={servicios.estadoServicio}
-        setEstadoServicio={servicios.setEstadoServicio}
-        aEliminar={servicios.aEliminar}
-        guardandoNuevo={servicios.guardandoNuevo}
-        guardandoEditar={servicios.guardandoEditar}
-        eliminando={servicios.eliminando}
-        handleCerrarNueva={servicios.handleCerrarNueva}
-        handleGuardarNueva={servicios.handleGuardarNueva}
-        handleCerrarEditar={servicios.handleCerrarEditar}
-        handleGuardarEditar={servicios.handleGuardarEditar}
-        handleCerrarEliminar={servicios.handleCerrarEliminar}
-        handleConfirmarEliminar={servicios.handleConfirmarEliminar}
+        modalNueva={contratistas.modalNueva}
+        modalEditar={contratistas.modalEditar}
+        modalEliminar={contratistas.modalEliminar}
+        nombre={contratistas.nombre}
+        setNombre={contratistas.setNombre}
+        empresaId={contratistas.empresaId}
+        setEmpresaId={contratistas.setEmpresaId}
+        estadoServicio={contratistas.estadoServicio}
+        setEstadoServicio={contratistas.setEstadoServicio}
+        aEliminar={contratistas.aEliminar}
+        guardandoNuevo={contratistas.guardandoNuevo}
+        guardandoEditar={contratistas.guardandoEditar}
+        eliminando={contratistas.eliminando}
+        handleCerrarNueva={contratistas.handleCerrarNueva}
+        handleGuardarNueva={contratistas.handleGuardarNueva}
+        handleCerrarEditar={contratistas.handleCerrarEditar}
+        handleGuardarEditar={contratistas.handleGuardarEditar}
+        handleCerrarEliminar={contratistas.handleCerrarEliminar}
+        handleConfirmarEliminar={contratistas.handleConfirmarEliminar}
       />
     </>
   );

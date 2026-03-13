@@ -23,8 +23,8 @@ export const obtenerOpcionesCampoPorNombre = async (nombre) => {
 export const mapCampoFromApi = (item, getTipoLabel) => ({
   id: item.id,
   campo: item.nombre ?? '',
-  empresa: item.empresa_nombre ?? (item.empresa == null ? 'Todas las empresas' : ''),
-  servicio: item.servicio_nombre?.trim() || (item.servicio == null ? 'Todos los servicios' : ''),
+  empresa: item.empresa_nombre ?? (item.empresa == null ? 'Todos los servicios' : ''),
+  servicio: item.servicio_nombre?.trim() || (item.servicio == null ? 'Todos los contratistas' : ''),
   producto: item.producto ?? '',
   tipo: item.tipo ?? '',
   tipoCampo: getTipoLabel ? getTipoLabel(item.tipo) : item.tipo,
@@ -33,8 +33,6 @@ export const mapCampoFromApi = (item, getTipoLabel) => ({
   activo: item.activo ?? true,
   requerido: item.requerido ?? false,
   placeholder: item.placeholder ?? '',
-  help_text: item.help_text ?? '',
-  default_value: item.default_value ?? '',
   visible_si: item.visible_si ?? '',
   opciones: (item.opciones ?? []).map((o) => o.label ?? o.value ?? ''),
 });
@@ -62,7 +60,7 @@ export const listarCampos = async (page = 1, pageSize = 5, params = {}) => {
 
 /**
  * Crea un campo.
- * @param {Object} payload - nombre, tipo, empresa_id, servicio_id, orden, placeholder, help_text, default_value, visible_si, requerido, activo
+ * @param {Object} payload - nombre, tipo, empresa_id, servicio_id, orden, placeholder, visible_si, requerido, activo
  * @returns {Promise<Object>} - data.data del backend (campo creado)
  */
 export const crearCampo = async (payload) => {

@@ -44,7 +44,7 @@ function labelConAsterisco(nombre, requerido) {
 const ES_TIPO_IDENTIFICACION = (n) => /tipo\s*(de)?\s*identificaci[oó]n/i.test(n || '');
 
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
-  const { nombre, tipo, placeholder, help_text, requerido, opciones = [] } = campo;
+  const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
   const id = `agregar-campo-${nombre}`;
   const label = labelBase(nombre);
   const opcionesSelect = (opcionesTipoIdentificacion?.length && ES_TIPO_IDENTIFICACION(nombre))
@@ -100,7 +100,6 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         required={requerido}
-        helperText={help_text}
         fullWidth
         sx={{ maxWidth: 400 }}
       />
@@ -119,7 +118,6 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       required={requerido}
-      helperText={help_text}
       fullWidth
       sx={{ maxWidth: 280 }}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}

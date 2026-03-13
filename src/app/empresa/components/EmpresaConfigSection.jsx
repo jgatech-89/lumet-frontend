@@ -61,7 +61,7 @@ export function EmpresaConfigSection({ empresa, pagina, setPagina }) {
           </TableHead>
           <TableBody>
             {empresa.loading ? (
-              <TableLoader columnCount={COLUMNS.length} message="Cargando empresas..." />
+              <TableLoader columnCount={COLUMNS.length} message="Cargando servicios..." />
             ) : (
               empresa.empresas.map((row) => (
                 <TableRow
@@ -104,7 +104,7 @@ export function EmpresaConfigSection({ empresa, pagina, setPagina }) {
         }}
       >
         <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
-          Mostrando {inicio}–{fin} de {totalItems} empresas
+          Mostrando {inicio}–{fin} de {totalItems} servicios
         </Typography>
         <Pagination
           count={totalPages}

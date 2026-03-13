@@ -115,15 +115,6 @@ export function useNuevoCliente() {
     try {
       const campos = await apiCliente.obtenerCamposFormulario();
       setCamposGlobales(Array.isArray(campos) ? campos : []);
-      setRespuestas((prev) => {
-        const next = { ...prev };
-        campos.forEach((c) => {
-          if (c.nombre && !(c.nombre in next)) {
-            next[c.nombre] = c.default_value ?? '';
-          }
-        });
-        return next;
-      });
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');
       setCamposGlobales([]);
@@ -182,15 +173,6 @@ export function useNuevoCliente() {
       const productoParam = (producto && producto !== '__todos__' && producto.trim()) ? producto.trim() : undefined;
       const campos = await apiCliente.obtenerCamposFormulario(servicio.empresa_id, servicio.id, productoParam);
       setCamposFormulario(Array.isArray(campos) ? campos : []);
-      setRespuestas((prev) => {
-        const next = { ...prev };
-        campos.forEach((c) => {
-          if (c.nombre && !(c.nombre in next)) {
-            next[c.nombre] = c.default_value ?? '';
-          }
-        });
-        return next;
-      });
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');
       setCamposFormulario([]);

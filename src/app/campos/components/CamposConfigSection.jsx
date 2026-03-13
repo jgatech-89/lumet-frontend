@@ -16,7 +16,7 @@ import { CampoModals } from './CampoModals';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
-const COLUMNS = ['Campo', 'Empresa', 'Servicio', 'Producto', 'Tipo de campo', 'Estado', 'Opciones'];
+const COLUMNS = ['Campo', 'Servicio', 'Contratista', 'Producto', 'Tipo de campo', 'Estado', 'Opciones'];
 
 export function CamposConfigSection({ campos, pagina, setPagina }) {
   const { isDark } = useThemeMode();
@@ -146,10 +146,6 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         setRequerido={campos.setRequerido}
         placeholder={campos.placeholder}
         setPlaceholder={campos.setPlaceholder}
-        help_text={campos.help_text}
-        setHelp_text={campos.setHelp_text}
-        default_value={campos.default_value}
-        setDefault_value={campos.setDefault_value}
         visible_si={campos.visible_si}
         setVisible_si={campos.setVisible_si}
         productoId={campos.productoId}
@@ -162,6 +158,8 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         setAplicarTodosServicios={campos.setAplicarTodosServicios}
         aplicarTodosEmpresas={campos.aplicarTodosEmpresas}
         setAplicarTodosEmpresas={campos.setAplicarTodosEmpresas}
+        aplicarTodosProductos={campos.aplicarTodosProductos}
+        setAplicarTodosProductos={campos.setAplicarTodosProductos}
         aEliminar={campos.aEliminar}
         errors={campos.errors}
         canSave={campos.canSave}
