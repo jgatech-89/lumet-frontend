@@ -126,14 +126,14 @@ export function ContratistasConfigSection({ contratistas, empresasParaSelect, ca
       </Stack>
 
       <ContratistaModals
-        empresasParaSelect={empresasParaSelect}
+        serviciosParaSelect={empresasParaSelect}
         modalNueva={contratistas.modalNueva}
         modalEditar={contratistas.modalEditar}
         modalEliminar={contratistas.modalEliminar}
         nombre={contratistas.nombre}
         setNombre={contratistas.setNombre}
-        empresaId={contratistas.empresaId}
-        setEmpresaId={contratistas.setEmpresaId}
+        servicioId={contratistas.servicioId}
+        setServicioId={contratistas.setServicioId}
         estadoServicio={contratistas.estadoServicio}
         setEstadoServicio={contratistas.setEstadoServicio}
         aEliminar={contratistas.aEliminar}

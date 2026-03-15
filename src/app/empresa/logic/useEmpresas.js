@@ -38,7 +38,7 @@ export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
     async (page = 1) => {
       setLoading(true);
       try {
-        const { results, count } = await api.listarEmpresas(page, EMPRESAS_POR_PAGINA, {
+        const { results, count } = await api.listarServicios(page, EMPRESAS_POR_PAGINA, {
           search: busqueda?.trim() || undefined,
           estado: estadoParam,
         });
@@ -46,7 +46,7 @@ export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
         setEmpresasTotal(count);
       } catch (e) {
         showSnackbar(
-          getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar las empresas'),
+          getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los servicios'),
           'error'
         );
       } finally {
@@ -58,12 +58,12 @@ export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
 
   const cargarEmpresasParaSelect = useCallback(async () => {
     try {
-      const results = await api.listarEmpresasParaSelect();
+      const results = await api.listarServiciosParaSelect();
       setEmpresasParaSelect(results);
       return results;
     } catch (e) {
       showSnackbar(
-        getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar las empresas'),
+        getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los servicios'),
         'error'
       );
       return [];
@@ -93,12 +93,12 @@ export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
     if (!nombre.trim()) return;
     setGuardandoNuevo(true);
     try {
-      await api.crearEmpresa({ nombre: nombre.trim() });
-      showSnackbar('Empresa creada correctamente', 'success');
+      await api.crearServicio({ nombre: nombre.trim() });
+      showSnackbar('Servicio creado correctamente', 'success');
       handleCerrarNueva();
       await cargarEmpresas(pagina);
     } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo crear la empresa'), 'error');
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo crear el servicio'), 'error');
     } finally {
       setGuardandoNuevo(false);
     }
@@ -107,7 +107,7 @@ export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
   const handleAbrirEditar = (empresa) => {
     setEnEdicion(empresa);
     setNombre(empresa.nombre);
-    setEstado(empresa.estado_empresa ?? (empresa.estado === 'Activa' ? '1' : '0'));
+    setEstado(empresa.estado_servicio ?? (empresa.estado === 'Activa' ? '1' : '0'));
     setModalEditar(true);
   };
   const handleCerrarEditar = () => {
@@ -120,16 +120,16 @@ export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
     if (!enEdicion || !nombre.trim()) return;
     setGuardandoEditar(true);
     try {
-      await api.actualizarEmpresa(enEdicion.id, {
+      await api.actualizarServicio(enEdicion.id, {
         nombre: nombre.trim(),
-        estado_empresa: estado,
+        estado_servicio: estado,
       });
-      showSnackbar('Empresa actualizada correctamente', 'success');
+      showSnackbar('Servicio actualizado correctamente', 'success');
       handleCerrarEditar();
       await cargarEmpresas(pagina);
     } catch (e) {
       showSnackbar(
-        getErrorMessage(e, e?.status, e?.response, 'No se pudo actualizar la empresa'),
+        getErrorMessage(e, e?.status, e?.response, 'No se pudo actualizar el servicio'),
         'error'
       );
     } finally {
@@ -149,14 +149,14 @@ export function useEmpresas(pagina, setPagina, busqueda, filtroEstado, active) {
     if (!aEliminar) return;
     setEliminando(true);
     try {
-      await api.eliminarEmpresa(aEliminar.id);
+      await api.eliminarServicio(aEliminar.id);
       handleCerrarEliminar();
-      showSnackbar('Empresa eliminada correctamente', 'success');
+      showSnackbar('Servicio eliminado correctamente', 'success');
       const nextPage = empresas.length === 1 && pagina > 1 ? pagina - 1 : pagina;
       setPagina(nextPage);
       await cargarEmpresas(nextPage);
     } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo eliminar la empresa'), 'error');
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'No se pudo eliminar el servicio'), 'error');
     } finally {
       setEliminando(false);
     }

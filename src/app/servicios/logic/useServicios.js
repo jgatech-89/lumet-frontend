@@ -12,10 +12,10 @@ import { CONFIG_FILAS_POR_PAGINA } from './constants';
  * @param {string} busqueda - Texto de búsqueda (nombre o empresa)
  * @param {string} filtroEstado - 'todos' | '1' | '0'
  * @param {boolean} active - Si el tab contratistas está activo
- * @param {Array} empresasParaSelect - Empresas para el selector en modales
- * @param {function} cargarEmpresasParaSelect - Recargar empresas para select
+ * @param {Array} serviciosParaSelect - Servicios para el selector en modales
+ * @param {function} cargarServiciosParaSelect - Recargar servicios para select
  */
-export function useContratistas(pagina, setPagina, busqueda, filtroEstado, active, empresasParaSelect, cargarEmpresasParaSelect) {
+export function useContratistas(pagina, setPagina, busqueda, filtroEstado, active, serviciosParaSelect, cargarServiciosParaSelect) {
   const { showSnackbar } = useSnackbar();
   const lastLoadKeyRef = useRef(null);
 
@@ -31,7 +31,7 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [nombre, setNombre] = useState('');
-  const [empresaId, setEmpresaId] = useState('');
+  const [servicioId, setServicioId] = useState('');
   const [estadoServicio, setEstadoServicio] = useState('1');
   const [enEdicion, setEnEdicion] = useState(null);
   const [aEliminar, setAEliminar] = useState(null);
@@ -42,7 +42,7 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
     async (page = 1) => {
       setLoading(true);
       try {
-        const { results, count } = await api.listarServicios(page, CONFIG_FILAS_POR_PAGINA, {
+        const { results, count } = await api.listarContratistas(page, CONFIG_FILAS_POR_PAGINA, {
           search: busqueda?.trim() || undefined,
           estado: estadoParam,
         });
@@ -62,7 +62,7 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
 
   const cargarContratistasParaSelect = useCallback(async () => {
     try {
-      const results = await api.listarServiciosParaSelect();
+      const results = await api.listarContratistasParaSelect();
       setContratistasParaSelect(results);
       return results;
     } catch (e) {
@@ -90,24 +90,24 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
 
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
-    setEmpresaId('');
-    if (!empresasParaSelect?.length) cargarEmpresasParaSelect?.();
+    setServicioId('');
+    if (!serviciosParaSelect?.length) cargarServiciosParaSelect?.();
     setModalNueva(true);
-  }, [empresasParaSelect?.length, cargarEmpresasParaSelect]);
+  }, [serviciosParaSelect?.length, cargarServiciosParaSelect]);
 
   const handleCerrarNueva = () => {
     setModalNueva(false);
     setNombre('');
-    setEmpresaId('');
+    setServicioId('');
   };
 
   const handleGuardarNueva = async () => {
-    if (!nombre.trim() || !empresaId) return;
+    if (!nombre.trim() || !servicioId) return;
     setGuardandoNuevo(true);
     try {
-      await api.crearServicio({
+      await api.crearContratista({
         nombre: nombre.trim(),
-        empresa_id: Number(empresaId),
+        servicio_id: Number(servicioId),
       });
       showSnackbar('Contratista creado correctamente', 'success');
       handleCerrarNueva();
@@ -121,29 +121,29 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
 
   const handleAbrirEditar = useCallback((contratista) => {
     setEnEdicion(contratista);
-    setNombre(contratista.servicio ?? contratista.nombre);
-    setEmpresaId(contratista.empresa_id?.toString() ?? '');
-    setEstadoServicio(contratista.estado_servicio ?? (contratista.estado === 'Activa' ? '1' : '0'));
-    if (!empresasParaSelect?.length) cargarEmpresasParaSelect?.();
+    setNombre(contratista.nombre ?? '');
+    setServicioId(contratista.servicio_id?.toString() ?? '');
+    setEstadoServicio(contratista.estado_contratista ?? (contratista.estado === 'Activa' ? '1' : '0'));
+    if (!serviciosParaSelect?.length) cargarServiciosParaSelect?.();
     setModalEditar(true);
-  }, [empresasParaSelect?.length, cargarEmpresasParaSelect]);
+  }, [serviciosParaSelect?.length, cargarServiciosParaSelect]);
 
   const handleCerrarEditar = () => {
     setModalEditar(false);
     setEnEdicion(null);
     setNombre('');
-    setEmpresaId('');
+    setServicioId('');
     setEstadoServicio('1');
   };
 
   const handleGuardarEditar = async () => {
-    if (!enEdicion || !nombre.trim() || !empresaId) return;
+    if (!enEdicion || !nombre.trim() || !servicioId) return;
     setGuardandoEditar(true);
     try {
-      await api.actualizarServicio(enEdicion.id, {
+      await api.actualizarContratista(enEdicion.id, {
         nombre: nombre.trim(),
-        empresa_id: Number(empresaId),
-        estado_servicio: estadoServicio,
+        servicio_id: Number(servicioId),
+        estado_contratista: estadoServicio,
       });
       showSnackbar('Contratista actualizado correctamente', 'success');
       handleCerrarEditar();
@@ -172,7 +172,7 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
     if (!aEliminar) return;
     setEliminando(true);
     try {
-      await api.eliminarServicio(aEliminar.id);
+      await api.eliminarContratista(aEliminar.id);
       handleCerrarEliminar();
       showSnackbar('Contratista eliminado correctamente', 'success');
       const nextPage = contratistas.length === 1 && pagina > 1 ? pagina - 1 : pagina;
@@ -203,8 +203,8 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
     modalEliminar,
     nombre,
     setNombre,
-    empresaId,
-    setEmpresaId,
+    servicioId,
+    setServicioId,
     estadoServicio,
     setEstadoServicio,
     enEdicion,

@@ -53,7 +53,7 @@ export function EmpresaModals({
   handleConfirmarEliminar,
 }) {
   const { getOptions } = useChoices();
-  const estadosEmpresa = getOptions('estado_empresa');
+  const estadosServicio = getOptions('estado_servicio');
 
   return (
     <>
@@ -125,7 +125,7 @@ export function EmpresaModals({
                 onChange={(e) => setEstado(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {estadosEmpresa.map((o) => (
+                {estadosServicio.map((o) => (
                   <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
                 ))}
               </Select>

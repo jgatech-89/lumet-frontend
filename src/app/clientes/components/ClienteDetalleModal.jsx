@@ -311,7 +311,7 @@ export function ClienteDetalleModal({
                     <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '20%' }}>Producto</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Servicio</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Contratistas</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Contratista</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '24%' }}>Estado</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '20%' }} align="center">Opciones</TableCell>
                     </TableRow>
@@ -324,8 +324,8 @@ export function ClienteDetalleModal({
                       return (
                         <TableRow key={ce.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
                           <TableCell sx={{ fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ce.producto || '-'}</TableCell>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ce.empresa_nombre || '-'}</TableCell>
                           <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ce.servicio_nombre || '-'}</TableCell>
+                          <TableCell sx={{ fontSize: '0.8125rem', color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ce.contratista_nombre || '-'}</TableCell>
                           <TableCell>
                             <Box
                               component="span"

@@ -167,25 +167,25 @@ export function ClienteEditModal({
   }, [cliente, open, productoPreSeleccionado]);
 
   useEffect(() => {
-    if (!cliente?.servicio_id || !cliente?.servicio_empresa_id || !open) return;
+    if (!cliente?.servicio_id || !cliente?.contratista_id || !open) return;
     let cancelled = false;
-    const params = { empresaId: cliente.servicio_empresa_id, servicioId: cliente.servicio_id };
+    const params = { servicioId: cliente.servicio_id, contratistaId: cliente.contratista_id };
     apiCampos.obtenerOpcionesCampoPorNombre('producto', params)
       .then((list) => { if (!cancelled) setOpcionesProducto(Array.isArray(list) ? list : []); })
       .catch(() => { if (!cancelled) setOpcionesProducto([]); });
     return () => { cancelled = true; };
-  }, [cliente?.servicio_id, cliente?.servicio_empresa_id, open]);
+  }, [cliente?.servicio_id, cliente?.contratista_id, open]);
 
   useEffect(() => {
-    if (!cliente?.servicio_id || !open) return;
+    if (!cliente?.servicio_id || !cliente?.contratista_id || !open) return;
     let cancelled = false;
     setCargandoCampos(true);
-    const empresaId = cliente.servicio_empresa_id;
     const servicioId = cliente.servicio_id;
+    const contratistaId = cliente.contratista_id;
     const productoParam = (producto || cliente?.producto || '').trim() || undefined;
     Promise.all([
       apiCliente.obtenerCamposFormulario(undefined, undefined, productoParam),
-      empresaId && servicioId ? apiCliente.obtenerCamposFormulario(empresaId, servicioId, productoParam) : Promise.resolve([]),
+      servicioId && contratistaId ? apiCliente.obtenerCamposFormulario(servicioId, contratistaId, productoParam) : Promise.resolve([]),
     ])
       .then(([globales, porServicio]) => {
         if (!cancelled) {
@@ -203,7 +203,7 @@ export function ClienteEditModal({
         if (!cancelled) setCargandoCampos(false);
       });
     return () => { cancelled = true; };
-  }, [cliente?.servicio_id, cliente?.servicio_empresa_id, open, producto]);
+  }, [cliente?.servicio_id, cliente?.contratista_id, open, producto]);
 
   const respuestasNombres = new Set((cliente?.respuestas || []).map((r) => r.nombre_campo).filter(Boolean));
   const campoTitular = [...camposFormulario, ...camposGlobales].find(esCambioTitular);

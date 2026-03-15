@@ -53,20 +53,18 @@ export const listarClientes = async (page = 1, pageSize = 20, filters = {}) => {
 };
 
 /**
- * Obtiene los campos del formulario para un empresa+servicio+producto (dinámicos).
- * @param {number} [empresaId] - ID de la empresa (opcional)
+ * Obtiene los campos del formulario para un servicio+contratista+producto (dinámicos).
  * @param {number} [servicioId] - ID del servicio (opcional)
+ * @param {number} [contratistaId] - ID del contratista (opcional)
  * @param {string} [producto] - Valor del producto para filtrar campos (opcional)
  * @param {boolean} [soloSinProducto] - Si true, solo campos sin restricción por producto (producto vacío)
  * @returns {Promise<Array>} Campos con id, nombre, tipo, opciones, requerido, etc.
- * Si no se pasan empresaId ni servicioId, devuelve campos globales.
- * Si soloSinProducto=true: solo campos que aplican a todos los productos.
- * Si se pasa producto: filtra campos que aplican a ese producto o a todos.
+ * Si no se pasan servicioId ni contratistaId, devuelve campos globales.
  */
-export const obtenerCamposFormulario = async (empresaId, servicioId, producto, soloSinProducto = false) => {
+export const obtenerCamposFormulario = async (servicioId, contratistaId, producto, soloSinProducto = false) => {
   const params = {};
-  if (empresaId != null) params.empresa_id = empresaId;
   if (servicioId != null) params.servicio_id = servicioId;
+  if (contratistaId != null) params.contratista_id = contratistaId;
   if (producto != null && String(producto).trim() !== '' && producto !== '__todos__') {
     params.producto = String(producto).trim();
   }

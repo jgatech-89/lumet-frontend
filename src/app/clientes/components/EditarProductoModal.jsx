@@ -23,8 +23,8 @@ import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import * as apiCliente from '../logic/apiCliente';
 import * as apiCampos from '../../campos/logic/apiCampos';
 import { listarVendedores } from '../../vendedores/logic/apiVendedores';
-import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa';
-import { listarServiciosPorEmpresa } from '../../servicios/logic/apiServicios';
+import { listarServiciosActivasParaSelect } from '../../empresa/logic/apiEmpresa';
+import { listarContratistasPorServicio } from '../../servicios/logic/apiServicios';
 import { useChoices } from '../../../context/ChoicesContext';
 
 const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
@@ -161,8 +161,8 @@ export function EditarProductoModal({
     }
     setRespuestas(r);
     setTipoCliente(producto?.tipo_cliente ?? r['Tipo de cliente'] ?? r['tipo_cliente'] ?? '');
-    setEmpresaId(producto?.empresa ?? producto?.empresa_id ?? '');
-    setServicioId(producto?.servicio ?? producto?.servicio_id ?? '');
+    setEmpresaId(producto?.servicio ?? producto?.servicio_id ?? '');
+    setServicioId(producto?.contratista ?? producto?.contratista_id ?? '');
     setProductoValor(producto?.producto ?? '');
   }, [cliente, producto, open]);
 
@@ -171,7 +171,7 @@ export function EditarProductoModal({
     listarVendedores(1, 100, { estado: '1' })
       .then(({ results }) => setVendedores(Array.isArray(results) ? results : []))
       .catch(() => setVendedores([]));
-    listarEmpresasActivasParaSelect()
+    listarServiciosActivasParaSelect()
       .then((list) => setEmpresas(Array.isArray(list) ? list : []))
       .catch(() => setEmpresas([]));
   }, [open]);
@@ -181,7 +181,7 @@ export function EditarProductoModal({
       setServicios([]);
       return;
     }
-    listarServiciosPorEmpresa(Number(empresaId))
+    listarContratistasPorServicio(Number(empresaId))
       .then((list) => setServicios(Array.isArray(list) ? list : []))
       .catch(() => setServicios([]));
   }, [empresaId]);
@@ -191,7 +191,7 @@ export function EditarProductoModal({
       setOpcionesProducto([]);
       return;
     }
-    const params = { empresaId: Number(empresaId), servicioId: Number(servicioId) };
+    const params = { servicioId: Number(empresaId), contratistaId: Number(servicioId) };
     apiCampos.obtenerOpcionesCampoPorNombre('producto', params)
       .then((list) => setOpcionesProducto(Array.isArray(list) ? list : []))
       .catch(() => setOpcionesProducto([]));
@@ -204,7 +204,7 @@ export function EditarProductoModal({
       setTipoClienteOptions(fallback);
       return;
     }
-    const params = { empresaId: Number(empresaId), servicioId: Number(servicioId) };
+    const params = { servicioId: Number(empresaId), contratistaId: Number(servicioId) };
     apiCampos.obtenerOpcionesCampoPorNombre('tipo_cliente', params)
       .then((list) => {
         const opts = Array.isArray(list) ? list.map((o) => ({ value: o.value ?? o.label ?? '', label: o.label ?? o.value ?? '' })).filter((o) => o.value || o.label) : [];
@@ -281,7 +281,7 @@ export function EditarProductoModal({
     onGuardar?.({
       cliente_empresa_id: producto?.id,
       tipo_cliente: (tipoCliente || '').trim(),
-      servicio_id: servicioId ? Number(servicioId) : null,
+      contratista_id: servicioId ? Number(servicioId) : null,
       producto: (productoValor || '').trim(),
       respuestas: respuestasList,
     });

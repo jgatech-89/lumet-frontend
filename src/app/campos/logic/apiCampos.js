@@ -11,16 +11,16 @@ const BASE_OPCIONES_POR_NOMBRE = '/api/campos/opciones-por-nombre/';
  */
 /**
  * Obtiene las opciones de un campo por su nombre (ej. Producto).
- * Si se pasan empresaId y servicioId, devuelve las opciones del campo más específico para ese servicio.
+ * Si se pasan servicioId y contratistaId, devuelve las opciones del campo más específico.
  * @param {string} nombre - Nombre del campo
- * @param {{ empresaId?: number, servicioId?: number }} [params] - Opcionales para filtrar por empresa/servicio
+ * @param {{ servicioId?: number, contratistaId?: number }} [params] - Opcionales para filtrar por servicio/contratista
  * @returns {Promise<Array<{ value: string, label: string }>>}
  */
 export const obtenerOpcionesCampoPorNombre = async (nombre, params = {}) => {
   if (!nombre?.trim()) return [];
   const query = { nombre: nombre.trim() };
-  if (params?.empresaId != null) query.empresa_id = params.empresaId;
   if (params?.servicioId != null) query.servicio_id = params.servicioId;
+  if (params?.contratistaId != null) query.contratista_id = params.contratistaId;
   const { data } = await get(BASE_OPCIONES_POR_NOMBRE, query);
   return Array.isArray(data) ? data : [];
 };
@@ -28,8 +28,8 @@ export const obtenerOpcionesCampoPorNombre = async (nombre, params = {}) => {
 export const mapCampoFromApi = (item, getTipoLabel) => ({
   id: item.id,
   campo: item.nombre ?? '',
-  empresa: item.empresa_nombre ?? (item.empresa == null ? 'Todos los servicios' : ''),
-  servicio: item.servicio_nombre?.trim() || (item.servicio == null ? 'Todos los contratistas' : ''),
+  empresa: item.servicio_nombre ?? (item.servicio == null ? 'Todos los servicios' : ''),
+  servicio: item.contratista_nombre?.trim() || (item.contratista == null ? 'Todos los contratistas' : ''),
   producto: item.producto ?? '',
   tipo: item.tipo ?? '',
   tipoCampo: getTipoLabel ? getTipoLabel(item.tipo) : item.tipo,
@@ -48,14 +48,14 @@ export const mapCampoFromApi = (item, getTipoLabel) => ({
  * Misma firma que listarEmpresas, listarServicios, listarVendedores: page, pageSize, params.
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página (ej. 5)
- * @param {{ search?: string, empresa?: number, servicio?: number, activo?: boolean, producto?: string }} params
+ * @param {{ search?: string, servicio?: number, contratista?: number, activo?: boolean, producto?: string }} params
  * @returns {Promise<{ results: Array, count: number }>}
  */
 export const listarCampos = async (page = 1, pageSize = 5, params = {}) => {
   const query = { page, page_size: pageSize };
   if (params.search != null && String(params.search).trim() !== '') query.search = params.search.trim();
-  if (params.empresa != null) query.empresa = params.empresa;
   if (params.servicio != null) query.servicio = params.servicio;
+  if (params.contratista != null) query.contratista = params.contratista;
   if (params.activo === true || params.activo === false) query.activo = params.activo;
   if (params.producto != null && String(params.producto).trim() !== '') query.producto = params.producto.trim();
   const { data } = await get(BASE_CAMPOS, query);
@@ -66,7 +66,7 @@ export const listarCampos = async (page = 1, pageSize = 5, params = {}) => {
 
 /**
  * Crea un campo.
- * @param {Object} payload - nombre, tipo, empresa_id, servicio_id, orden, placeholder, visible_si, requerido, activo
+ * @param {Object} payload - nombre, tipo, servicio_id, contratista_id, orden, placeholder, visible_si, requerido, activo
  * @returns {Promise<Object>} - data.data del backend (campo creado)
  */
 export const crearCampo = async (payload) => {

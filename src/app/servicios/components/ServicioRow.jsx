@@ -16,10 +16,10 @@ export function ContratistaRow({ row, onEdit, onDelete }) {
 
   return (
     <>
-      <TableCell sx={{ ...compactCellSx, fontWeight: 500 }}>{row.servicio}</TableCell>
+      <TableCell sx={{ ...compactCellSx, fontWeight: 500 }}>{row.nombre}</TableCell>
       <TableCell sx={compactCellSx}>
         <Chip
-          label={row.tipoEmpresa}
+          label={row.servicio_nombre ?? row.servicio ?? '-'}
           size="small"
           variant="filled"
           sx={{

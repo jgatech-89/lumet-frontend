@@ -92,8 +92,8 @@ export function ProductoDetalleModal({
         </Typography>
         <Stack spacing={0.5} sx={{ mb: 2 }}>
           <DataRow label="Tipo de cliente" value={tipoClienteValor} />
-          <DataRow label="Servicio" value={producto.empresa_nombre} />
-          <DataRow label="Contratistas" value={producto.servicio_nombre} />
+          <DataRow label="Servicio" value={producto.servicio_nombre} />
+          <DataRow label="Contratista" value={producto.contratista_nombre} />
           <DataRow label="Producto" value={producto.producto} />
           <DataRow label="Estado de venta" value={labelEstado} />
         </Stack>

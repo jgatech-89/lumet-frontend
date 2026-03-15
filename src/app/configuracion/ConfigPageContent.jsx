@@ -21,8 +21,8 @@ import { useEmpresas, EmpresaConfigSection } from '../empresa';
 import { useContratistas, ContratistasConfigSection } from '../servicios';
 import { useCampos, CamposConfigSection } from '../campos';
 import { useVendedores, VendedorConfigSection } from '../vendedores';
-import { listarEmpresasActivasParaSelect } from '../empresa/logic/apiEmpresa';
-import { listarServiciosPorEmpresa } from '../servicios/logic/apiServicios';
+import { listarServiciosActivasParaSelect } from '../empresa/logic/apiEmpresa';
+import { listarContratistasPorServicio } from '../servicios/logic/apiServicios';
 
 const TAB_KEYS = ['servicios', 'contratistas', 'campos', 'vendedor'];
 
@@ -91,7 +91,7 @@ export function ConfigPageContent() {
     busquedaPorTab.contratistas,
     filtroEstadoPorTab.contratistas,
     TAB_KEYS[tabActual] === 'contratistas',
-    empresa.empresasParaSelect,
+    empresa.empresasParaSelect, // lista de Servicios (ex Empresa) para el selector
     empresa.cargarEmpresasParaSelect
   );
   const campos = useCampos(
@@ -116,7 +116,7 @@ export function ConfigPageContent() {
   useEffect(() => {
     if (tabKey !== 'campos') return;
     let cancelled = false;
-    listarEmpresasActivasParaSelect()
+    listarServiciosActivasParaSelect()
       .then((list) => { if (!cancelled) setEmpresasParaFiltroCampos(Array.isArray(list) ? list : []); })
       .catch(() => { if (!cancelled) setEmpresasParaFiltroCampos([]); });
     return () => { cancelled = true; };
@@ -129,7 +129,7 @@ export function ConfigPageContent() {
       return;
     }
     let cancelled = false;
-    listarServiciosPorEmpresa(filtroEmpresaCampos)
+    listarContratistasPorServicio(filtroEmpresaCampos)
       .then((list) => { if (!cancelled) setServiciosParaFiltroCampos(Array.isArray(list) ? list : []); })
       .catch(() => { if (!cancelled) setServiciosParaFiltroCampos([]); });
     return () => { cancelled = true; };

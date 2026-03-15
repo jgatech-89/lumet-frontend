@@ -4,8 +4,8 @@ import { getErrorMessage } from '../../../utils/funciones';
 import { useChoices } from '../../../context/ChoicesContext';
 import * as api from './apiCampos';
 import { obtenerCamposFormulario } from '../../clientes/logic/apiCliente';
-import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa';
-import { listarServiciosPorEmpresa } from '../../servicios/logic/apiServicios';
+import { listarServiciosActivasParaSelect } from '../../empresa/logic/apiEmpresa';
+import { listarContratistasPorServicio } from '../../servicios/logic/apiServicios';
 import { CONFIG_FILAS_POR_PAGINA, SECCIONES_FORMULARIO } from './constants';
 
 const INIT_ERRORS = { empresa: '', servicio: '', nombre: '', tipo: '', orden: '', seccion: '' };
@@ -94,7 +94,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     let cancelled = false;
     setCargandoServicios(true);
     const load = empresaId
-      ? (aplicarTodosServicios ? Promise.resolve([]) : listarServiciosPorEmpresa(empresaId))
+      ? (aplicarTodosServicios ? Promise.resolve([]) : listarContratistasPorServicio(empresaId))
       : Promise.resolve([]);
     load
       .then((results) => {
@@ -155,8 +155,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
           search: busqueda?.trim() || undefined,
           activo: activoParam,
         };
-        if (filtroEmpresa) params.empresa = Number(filtroEmpresa);
-        if (filtroServicio) params.servicio = Number(filtroServicio);
+        if (filtroEmpresa) params.servicio = Number(filtroEmpresa);
+        if (filtroServicio) params.contratista = Number(filtroServicio);
         if (filtroProducto?.trim()) params.producto = filtroProducto.trim();
         const { results, count } = await api.listarCampos(page, CONFIG_FILAS_POR_PAGINA, params);
         const mapped = results.map((item) => api.mapCampoFromApi(item, getTipoLabel));
@@ -197,8 +197,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     if (!active && !modalNueva && !modalEditar) return;
     let cancelled = false;
     const params = {};
-    if (empresaId && !aplicarTodosEmpresas) params.empresaId = Number(empresaId);
-    if (servicioId && !aplicarTodosServicios) params.servicioId = Number(servicioId);
+    if (empresaId && !aplicarTodosEmpresas) params.servicioId = Number(empresaId);
+    if (servicioId && !aplicarTodosServicios) params.contratistaId = Number(servicioId);
     api.obtenerOpcionesCampoPorNombre('producto', params)
       .then((opciones) => {
         if (cancelled) return;
@@ -242,7 +242,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   useEffect(() => {
     if (!modalNueva) return;
     let cancelled = false;
-    listarEmpresasActivasParaSelect()
+    listarServiciosActivasParaSelect()
       .then((list) => {
         if (!cancelled) {
           const arr = Array.isArray(list) ? [...list] : [];
@@ -325,13 +325,13 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),
       };
       if (aplicarTodosEmpresas) {
-        payload.aplicar_todos_empresas = true;
+        payload.aplicar_todos_servicios = true;
       } else {
-        payload.empresa_id = Number(empresa.id);
+        payload.servicio_id = Number(empresa.id);
         if (aplicarTodosServicios) {
-          payload.aplicar_todos_servicios = true;
+          payload.aplicar_todos_contratistas = true;
         } else {
-          payload.servicio_id = Number(servicio.id);
+          payload.contratista_id = Number(servicio.id);
         }
       }
       const data = await api.crearCampo(payload);
@@ -377,7 +377,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     async (campo) => {
       setEnEdicion(campo);
       setNombre(campo.campo ?? '');
-      const list = await listarEmpresasActivasParaSelect();
+      const list = await listarServiciosActivasParaSelect();
       setEmpresasParaSelect(list);
       const esTodosEmpresas = campo.empresa === 'Todos los servicios' || campo.servicio === 'Todos los servicios y contratistas';
       setAplicarTodosEmpresas(esTodosEmpresas);
@@ -394,7 +394,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         setServiciosFiltrados([]);
         setServicioId('');
       } else {
-        const servs = empId ? await listarServiciosPorEmpresa(empId) : [];
+        const servs = empId ? await listarContratistasPorServicio(empId) : [];
         setServiciosFiltrados(servs);
         const serv = servs.find((s) => (s.nombre ?? s.servicio) === campo.servicio);
         setServicioId(serv?.id?.toString() ?? '');
@@ -476,13 +476,13 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),
       };
       if (aplicarTodosEmpresas) {
-        payload.aplicar_todos_empresas = true;
+        payload.aplicar_todos_servicios = true;
       } else {
-        payload.empresa_id = Number(empresa.id);
+        payload.servicio_id = Number(empresa.id);
         if (aplicarTodosServicios) {
-          payload.aplicar_todos_servicios = true;
+          payload.aplicar_todos_contratistas = true;
         } else {
-          payload.servicio_id = Number(servicio.id);
+          payload.contratista_id = Number(servicio.id);
         }
       }
       await api.actualizarCampo(enEdicion.id, payload);

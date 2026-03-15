@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as apiCliente from './apiCliente';
 import * as apiCampos from '../../campos/logic/apiCampos';
-import { listarServiciosPorEmpresa } from '../../servicios/logic/apiServicios';
-import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa';
+import { listarContratistasPorServicio } from '../../servicios/logic/apiServicios';
+import { listarServiciosActivasParaSelect } from '../../empresa/logic/apiEmpresa';
 import { listarVendedores } from '../../vendedores/logic/apiVendedores';
 import { useChoices } from '../../../context/ChoicesContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
@@ -63,10 +63,10 @@ export function useAgregarProducto(cliente, onExito) {
   const cargarEmpresas = useCallback(async () => {
     setCargandoEmpresas(true);
     try {
-      const list = await listarEmpresasActivasParaSelect();
+      const list = await listarServiciosActivasParaSelect();
       setEmpresas(Array.isArray(list) ? list : []);
     } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar empresas'), 'error');
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar servicios'), 'error');
       setEmpresas([]);
     } finally {
       setCargandoEmpresas(false);
@@ -93,7 +93,7 @@ export function useAgregarProducto(cliente, onExito) {
       setVendedores([]);
       setVendedorId('');
     }
-  }, [servicio?.empresa_id, servicio?.id, cargarVendedores]);
+  }, [empresa?.id, servicio?.id, cargarVendedores]);
 
   const cargarCamposGlobales = useCallback(async () => {
     setCargandoCamposGlobales(true);
@@ -132,10 +132,10 @@ export function useAgregarProducto(cliente, onExito) {
     }
     setCargandoServicios(true);
     try {
-      const list = await listarServiciosPorEmpresa(empresa.id);
+      const list = await listarContratistasPorServicio(empresa.id);
       setServicios(Array.isArray(list) ? list : []);
     } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar servicios'), 'error');
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar contratistas'), 'error');
       setServicios([]);
     } finally {
       setCargandoServicios(false);
@@ -153,18 +153,18 @@ export function useAgregarProducto(cliente, onExito) {
 
   const cargarOpcionesProducto = useCallback(async () => {
     try {
-      const params = servicio?.empresa_id && servicio?.id
-        ? { empresaId: servicio.empresa_id, servicioId: servicio.id }
+      const params = empresa?.id && servicio?.id
+        ? { servicioId: empresa.id, contratistaId: servicio.id }
         : {};
       const list = await apiCampos.obtenerOpcionesCampoPorNombre('producto', params);
       setOpcionesProducto(Array.isArray(list) ? list : []);
     } catch {
       setOpcionesProducto([]);
     }
-  }, [servicio?.empresa_id, servicio?.id]);
+  }, [empresa?.id, servicio?.id]);
 
   const cargarCamposFormulario = useCallback(async () => {
-    if (!servicio?.empresa_id || !servicio?.id) {
+    if (!empresa?.id || !servicio?.id) {
       setCamposFormulario([]);
       return;
     }
@@ -173,7 +173,7 @@ export function useAgregarProducto(cliente, onExito) {
       const productoSeleccionado = (producto && producto !== '__todos__' && String(producto).trim()) ? producto.trim() : null;
       const soloSinProducto = !productoSeleccionado;
       const campos = await apiCliente.obtenerCamposFormulario(
-        servicio.empresa_id,
+        empresa.id,
         servicio.id,
         productoSeleccionado || undefined,
         soloSinProducto
@@ -185,24 +185,24 @@ export function useAgregarProducto(cliente, onExito) {
     } finally {
       setCargandoCampos(false);
     }
-  }, [servicio?.empresa_id, servicio?.id, producto, showSnackbar]);
+  }, [empresa?.id, servicio?.id, producto, showSnackbar]);
 
   useEffect(() => {
-    if (servicio?.empresa_id && servicio?.id) {
+    if (empresa?.id && servicio?.id) {
       cargarOpcionesProducto();
     } else {
       setOpcionesProducto([]);
     }
-  }, [servicio?.empresa_id, servicio?.id, cargarOpcionesProducto]);
+  }, [empresa?.id, servicio?.id, cargarOpcionesProducto]);
 
   useEffect(() => {
-    if (servicio?.empresa_id && servicio?.id) {
+    if (empresa?.id && servicio?.id) {
       cargarCamposFormulario();
     } else {
       setCamposFormulario([]);
       setRespuestas({});
     }
-  }, [servicio?.empresa_id, servicio?.id, producto, cargarCamposFormulario]);
+  }, [empresa?.id, servicio?.id, producto, cargarCamposFormulario]);
 
   const actualizarRespuesta = (nombreCampo, valor) => {
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
@@ -305,7 +305,8 @@ export function useAgregarProducto(cliente, onExito) {
 
       const productoVal = (producto && producto !== '__todos__') ? producto.trim() : undefined;
       const payload = {
-        servicio_id: servicio.id,
+        servicio_id: empresa.id,
+        contratista_id: servicio.id,
         producto: productoVal,
         respuestas: respuestasList,
       };

@@ -33,14 +33,14 @@ const btnPrimarySx = {
 };
 
 export function ContratistaModals({
-  empresasParaSelect,
+  serviciosParaSelect,
   modalNueva,
   modalEditar,
   modalEliminar,
   nombre,
   setNombre,
-  empresaId,
-  setEmpresaId,
+  servicioId,
+  setServicioId,
   estadoServicio = '1',
   setEstadoServicio,
   aEliminar,
@@ -55,7 +55,8 @@ export function ContratistaModals({
   handleConfirmarEliminar,
 }) {
   const { getOptions } = useChoices();
-  const estadosServicio = getOptions('estado_servicio');
+  const estadosContratista = getOptions('estado_contratista');
+  const list = serviciosParaSelect ?? [];
 
   return (
     <>
@@ -82,15 +83,15 @@ export function ContratistaModals({
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
             <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="servicio-empresa-label">Servicio</InputLabel>
+              <InputLabel id="servicio-label">Servicio</InputLabel>
               <Select
-                labelId="servicio-empresa-label"
-                value={empresaId}
+                labelId="servicio-label"
+                value={servicioId}
                 label="Servicio"
-                onChange={(e) => setEmpresaId(e.target.value)}
+                onChange={(e) => setServicioId(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {empresasParaSelect.map((e) => (
+                {list.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>{e.nombre}</MenuItem>
                 ))}
               </Select>
@@ -102,7 +103,7 @@ export function ContratistaModals({
           <Button
             variant="contained"
             onClick={handleGuardarNueva}
-            disabled={!nombre.trim() || !empresaId || guardandoNuevo}
+            disabled={!nombre.trim() || !servicioId || guardandoNuevo}
             sx={btnPrimarySx}
           >
             {guardandoNuevo ? 'Guardando...' : 'Guardar contratista'}
@@ -133,15 +134,15 @@ export function ContratistaModals({
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
             <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="editar-servicio-empresa-label">Servicio</InputLabel>
+              <InputLabel id="editar-servicio-label">Servicio</InputLabel>
               <Select
-                labelId="editar-servicio-empresa-label"
-                value={empresaId}
+                labelId="editar-servicio-label"
+                value={servicioId}
                 label="Servicio"
-                onChange={(e) => setEmpresaId(e.target.value)}
+                onChange={(e) => setServicioId(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {empresasParaSelect.map((e) => (
+                {list.map((e) => (
                   <MenuItem key={e.id} value={e.id.toString()}>{e.nombre}</MenuItem>
                 ))}
               </Select>
@@ -155,7 +156,7 @@ export function ContratistaModals({
                 onChange={(e) => setEstadoServicio(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
-                {estadosServicio.map((o) => (
+                {estadosContratista.map((o) => (
                   <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
                 ))}
               </Select>
@@ -167,7 +168,7 @@ export function ContratistaModals({
           <Button
             variant="contained"
             onClick={handleGuardarEditar}
-            disabled={!nombre.trim() || !empresaId || guardandoEditar}
+            disabled={!nombre.trim() || !servicioId || guardandoEditar}
             sx={btnPrimarySx}
           >
             {guardandoEditar ? 'Guardando...' : 'Guardar'}
