@@ -22,6 +22,7 @@ import {
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
+import { LoadingButton } from '../../../components/loading';
 
 const btnCancelSx = {
   borderRadius: 2,
@@ -585,9 +586,9 @@ export function CampoModals({
         </DialogContent>
         <DialogActions sx={dialogActionsSx}>
           <Button variant="outlined" onClick={handleCerrarNueva} disabled={guardandoNueva} sx={btnCancelSx}>Cancelar</Button>
-          <Button variant="contained" onClick={handleGuardarNueva} disabled={!canSave || guardandoNueva} sx={btnPrimarySx}>
-            {guardandoNueva ? 'Guardando...' : 'Guardar campo'}
-          </Button>
+          <LoadingButton variant="contained" onClick={handleGuardarNueva} disabled={!canSave} loading={guardandoNueva} loadingText="Guardando..." sx={btnPrimarySx}>
+            Guardar campo
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -614,9 +615,9 @@ export function CampoModals({
         </DialogContent>
         <DialogActions sx={dialogActionsSx}>
           <Button variant="outlined" onClick={handleCerrarEditar} disabled={guardandoEditar} sx={btnCancelSx}>Cerrar</Button>
-          <Button variant="contained" onClick={handleGuardarEditar} disabled={!canSave || guardandoEditar} sx={btnPrimarySx}>
-            {guardandoEditar ? 'Guardando...' : 'Guardar campo'}
-          </Button>
+          <LoadingButton variant="contained" onClick={handleGuardarEditar} disabled={!canSave} loading={guardandoEditar} loadingText="Guardando..." sx={btnPrimarySx}>
+            Guardar campo
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 

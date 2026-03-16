@@ -7,7 +7,7 @@ import { useClientes } from '../logic/useClientes';
 import { ClienteRow } from './ClienteRow';
 import { ClienteDetalleModal } from './ClienteDetalleModal';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
-import { TableLoader } from '../../../components/loading';
+import { TableLoader, LoadingButton } from '../../../components/loading';
 import { SearchIcon } from '../../../utils/icons';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import { getErrorMessage } from '../../../utils/funciones';
@@ -71,15 +71,11 @@ export function ClientesList() {
   const [eliminando, setEliminando] = useState(false);
   const [exportando, setExportando] = useState(false);
 
-  const handleAbrirVer = useCallback(async (row) => {
-    try {
-      const cliente = await apiCliente.obtenerCliente(row.id);
-      setClienteVerDetalle(cliente);
-      setModalVerDetalle(true);
-    } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar detalle'), 'error');
-    }
-  }, [showSnackbar]);
+  // Solo abrir modal con la fila; el detalle se carga dentro del modal (una sola consulta).
+  const handleAbrirVer = useCallback((row) => {
+    setClienteVerDetalle(row);
+    setModalVerDetalle(true);
+  }, []);
 
   const handleCerrarVer = useCallback(() => {
     setModalVerDetalle(false);
@@ -264,12 +260,13 @@ export function ClientesList() {
               ))}
             </Select>
           </FormControl>
-          <Button
+          <LoadingButton
             variant="outlined"
             size="small"
-            startIcon={<DownloadExcelIcon />}
+            startIcon={!exportando ? <DownloadExcelIcon /> : null}
             onClick={handleExportarExcel}
-            disabled={exportando}
+            loading={exportando}
+            loadingText="Exportando..."
             sx={{
               borderRadius: 2,
               textTransform: 'none',
@@ -282,8 +279,8 @@ export function ClientesList() {
               fontSize: '0.875rem',
             }}
           >
-            {exportando ? 'Exportando...' : 'Exportar Excel'}
-          </Button>
+            Exportar Excel
+          </LoadingButton>
         </Stack>
 
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

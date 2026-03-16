@@ -16,6 +16,7 @@ import {
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
+import { LoadingButton } from '../../../components/loading';
 import { useChoices } from '../../../context/ChoicesContext';
 
 const btnCancelSx = {
@@ -99,14 +100,16 @@ export function ContratistaModals({
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
           <Button variant="outlined" onClick={handleCerrarNueva} disabled={guardandoNuevo} sx={btnCancelSx}>Cancelar</Button>
-          <Button
+          <LoadingButton
             variant="contained"
             onClick={handleGuardarNueva}
-            disabled={!nombre.trim() || !empresaId || guardandoNuevo}
+            disabled={!nombre.trim() || !empresaId}
+            loading={guardandoNuevo}
+            loadingText="Guardando..."
             sx={btnPrimarySx}
           >
-            {guardandoNuevo ? 'Guardando...' : 'Guardar contratista'}
-          </Button>
+            Guardar contratista
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -164,14 +167,16 @@ export function ContratistaModals({
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
           <Button variant="outlined" onClick={handleCerrarEditar} disabled={guardandoEditar} sx={btnCancelSx}>Cerrar</Button>
-          <Button
+          <LoadingButton
             variant="contained"
             onClick={handleGuardarEditar}
-            disabled={!nombre.trim() || !empresaId || guardandoEditar}
+            disabled={!nombre.trim() || !empresaId}
+            loading={guardandoEditar}
+            loadingText="Guardando..."
             sx={btnPrimarySx}
           >
-            {guardandoEditar ? 'Guardando...' : 'Guardar'}
-          </Button>
+            Guardar
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 

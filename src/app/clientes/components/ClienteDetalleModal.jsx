@@ -14,13 +14,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress,
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { EyeIcon } from '../../../utils/icons';
 import { SettingsIcon } from '../../../utils/icons';
 import { EditIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
+import { SectionLoader } from '../../../components/loading';
 import * as apiCliente from '../logic/apiCliente';
 import { getErrorMessage } from '../../../utils/funciones';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
@@ -58,8 +58,10 @@ export function ClienteDetalleModal({
   onClose,
   opcionesEstadoVenta = [],
   onCambioEstado,
+  onCambiarEstado,
   onExito,
 }) {
+  const onCambioEstadoCb = onCambiarEstado ?? onCambioEstado;
   const { isDark } = useThemeMode();
   const { showSnackbar } = useSnackbar();
   const CHIP_ESTADOS = getChipEstadosVenta(isDark);
@@ -77,12 +79,25 @@ export function ClienteDetalleModal({
   const [guardandoCliente, setGuardandoCliente] = useState(false);
   const [guardandoProducto, setGuardandoProducto] = useState(false);
 
+  // Consulta de detalle: solo cuando hace falta (si ya tenemos cliente_empresas = datos completos, reutilizar).
   useEffect(() => {
     if (!cliente?.id || !open) {
       setClienteDetalle(null);
       setCargandoDetalle(false);
       setProductoVerDetalle(null);
       setProductoParaCambiarEstado(null);
+      return;
+    }
+    const tieneDetalleCompleto = Array.isArray(cliente.cliente_empresas);
+    if (tieneDetalleCompleto) {
+      setClienteDetalle(cliente);
+      setCargandoDetalle(false);
+      const emp = cliente.cliente_empresas || [];
+      const init = {};
+      emp.forEach((ce) => {
+        init[ce.id] = (ce.estado_venta ?? '').trim() || 'venta_iniciada';
+      });
+      setEstadosPorProducto(init);
       return;
     }
     let cancelled = false;
@@ -103,7 +118,7 @@ export function ClienteDetalleModal({
       if (!cancelled) setCargandoDetalle(false);
     });
     return () => { cancelled = true; };
-  }, [cliente?.id, open]);
+  }, [cliente?.id, open, cliente?.cliente_empresas]);
 
   useEffect(() => {
     const emp = clienteDetalle?.cliente_empresas || [];
@@ -121,7 +136,7 @@ export function ClienteDetalleModal({
     try {
       await apiCliente.cambiarEstadoCliente(clienteDetalle.id, nuevoEstado, ce.id);
       showSnackbar('Estado actualizado correctamente.', 'success');
-      onCambioEstado?.();
+      onCambioEstadoCb?.();
       onExito?.();
       setEstadosPorProducto((p) => ({ ...p, [ce.id]: nuevoEstado }));
       setClienteDetalle((prev) => {
@@ -136,7 +151,7 @@ export function ClienteDetalleModal({
     } finally {
       setGuardandoPorProducto((p) => ({ ...p, [ce.id]: false }));
     }
-  }, [clienteDetalle?.id, estadosPorProducto, onCambioEstado, onExito, showSnackbar]);
+  }, [clienteDetalle?.id, estadosPorProducto, onCambioEstadoCb, onExito, showSnackbar]);
 
   const handleGuardarEditarCliente = useCallback(async (payload) => {
     if (!clienteDetalle?.id) return;
@@ -224,9 +239,7 @@ export function ClienteDetalleModal({
       </DialogTitle>
       <DialogContent dividers sx={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', px: 3, pt: 2, pb: 1.5 }}>
         {cargandoDetalle ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-            <CircularProgress />
-          </Box>
+          <SectionLoader message="Cargando detalle del cliente..." minHeight={200} />
         ) : !clienteDetalle ? (
           <Typography color="text.secondary">Error al cargar el cliente.</Typography>
         ) : (

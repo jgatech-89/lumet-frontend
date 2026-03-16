@@ -16,10 +16,11 @@ import {
   Box,
   FormControlLabel,
   Checkbox,
-  CircularProgress,
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
+import { LoadingButton } from '../../../components/loading';
+import { SectionLoader } from '../../../components/loading';
 import { useChoices } from '../../../context/ChoicesContext';
 import * as apiCliente from '../logic/apiCliente';
 import * as apiCampos from '../../campos/logic/apiCampos';
@@ -334,9 +335,7 @@ export function ClienteEditModal({
                 </FormControl>
               )}
               {cargandoCampos ? (
-                <Box display="flex" justifyContent="center" py={2}>
-                  <CircularProgress size={24} />
-                </Box>
+                <SectionLoader message="Cargando campos del formulario..." minHeight={120} />
               ) : (
                 <Stack spacing={2}>
                   {camposParaEditar.map((c) => (
@@ -380,9 +379,9 @@ export function ClienteEditModal({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, pt: 2, gap: 2 }}>
         <Button variant="outlined" onClick={onClose} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={!nombre?.trim() || guardando}>
-          {guardando ? 'Guardando...' : 'Guardar'}
-        </Button>
+        <LoadingButton variant="contained" onClick={handleSubmit} disabled={!nombre?.trim()} loading={guardando} loadingText="Guardando...">
+          Guardar
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
+import { LoadingButton } from '../../../components/loading';
 
 export function CambiarEstadoModal({
   open,
@@ -60,9 +61,9 @@ export function CambiarEstadoModal({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, pt: 2, gap: 2 }}>
         <Button variant="outlined" onClick={onClose} disabled={guardando}>Cancelar</Button>
-        <Button variant="contained" onClick={onGuardar} disabled={guardando}>
-          {guardando ? 'Guardando...' : 'Guardar'}
-        </Button>
+        <LoadingButton variant="contained" onClick={onGuardar} loading={guardando} loadingText="Guardando...">
+          Guardar
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );
