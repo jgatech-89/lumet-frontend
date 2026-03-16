@@ -68,7 +68,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
   const label = labelBase(nombre);
   const usarChoicesTipoId = opcionesTipoIdentificacion?.length && esCampoTipoIdentificacion(nombre);
   const usarOpcionesVendedor = opcionesVendedor?.length && esCampoVendedor(nombre);
-  const opcionesSelect = usarChoicesTipoId ? opcionesTipoIdentificacion : (usarOpcionesVendedor ? opcionesVendedor.map((v) => ({ value: String(v.id), label: v.nombre })) : opciones);
+  const opcionesSelect = usarChoicesTipoId ? opcionesTipoIdentificacion : (usarOpcionesVendedor ? opcionesVendedor.map((v) => ({ value: String(v.id), label: v.nombre_completo ?? v.nombre ?? '' })) : opciones);
 
   if (tipo === 'select' || usarChoicesTipoId || usarOpcionesVendedor) {
     return (
@@ -548,13 +548,15 @@ export function NuevoClienteForm() {
                         </Select>
                       </FormControl>
                       {!producto && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1 }}>
-                          Seleccione un producto para ver todos los campos. Sin selección se muestran solo los que aplican a todos.
+                        <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                          Seleccione un producto para ver los campos del formulario.
                         </Typography>
                       )}
                     </>
                   )}
-                  {cargandoCampos ? (
+                  {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'campos_formulario' && opcionesProducto?.length > 0 && !producto ? (
+                    null
+                  ) : cargandoCampos ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <CircularProgress size={24} />
                       <Typography variant="body2" color="text.secondary">Cargando campos...</Typography>

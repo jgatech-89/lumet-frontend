@@ -61,7 +61,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
   const opcionesSelect = (opcionesTipoIdentificacion?.length && ES_TIPO_IDENTIFICACION(nombre))
     ? opcionesTipoIdentificacion
     : (opcionesVendedor?.length && ES_VENDEDOR(nombre))
-      ? opcionesVendedor.map((v) => ({ value: String(v.id), label: v.nombre }))
+      ? opcionesVendedor.map((v) => ({ value: String(v.id), label: v.nombre_completo ?? v.nombre ?? '' }))
       : opciones;
 
   if (tipo === 'select' || (opcionesSelect?.length && (ES_TIPO_IDENTIFICACION(nombre) || ES_VENDEDOR(nombre)))) {
@@ -335,13 +335,15 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                   </Select>
                 </FormControl>
                 {!producto && (
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1 }}>
-                    Seleccione un producto para ver todos los campos. Sin selección se muestran solo los que aplican a todos.
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    Seleccione un producto para ver los campos del formulario.
                   </Typography>
                 )}
               </>
             )}
-            {cargandoCampos ? (
+            {campoTipoProducto && (campoTipoProducto.seccion || '').toLowerCase() === 'campos_formulario' && opcionesProducto?.length > 0 && !producto ? (
+              null
+            ) : cargandoCampos ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <CircularProgress size={24} />
                 <Typography variant="body2" color="text.secondary">Cargando campos...</Typography>

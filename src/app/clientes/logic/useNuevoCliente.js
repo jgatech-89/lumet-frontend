@@ -116,7 +116,8 @@ export function useNuevoCliente() {
   const cargarCamposGlobales = useCallback(async () => {
     setCargandoCamposGlobales(true);
     try {
-      const campos = await apiCliente.obtenerCamposFormulario();
+      // Solo campos globales sin restricción por producto (aplican a todos); así no mezclamos campos de otro producto
+      const campos = await apiCliente.obtenerCamposFormulario(undefined, undefined, undefined, true);
       setCamposGlobales(Array.isArray(campos) ? campos : []);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');

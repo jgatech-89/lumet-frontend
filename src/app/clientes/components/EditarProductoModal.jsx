@@ -29,6 +29,7 @@ import { useChoices } from '../../../context/ChoicesContext';
 
 const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
 const NOMBRES_VENDEDOR = ['vendedor', 'Vendedor'];
+const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo producto', 'tipo de producto', 'Tipo de Producto'];
 const NOMBRES_TIPO_ID_CAMPO = ['tipo de identificación', 'tipo identificación', 'tipo ident', 'tipo_id'];
 const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
   (x) => (n || '').toLowerCase().replace(/\s+/g, '_').includes((x || '').toLowerCase().replace(/\s+/g, '_'))
@@ -36,7 +37,8 @@ const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
 const CAMBIO_TITULAR_NAMES = ['cambio de titular', 'Cambio de titular', 'cambio titular', 'Cambio titular'];
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esTipoCliente = (c) => NOMBRES_TIPO_CLIENTE.some((n) => norm(c?.nombre) === norm(n));
-const esVendedor = (c) => NOMBRES_VENDEDOR.some((n) => norm(c?.nombre) === norm(n));
+const esVendedor = (c) => NOMBRES_VENDEDOR.some((n) => norm(c?.nombre) === norm(n)) || (c?.nombre && norm(c.nombre).includes('vendedor'));
+const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c?.nombre) === norm(n));
 const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
 const esVisibleSiCambioTitular = (c) => {
   const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
@@ -155,15 +157,28 @@ export function EditarProductoModal({
     (cliente.respuestas || []).forEach((item) => {
       r[item.nombre_campo] = item.respuesta_campo ?? '';
     });
-    if (producto?.vendedor != null && String(producto.vendedor).trim() !== '') {
-      r.vendedor = String(producto.vendedor);
-      r.Vendedor = String(producto.vendedor);
+    const tipoClienteVal = (producto?.tipo_cliente ?? r['Tipo de cliente'] ?? r['tipo_cliente'] ?? '').toString().trim();
+    const productoVal = (producto?.producto ?? r['Producto'] ?? r['Tipo de Producto'] ?? '').toString().trim();
+    const vendedorVal = producto?.vendedor != null && String(producto.vendedor).trim() !== '' ? String(producto.vendedor).trim() : (r['vendedor'] ?? r['Vendedor'] ?? '');
+    if (tipoClienteVal) {
+      r['Tipo de cliente'] = tipoClienteVal;
+      r['tipo_cliente'] = tipoClienteVal;
+    }
+    if (productoVal) {
+      r['Producto'] = productoVal;
+      r['Tipo de Producto'] = productoVal;
+      r['producto'] = productoVal;
+    }
+    if (vendedorVal) {
+      r.vendedor = vendedorVal;
+      r.Vendedor = vendedorVal;
+      Object.keys(r).forEach((k) => { if (k !== 'vendedor' && k !== 'Vendedor' && norm(k).includes('vendedor')) r[k] = vendedorVal; });
     }
     setRespuestas(r);
-    setTipoCliente(producto?.tipo_cliente ?? r['Tipo de cliente'] ?? r['tipo_cliente'] ?? '');
+    setTipoCliente(tipoClienteVal);
     setEmpresaId(producto?.empresa ?? producto?.empresa_id ?? '');
     setServicioId(producto?.servicio ?? producto?.servicio_id ?? '');
-    setProductoValor(producto?.producto ?? '');
+    setProductoValor(productoVal);
   }, [cliente, producto, open]);
 
   useEffect(() => {
@@ -234,6 +249,28 @@ export function EditarProductoModal({
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
   }, []);
 
+  /** Valor a mostrar en el Select Tipo de cliente: si las opciones usan value "1"/"2" y tenemos "Particular" (o el serializer trae "Natural"), resolver al value que coincida por label o value */
+  const valorTipoClienteSelect = (() => {
+    const tc = String(tipoCliente ?? '').trim();
+    if (!tc) return '';
+    if (!tipoClienteOptions?.length) return tc;
+    const porValor = tipoClienteOptions.find((o) => String(o.value ?? '').trim() === tc);
+    if (porValor) return porValor.value ?? tc;
+    const porLabel = tipoClienteOptions.find((o) => String(o.label ?? '').trim() === tc);
+    if (porLabel) return porLabel.value ?? tc;
+    return tc;
+  })();
+
+  /** Opciones para Tipo de cliente: incluir el valor que trae el serializer (ej. "Natural") aunque no esté en la lista cargada */
+  const opcionesTipoClienteParaSelect = (() => {
+    const list = [...(tipoClienteOptions || [])];
+    const tc = String(tipoCliente ?? '').trim();
+    if (tc && !list.some((o) => String(o.value ?? '').trim() === tc)) {
+      list.push({ value: tc, label: tc });
+    }
+    return list;
+  })();
+
   const respuestasNombres = new Set((cliente?.respuestas || []).map((r) => r.nombre_campo).filter(Boolean));
   const campoTitular = camposFormulario.find(esCambioTitular);
   const camposTitularDependientes = camposFormulario.filter(
@@ -243,7 +280,7 @@ export function EditarProductoModal({
     ? (respuestas[campoTitular.nombre] === '1' || respuestas[campoTitular.nombre] === 'si' || respuestas[campoTitular.nombre] === true)
     : false;
   const camposParaEditar = camposFormulario.filter(
-    (c) => !esTipoCliente(c) && !esVendedor(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c)
+    (c) => !esTipoCliente(c) && !esVendedor(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c)
   );
 
   const labelEstado = opcionesEstadoVenta?.length > 0
@@ -309,13 +346,13 @@ export function EditarProductoModal({
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Tipo de cliente</InputLabel>
             <Select
-              value={tipoCliente}
+              value={valorTipoClienteSelect}
               label="Tipo de cliente"
               onChange={(e) => setTipoCliente(e.target.value)}
             >
               <MenuItem value="">Seleccionar</MenuItem>
-              {tipoClienteOptions.map((o) => (
-                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+              {opcionesTipoClienteParaSelect.map((o) => (
+                <MenuItem key={String(o.value)} value={o.value}>{o.label}</MenuItem>
               ))}
             </Select>
           </FormControl>
