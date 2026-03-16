@@ -283,7 +283,12 @@ export function ClienteDetalleModal({
             <DataRow label="Tipo identificación" value={clienteDetalle.tipo_identificacion} />
             <DataRow label="Nº identificación" value={clienteDetalle.numero_identificacion} />
             <DataRow label="Teléfono" value={clienteDetalle.telefono} />
-            <DataRow label="Correo" value={clienteDetalle.correo} />
+            <DataRow label="Dirección" value={clienteDetalle.direccion} />
+            <DataRow label="CUPS" value={clienteDetalle.cups} />
+            <DataRow label="Cuenta bancaria" value={clienteDetalle.cuenta_bancaria} />
+            <DataRow label="Compañía anterior" value={clienteDetalle.compania_anterior} />
+            <DataRow label="Compañía actual" value={clienteDetalle.compania_actual} />
+            <DataRow label="Correo o carta" value={clienteDetalle.correo_electronico_o_carta} />
           </Box>
 
           {/* Derecha: Tabla de productos */}

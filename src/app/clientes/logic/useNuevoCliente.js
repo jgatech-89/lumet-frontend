@@ -14,8 +14,12 @@ const BASE_DATA_INICIAL = {
   tipo_identificacion: '',
   numero_identificacion: '',
   telefono: '',
-  correo: '',
   direccion: '',
+  cups: '',
+  cuenta_bancaria: '',
+  compania_anterior: '',
+  compania_actual: '',
+  correo_electronico_o_carta: '',
 };
 
 /** Nombres que identifican tipo_cliente en campos dinámicos (viene de tabla campos, se muestra en paso 1; el resto en paso 3). */
@@ -240,8 +244,7 @@ export function useNuevoCliente() {
       if (!baseData.numero_identificacion?.trim()) return false;
       if (!baseData.telefono?.trim()) return false;
       if (!validarTelefono(baseData.telefono)) return false;
-      if (!baseData.correo?.trim()) return false;
-      if (!validarCorreo(baseData.correo)) return false;
+      if (!baseData.correo_electronico_o_carta?.trim()) return false;
       const prodEnDatosBase = campoTipoProducto && seccion(campoTipoProducto) === 'datos_base';
       if (prodEnDatosBase && opcionesProducto?.length > 0 && !producto) return false;
       const requeridosDatosBase = camposSeccionDatosBase.filter((c) => c.requerido);
@@ -349,8 +352,12 @@ export function useNuevoCliente() {
         tipo_identificacion: baseData.tipo_identificacion?.trim() || '',
         numero_identificacion: baseData.numero_identificacion?.trim() || '',
         telefono: baseData.telefono?.trim() || '',
-        correo: baseData.correo?.trim() || '',
+        correo_electronico_o_carta: baseData.correo_electronico_o_carta?.trim() || '',
         direccion: baseData.direccion?.trim() || '',
+        cups: baseData.cups?.trim() || '',
+        cuenta_bancaria: baseData.cuenta_bancaria?.trim() || '',
+        compania_anterior: baseData.compania_anterior?.trim() || '',
+        compania_actual: baseData.compania_actual?.trim() || '',
         respuestas: respuestasList,
       };
 

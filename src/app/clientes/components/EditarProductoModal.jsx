@@ -150,7 +150,7 @@ export function EditarProductoModal({
   const [empresas, setEmpresas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [opcionesProducto, setOpcionesProducto] = useState([]);
-  const [tipoClienteOptions, setTipoClienteOptions] = useState([]);
+  const [opcionesTipoClienteApi, setOpcionesTipoClienteApi] = useState([]);
 
   useEffect(() => {
     if (!open || !cliente || !producto) return;
@@ -213,21 +213,18 @@ export function EditarProductoModal({
       .catch(() => setOpcionesProducto([]));
   }, [open, empresaId, servicioId]);
 
-  /** Tipo de cliente: opciones desde config campos; fallback a choices */
   useEffect(() => {
-    const fallback = getOptions('tipo_cliente') || [];
-    if (!open || !empresaId || !servicioId) {
-      setTipoClienteOptions(fallback);
+    if (!open) {
+      setOpcionesTipoClienteApi([]);
       return;
     }
-    const params = { empresaId: Number(empresaId), servicioId: Number(servicioId) };
+    const params = {};
+    if (empresaId) params.empresaId = Number(empresaId);
+    if (servicioId) params.servicioId = Number(servicioId);
     apiCampos.obtenerOpcionesCampoPorNombre('tipo_cliente', params)
-      .then((list) => {
-        const opts = Array.isArray(list) ? list.map((o) => ({ value: o.value ?? o.label ?? '', label: o.label ?? o.value ?? '' })).filter((o) => o.value || o.label) : [];
-        setTipoClienteOptions(opts.length > 0 ? opts : fallback);
-      })
-      .catch(() => setTipoClienteOptions(fallback));
-  }, [open, empresaId, servicioId, getOptions]);
+      .then((list) => setOpcionesTipoClienteApi(Array.isArray(list) ? list : []))
+      .catch(() => setOpcionesTipoClienteApi([]));
+  }, [open, empresaId, servicioId]);
 
   useEffect(() => {
     if (!open || !empresaId || !servicioId) {
@@ -250,29 +247,8 @@ export function EditarProductoModal({
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
   }, []);
 
-  /** Valor a mostrar en el Select Tipo de cliente: si las opciones usan value "1"/"2" y tenemos "Particular" (o el serializer trae "Natural"), resolver al value que coincida por label o value */
-  const valorTipoClienteSelect = (() => {
-    const tc = String(tipoCliente ?? '').trim();
-    if (!tc) return '';
-    if (!tipoClienteOptions?.length) return tc;
-    const porValor = tipoClienteOptions.find((o) => String(o.value ?? '').trim() === tc);
-    if (porValor) return porValor.value ?? tc;
-    const porLabel = tipoClienteOptions.find((o) => String(o.label ?? '').trim() === tc);
-    if (porLabel) return porLabel.value ?? tc;
-    return tc;
-  })();
-
-  /** Opciones para Tipo de cliente: incluir el valor que trae el serializer (ej. "Natural") aunque no esté en la lista cargada */
-  const opcionesTipoClienteParaSelect = (() => {
-    const list = [...(tipoClienteOptions || [])];
-    const tc = String(tipoCliente ?? '').trim();
-    if (tc && !list.some((o) => String(o.value ?? '').trim() === tc)) {
-      list.push({ value: tc, label: tc });
-    }
-    return list;
-  })();
-
   const respuestasNombres = new Set((cliente?.respuestas || []).map((r) => r.nombre_campo).filter(Boolean));
+  const campoTipoCliente = camposFormulario.find(esTipoCliente);
   const campoTitular = camposFormulario.find(esCambioTitular);
   const camposTitularDependientes = camposFormulario.filter(
     (c) => !esCambioTitular(c) && esVisibleSiCambioTitular(c)
@@ -283,6 +259,32 @@ export function EditarProductoModal({
   const camposParaEditar = camposFormulario.filter(
     (c) => !esTipoCliente(c) && !esVendedor(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c)
   );
+
+  /** Opciones de Tipo de cliente: desde campoTipoCliente.opciones o desde API (configuración), nunca quemadas */
+  const desdeCampo = (campoTipoCliente?.opciones ?? []).map((o) => ({
+    value: o.value ?? o.label ?? '',
+    label: o.label ?? o.value ?? '',
+  })).filter((o) => o.value || o.label);
+  const desdeApi = (opcionesTipoClienteApi ?? []).map((o) => ({
+    value: o.value ?? o.label ?? '',
+    label: o.label ?? o.value ?? '',
+  })).filter((o) => o.value || o.label);
+  const opcionesTipoClienteBase = desdeCampo.length > 0 ? desdeCampo : desdeApi;
+  const tcActual = String(tipoCliente ?? '').trim();
+  const opcionesTipoCliente = tcActual && !opcionesTipoClienteBase.some((o) => String(o.value ?? '').trim() === tcActual)
+    ? [...opcionesTipoClienteBase, { value: tcActual, label: tcActual }]
+    : opcionesTipoClienteBase;
+
+  const valorTipoClienteSelect = (() => {
+    const tc = String(tipoCliente ?? '').trim();
+    if (!tc) return '';
+    if (!opcionesTipoCliente?.length) return tc;
+    const porValor = opcionesTipoCliente.find((o) => String(o.value ?? '').trim() === tc);
+    if (porValor) return porValor.value ?? tc;
+    const porLabel = opcionesTipoCliente.find((o) => String(o.label ?? '').trim() === tc);
+    if (porLabel) return porLabel.value ?? tc;
+    return tc;
+  })();
 
   const labelEstado = opcionesEstadoVenta?.length > 0
     ? opcionesEstadoVenta.find(
@@ -349,10 +351,16 @@ export function EditarProductoModal({
             <Select
               value={valorTipoClienteSelect}
               label="Tipo de cliente"
-              onChange={(e) => setTipoCliente(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setTipoCliente(v);
+                actualizarRespuesta('Tipo de cliente', v);
+                actualizarRespuesta('tipo_cliente', v);
+                campoTipoCliente && actualizarRespuesta(campoTipoCliente.nombre, v);
+              }}
             >
               <MenuItem value="">Seleccionar</MenuItem>
-              {opcionesTipoClienteParaSelect.map((o) => (
+              {opcionesTipoCliente.map((o) => (
                 <MenuItem key={String(o.value)} value={o.value}>{o.label}</MenuItem>
               ))}
             </Select>

@@ -142,7 +142,12 @@ export function ClienteEditModal({
   const [tipoIdentificacion, setTipoIdentificacion] = useState('');
   const [numeroIdentificacion, setNumeroIdentificacion] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [correo, setCorreo] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [cups, setCups] = useState('');
+  const [cuentaBancaria, setCuentaBancaria] = useState('');
+  const [companiaAnterior, setCompaniaAnterior] = useState('');
+  const [companiaActual, setCompaniaActual] = useState('');
+  const [correoElectronicoOCarta, setCorreoElectronicoOCarta] = useState('');
   const [respuestas, setRespuestas] = useState({});
   const [camposFormulario, setCamposFormulario] = useState([]);
   const [camposGlobales, setCamposGlobales] = useState([]);
@@ -158,7 +163,12 @@ export function ClienteEditModal({
     setTipoIdentificacion(cliente.tipo_identificacion || '');
     setNumeroIdentificacion(cliente.numero_identificacion || '');
     setTelefono(cliente.telefono || '');
-    setCorreo(cliente.correo || '');
+    setDireccion(cliente.direccion || '');
+    setCups(cliente.cups || '');
+    setCuentaBancaria(cliente.cuenta_bancaria || '');
+    setCompaniaAnterior(cliente.compania_anterior || '');
+    setCompaniaActual(cliente.compania_actual || '');
+    setCorreoElectronicoOCarta(cliente.correo_electronico_o_carta || '');
     setProducto(productoPreSeleccionado ?? cliente.producto ?? '');
     const r = {};
     (cliente.respuestas || []).forEach((item) => {
@@ -240,7 +250,12 @@ export function ClienteEditModal({
       tipo_identificacion: tipoIdentificacion.trim() || '',
       numero_identificacion: numeroIdentificacion.trim() || '',
       telefono: telefono.trim() || '',
-      correo: correo.trim() || '',
+      correo_electronico_o_carta: correoElectronicoOCarta.trim() || '',
+      direccion: direccion.trim() || '',
+      cups: cups.trim() || '',
+      cuenta_bancaria: cuentaBancaria.trim() || '',
+      compania_anterior: companiaAnterior.trim() || '',
+      compania_actual: companiaActual.trim() || '',
       respuestas: respuestasList,
     });
   };
@@ -305,14 +320,52 @@ export function ClienteEditModal({
             />
             <TextField
               size="small"
-              label="Correo"
-              type="email"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
+              label="Correo electrónico o carta"
+              value={correoElectronicoOCarta}
+              onChange={(e) => setCorreoElectronicoOCarta(e.target.value)}
               sx={{ flex: 1, ...inputSx }}
             />
           </Stack>
-
+          <TextField
+            fullWidth
+            size="small"
+            label="Dirección"
+            value={direccion}
+            onChange={(e) => setDireccion(e.target.value)}
+            sx={inputSx}
+          />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              size="small"
+              label="CUPS"
+              value={cups}
+              onChange={(e) => setCups(e.target.value)}
+              sx={{ flex: 1, ...inputSx }}
+            />
+            <TextField
+              size="small"
+              label="Cuenta bancaria"
+              value={cuentaBancaria}
+              onChange={(e) => setCuentaBancaria(e.target.value)}
+              sx={{ flex: 1, ...inputSx }}
+            />
+          </Stack>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              size="small"
+              label="Compañía anterior"
+              value={companiaAnterior}
+              onChange={(e) => setCompaniaAnterior(e.target.value)}
+              sx={{ flex: 1, ...inputSx }}
+            />
+            <TextField
+              size="small"
+              label="Compañía actual"
+              value={companiaActual}
+              onChange={(e) => setCompaniaActual(e.target.value)}
+              sx={{ flex: 1, ...inputSx }}
+            />
+          </Stack>
           {!soloDatosBase && (camposParaEditar.length > 0 || campoTitular || opcionesProducto?.length > 0) && (
             <>
               <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Campos del formulario (enviados)</Typography>
