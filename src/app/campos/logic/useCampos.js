@@ -8,7 +8,7 @@ import { listarServiciosActivasParaSelect } from '../../empresa/logic/apiEmpresa
 import { listarContratistasPorServicio } from '../../servicios/logic/apiServicios';
 import { CONFIG_FILAS_POR_PAGINA, SECCIONES_FORMULARIO } from './constants';
 
-const INIT_ERRORS = { empresa: '', servicio: '', nombre: '', tipo: '', orden: '', seccion: '' };
+const INIT_ERRORS = { empresa: '', servicio: '', nombre: '', tipo: '', orden: '', seccion: '', entidad: '', depende_de_id: '' };
 const TIPO_CAMPO_KEY = 'tipo_campo';
 const SECCIONES_FORMULARIO_KEY = 'secciones_formulario';
 
@@ -32,10 +32,23 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     const opts = getOptions(SECCIONES_FORMULARIO_KEY);
     return opts?.length ? opts : SECCIONES_FORMULARIO;
   }, [getOptions]);
+  const entidadOptions = useMemo(() => {
+    const opts = getOptions('entidad_campo');
+    return opts?.length ? opts : [
+      { value: 'servicio', label: 'Servicio' },
+      { value: 'contratista', label: 'Contratista' },
+      { value: 'producto', label: 'Producto' },
+      { value: 'vendedor', label: 'Vendedor' },
+    ];
+  }, [getOptions]);
 
   const getTipoLabel = useCallback(
     (value) => (tipoCampoOptions.find((t) => t.value === value)?.label ?? value),
     [tipoCampoOptions]
+  );
+  const getSeccionLabel = useCallback(
+    (value) => (seccionOptions.find((s) => s.value === value)?.label ?? value),
+    [seccionOptions]
   );
   const getTipoValueFromCampo = useCallback(
     (campo) => {
@@ -66,7 +79,10 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   const [activo, setActivo] = useState(true);
   const [requerido, setRequerido] = useState(false);
   const [placeholder, setPlaceholder] = useState('');
-  const [visible_si, setVisible_si] = useState('');
+  /** visible_si: null = sin condición; { campo, valor } = mostrar campo solo cuando formState[campo] === valor */
+  const [visible_si, setVisible_si] = useState(null);
+  const [entidad, setEntidad] = useState('');
+  const [depende_de_id, setDepende_de_id] = useState('');
   const [productoId, setProductoId] = useState('');
   const [aplicarTodosProductos, setAplicarTodosProductos] = useState(false);
   /** Opciones: en crear = string[]; en editar = Array<{ id?, label, value? }> */
@@ -83,6 +99,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   /** Servicios de la empresa seleccionada; se cargan al elegir empresa */
   const [serviciosFiltrados, setServiciosFiltrados] = useState([]);
   const [cargandoServicios, setCargandoServicios] = useState(false);
+  /** Campos de la misma sección para el selector "Depende de" (se cargan al tener sección en modal) */
+  const [camposMismaSeccion, setCamposMismaSeccion] = useState([]);
   /** Evitar doble fetch: al abrir editar ya cargamos servicios en handleAbrirEditar */
   const skipServiciosLoadRef = useRef(false);
 
@@ -123,12 +141,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
 
   const getFormValid = useCallback(() => {
     const nextErrors = { ...INIT_ERRORS };
-    if (!aplicarTodosEmpresas) {
-      if (!empresaId) nextErrors.empresa = 'Seleccione un servicio';
-      if (!aplicarTodosServicios && !servicioId) nextErrors.servicio = 'Seleccione un contratista';
-    }
     if (!nombre?.trim()) nextErrors.nombre = 'El nombre del campo es obligatorio';
     if (!tipoCampo) nextErrors.tipo = 'Seleccione el tipo de campo';
+    if (tipoCampo === 'entity_select' && !entidad?.trim()) nextErrors.entidad = 'Seleccione la entidad';
     if (!seccion) nextErrors.seccion = 'Seleccione la sección del formulario';
     const ordenNum = parseInt(orden, 10);
     if (orden === '' || isNaN(ordenNum) || ordenNum < 1) {
@@ -136,13 +151,14 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     }
     const valid = Object.values(nextErrors).every((v) => !v);
     return { valid, errors: nextErrors };
-  }, [aplicarTodosEmpresas, aplicarTodosServicios, empresaId, servicioId, nombre, tipoCampo, seccion, orden]);
+  }, [nombre, tipoCampo, seccion, orden, entidad]);
 
   const canSave = useMemo(() => {
     const { valid } = getFormValid();
     const opcionesOk = tipoCampo !== 'select' || opciones.length > 0;
-    return valid && opcionesOk;
-  }, [getFormValid, tipoCampo, opciones.length]);
+    const entidadOk = tipoCampo !== 'entity_select' || (entidad?.trim() ?? '') !== '';
+    return valid && opcionesOk && entidadOk;
+  }, [getFormValid, tipoCampo, opciones.length, entidad]);
 
   const activoParam = filtroEstado === '1' ? true : filtroEstado === '0' ? false : undefined;
 
@@ -159,7 +175,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         if (filtroServicio) params.contratista = Number(filtroServicio);
         if (filtroProducto?.trim()) params.producto = filtroProducto.trim();
         const { results, count } = await api.listarCampos(page, CONFIG_FILAS_POR_PAGINA, params);
-        const mapped = results.map((item) => api.mapCampoFromApi(item, getTipoLabel));
+        const mapped = results.map((item) => api.mapCampoFromApi(item, getTipoLabel, getSeccionLabel));
         setCampos(mapped);
         setCamposTotal(count);
       } catch (e) {
@@ -171,7 +187,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         setLoading(false);
       }
     },
-    [active, pagina, busqueda, activoParam, filtroEmpresa, filtroServicio, getTipoLabel, showSnackbar]
+    [active, pagina, busqueda, activoParam, filtroEmpresa, filtroServicio, getTipoLabel, getSeccionLabel, showSnackbar]
   );
 
   useEffect(() => {
@@ -216,25 +232,49 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     return () => { cancelled = true; };
   }, [active, modalNueva, modalEditar, empresaId, servicioId, aplicarTodosEmpresas, aplicarTodosServicios]);
 
+  /** Cargar campos de la misma sección para el selector "Depende de" cuando el modal está abierto y hay sección. */
+  useEffect(() => {
+    if ((!modalNueva && !modalEditar) || !seccion?.trim()) {
+      setCamposMismaSeccion([]);
+      return;
+    }
+    let cancelled = false;
+    api
+      .listarCampos(1, 200, { seccion: seccion.trim(), activo: true })
+      .then(({ results }) => {
+        if (cancelled) return;
+        const list = Array.isArray(results) ? results : [];
+        const excluirId = enEdicion?.id;
+        const filtrados = excluirId ? list.filter((c) => c.id !== excluirId) : list;
+        setCamposMismaSeccion(filtrados);
+      })
+      .catch(() => {
+        if (!cancelled) setCamposMismaSeccion([]);
+      });
+    return () => { cancelled = true; };
+  }, [modalNueva, modalEditar, seccion, enEdicion?.id]);
+
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
     setEmpresaId('');
     setServicioId('');
     setProductoId('');
+    setDepende_de_id('');
     setAplicarTodosProductos(false);
     setAplicarTodosServicios(false);
-    setAplicarTodosEmpresas(false);
+    setAplicarTodosEmpresas(true);
     setTipoCampo('');
     setSeccion('');
     setOrden('1');
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
-    setVisible_si('');
+    setVisible_si(null);
     setOpciones([]);
     setOpcionInput('');
     setErrors(INIT_ERRORS);
     setServiciosFiltrados([]);
+    setCamposMismaSeccion([]);
     setModalNueva(true);
   }, []);
 
@@ -267,16 +307,18 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setEmpresaId('');
     setServicioId('');
     setProductoId('');
+    setDepende_de_id('');
     setAplicarTodosProductos(false);
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
+    setEntidad('');
     setSeccion('');
     setOrden('1');
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
-    setVisible_si('');
+    setVisible_si(null);
     setOpciones([]);
     setOpcionInput('');
     setErrors(INIT_ERRORS);
@@ -318,12 +360,13 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        visible_si: visible_si.trim() || '',
+        visible_si: (visible_si && visible_si.campo_id && String(visible_si.valor ?? '').trim() !== '') ? { campo_id: visible_si.campo_id, operador: visible_si.operador || 'igual', valor: String(visible_si.valor).trim() } : null,
         requerido: !!requerido,
         activo: !!activo,
         estado: '1',
         producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),
       };
+      if (tipoCampo === 'entity_select' && entidad?.trim()) payload.entidad = entidad.trim().toLowerCase();
       if (aplicarTodosEmpresas) {
         payload.aplicar_todos_servicios = true;
       } else {
@@ -371,6 +414,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     cargarCampos,
     pagina,
     showSnackbar,
+    entidad,
+    depende_de_id,
   ]);
 
   const handleAbrirEditar = useCallback(
@@ -400,12 +445,23 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         setServicioId(serv?.id?.toString() ?? '');
       }
       setTipoCampo(getTipoValueFromCampo(campo));
+      setEntidad(campo.entidad ?? '');
+      setDepende_de_id(campo.depende_de != null ? String(campo.depende_de) : '');
       setSeccion(campo.seccion ?? 'campos_formulario');
       setOrden(String(campo.orden ?? 1));
       setActivo(campo.activo ?? true);
       setRequerido(campo.requerido ?? false);
       setPlaceholder(campo.placeholder ?? '');
-      setVisible_si(campo.visible_si ?? '');
+      const vs = campo.visible_si;
+      if (vs && typeof vs === 'object' && (vs.campo_id != null || vs.campo != null)) {
+        setVisible_si({
+          campo_id: vs.campo_id ?? null,
+          operador: vs.operador || 'igual',
+          valor: String(vs.valor ?? ''),
+        });
+      } else {
+        setVisible_si(null);
+      }
       setProductoId(campo.producto ?? '');
       setAplicarTodosProductos(!campo.producto);
 
@@ -435,16 +491,18 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     setEmpresaId('');
     setServicioId('');
     setProductoId('');
+    setDepende_de_id('');
     setAplicarTodosProductos(false);
     setAplicarTodosServicios(false);
     setAplicarTodosEmpresas(false);
     setTipoCampo('');
+    setEntidad('');
     setSeccion('');
     setOrden('1');
     setActivo(true);
     setRequerido(false);
     setPlaceholder('');
-    setVisible_si('');
+    setVisible_si(null);
     setOpciones([]);
     setOpcionInput('');
     setErrors(INIT_ERRORS);
@@ -470,11 +528,14 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        visible_si: visible_si.trim() || '',
+        visible_si: (visible_si && visible_si.campo_id && String(visible_si.valor ?? '').trim() !== '') ? { campo_id: visible_si.campo_id, operador: visible_si.operador || 'igual', valor: String(visible_si.valor).trim() } : null,
         requerido: !!requerido,
         activo: !!activo,
         producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),
       };
+      if (tipoCampo === 'entity_select' && entidad?.trim()) payload.entidad = entidad.trim().toLowerCase();
+      if (depende_de_id !== '' && depende_de_id != null) payload.depende_de_id = Number(depende_de_id);
+      else payload.depende_de_id = null;
       if (aplicarTodosEmpresas) {
         payload.aplicar_todos_servicios = true;
       } else {
@@ -546,6 +607,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     cargarCampos,
     pagina,
     showSnackbar,
+    entidad,
+    depende_de_id,
   ]);
 
   const handleAbrirEliminar = (campo) => {
@@ -580,6 +643,8 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
   return {
     tipoCampoOptions,
     seccionOptions,
+    getTipoLabel,
+    getSeccionLabel,
     campos,
     setCampos,
     totalItems: camposTotal,
@@ -600,6 +665,12 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     cargandoServicios,
     tipoCampo,
     setTipoCampo,
+    entidad,
+    setEntidad,
+    entidadOptions,
+    depende_de_id,
+    setDepende_de_id,
+    camposMismaSeccion,
     seccion,
     setSeccion,
     orden,

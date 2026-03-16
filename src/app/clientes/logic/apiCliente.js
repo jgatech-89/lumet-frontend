@@ -54,23 +54,37 @@ export const listarClientes = async (page = 1, pageSize = 20, filters = {}) => {
 
 /**
  * Obtiene los campos del formulario para un servicio+contratista+producto (dinámicos).
+ * Para seccion=campos_formulario: sin productoId solo devuelve campos base (selector producto);
+ * con productoId devuelve base + campos relacionados al producto (vía Relacion).
  * @param {number} [servicioId] - ID del servicio (opcional)
  * @param {number} [contratistaId] - ID del contratista (opcional)
- * @param {string} [producto] - Valor del producto para filtrar campos (opcional)
- * @param {boolean} [soloSinProducto] - Si true, solo campos sin restricción por producto (producto vacío)
+ * @param {string} [producto] - Valor del producto para filtrar campos (otras secciones)
+ * @param {number|string} [productoId] - ID del producto; en campos_formulario carga base + relacionados
+ * @param {boolean} [soloSinProducto] - Si true, solo campos sin restricción por producto (otras secciones)
+ * @param {string} [seccion] - Filtrar por sección: cliente, datos_base, campos_formulario, vendedor
  * @returns {Promise<Array>} Campos con id, nombre, tipo, opciones, requerido, etc.
- * Si no se pasan servicioId ni contratistaId, devuelve campos globales.
  */
-export const obtenerCamposFormulario = async (servicioId, contratistaId, producto, soloSinProducto = false) => {
+export const obtenerCamposFormulario = async (servicioId, contratistaId, producto, soloSinProducto = false, seccion = null, productoId = null) => {
   const params = {};
-  if (servicioId != null) params.servicio_id = servicioId;
-  if (contratistaId != null) params.contratista_id = contratistaId;
-  if (producto != null && String(producto).trim() !== '' && producto !== '__todos__') {
-    params.producto = String(producto).trim();
+  if (servicioId != null && contratistaId != null) {
+    params.servicio_id = servicioId;
+    params.contratista_id = contratistaId;
   }
-  if (soloSinProducto) params.solo_sin_producto = 'true';
+  const esCamposFormulario = seccion != null && String(seccion).trim() === 'campos_formulario';
+  if (esCamposFormulario && productoId != null && productoId !== '' && !Number.isNaN(Number(productoId))) {
+    params.producto_id = Number(productoId);
+  } else if (!esCamposFormulario) {
+    if (producto != null && String(producto).trim() !== '' && producto !== '__todos__') {
+      params.producto = String(producto).trim();
+    }
+    if (soloSinProducto) params.solo_sin_producto = 'true';
+  }
+  if (seccion != null && String(seccion).trim() !== '') params.seccion = String(seccion).trim();
   const { data } = await get(BASE_FORMULARIO, params);
-  return Array.isArray(data) ? data : [];
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
 };
 
 /**

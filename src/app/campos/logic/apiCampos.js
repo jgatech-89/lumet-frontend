@@ -8,6 +8,7 @@ const BASE_OPCIONES_POR_NOMBRE = '/api/campos/opciones-por-nombre/';
  * Convierte un item de la API (CampoReadSerializer) al formato usado en la tabla/modales.
  * @param {Object} item - Respuesta del backend
  * @param {function(string): string} getTipoLabel - Función para obtener etiqueta del tipo
+ * @param {function(string): string} [getSeccionLabel] - Función para obtener etiqueta de la sección
  */
 /**
  * Obtiene las opciones de un campo por su nombre (ej. Producto).
@@ -25,30 +26,37 @@ export const obtenerOpcionesCampoPorNombre = async (nombre, params = {}) => {
   return Array.isArray(data) ? data : [];
 };
 
-export const mapCampoFromApi = (item, getTipoLabel) => ({
-  id: item.id,
-  campo: item.nombre ?? '',
-  empresa: item.servicio_nombre ?? (item.servicio == null ? 'Todos los servicios' : ''),
-  servicio: item.contratista_nombre?.trim() || (item.contratista == null ? 'Todos los contratistas' : ''),
-  producto: item.producto ?? '',
-  tipo: item.tipo ?? '',
-  tipoCampo: getTipoLabel ? getTipoLabel(item.tipo) : item.tipo,
-  seccion: item.seccion ?? 'campos_formulario',
-  estado: item.activo ? 'Activa' : 'Inactiva',
-  orden: item.orden ?? 1,
-  activo: item.activo ?? true,
-  requerido: item.requerido ?? false,
-  placeholder: item.placeholder ?? '',
-  visible_si: item.visible_si ?? '',
-  opciones: (item.opciones ?? []).map((o) => o.label ?? o.value ?? ''),
-});
+export const mapCampoFromApi = (item, getTipoLabel, getSeccionLabel) => {
+  const seccionRaw = item.seccion ?? 'campos_formulario';
+  return {
+    id: item.id,
+    campo: item.nombre ?? '',
+    empresa: item.servicio_nombre ?? (item.servicio == null ? 'Todos los servicios' : ''),
+    servicio: item.contratista_nombre?.trim() || (item.contratista == null ? 'Todos los contratistas' : ''),
+    producto: item.producto ?? '',
+    tipo: item.tipo ?? '',
+    entidad: item.entidad ?? '',
+    depende_de: item.depende_de ?? null,
+    depende_de_nombre: item.depende_de_nombre ?? null,
+    tipoCampo: getTipoLabel ? getTipoLabel(item.tipo) : item.tipo,
+    seccion: seccionRaw,
+    seccionLabel: getSeccionLabel ? getSeccionLabel(seccionRaw) : seccionRaw,
+    estado: item.activo ? 'Activa' : 'Inactiva',
+    orden: item.orden ?? 1,
+    activo: item.activo ?? true,
+    requerido: item.requerido ?? false,
+    placeholder: item.placeholder ?? '',
+    visible_si: item.visible_si && typeof item.visible_si === 'object' && (item.visible_si.campo_id != null || item.visible_si.campo != null) ? item.visible_si : null,
+    opciones: (item.opciones ?? []).map((o) => o.label ?? o.value ?? ''),
+  };
+};
 
 /**
  * Lista campos con paginación y filtros opcionales.
  * Misma firma que listarEmpresas, listarServicios, listarVendedores: page, pageSize, params.
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página (ej. 5)
- * @param {{ search?: string, servicio?: number, contratista?: number, activo?: boolean, producto?: string }} params
+ * @param {{ search?: string, servicio?: number, contratista?: number, activo?: boolean, producto?: string, seccion?: string }} params
  * @returns {Promise<{ results: Array, count: number }>}
  */
 export const listarCampos = async (page = 1, pageSize = 5, params = {}) => {
@@ -58,10 +66,27 @@ export const listarCampos = async (page = 1, pageSize = 5, params = {}) => {
   if (params.contratista != null) query.contratista = params.contratista;
   if (params.activo === true || params.activo === false) query.activo = params.activo;
   if (params.producto != null && String(params.producto).trim() !== '') query.producto = params.producto.trim();
+  if (params.seccion != null && String(params.seccion).trim() !== '') query.seccion = params.seccion.trim();
   const { data } = await get(BASE_CAMPOS, query);
   const results = Array.isArray(data) ? data : data?.results ?? [];
   const count = data?.count ?? results.length;
   return { results, count };
+};
+
+/**
+ * Lista todos los campos activos para el selector "Campo dependiente" de condición de visibilidad.
+ * Incluye id, nombre, tipo, entidad y opciones (para tipo select).
+ * @returns {Promise<Array<{ id: number, nombre: string, tipo: string, entidad?: string, opciones?: Array<{ label, value }> }>>}
+ */
+export const listarCamposParaCondicionVisibleSi = async () => {
+  const { results } = await listarCampos(1, 1000, { activo: true });
+  return (results || []).map((item) => ({
+    id: item.id,
+    nombre: item.nombre ?? '',
+    tipo: item.tipo ?? '',
+    entidad: item.entidad ?? '',
+    opciones: (item.opciones ?? []).map((o) => ({ label: o.label ?? o.value ?? '', value: o.value ?? o.label ?? '' })),
+  }));
 };
 
 /**

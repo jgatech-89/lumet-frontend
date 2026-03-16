@@ -31,7 +31,6 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
   const [modalEditar, setModalEditar] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [nombre, setNombre] = useState('');
-  const [servicioId, setServicioId] = useState('');
   const [estadoServicio, setEstadoServicio] = useState('1');
   const [enEdicion, setEnEdicion] = useState(null);
   const [aEliminar, setAEliminar] = useState(null);
@@ -90,24 +89,20 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
 
   const handleAbrirNueva = useCallback(() => {
     setNombre('');
-    setServicioId('');
-    if (!serviciosParaSelect?.length) cargarServiciosParaSelect?.();
     setModalNueva(true);
-  }, [serviciosParaSelect?.length, cargarServiciosParaSelect]);
+  }, []);
 
   const handleCerrarNueva = () => {
     setModalNueva(false);
     setNombre('');
-    setServicioId('');
   };
 
   const handleGuardarNueva = async () => {
-    if (!nombre.trim() || !servicioId) return;
+    if (!nombre.trim()) return;
     setGuardandoNuevo(true);
     try {
       await api.crearContratista({
         nombre: nombre.trim(),
-        servicio_id: Number(servicioId),
       });
       showSnackbar('Contratista creado correctamente', 'success');
       handleCerrarNueva();
@@ -122,27 +117,24 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
   const handleAbrirEditar = useCallback((contratista) => {
     setEnEdicion(contratista);
     setNombre(contratista.nombre ?? '');
-    setServicioId(contratista.servicio_id?.toString() ?? '');
-    setEstadoServicio(contratista.estado_contratista ?? (contratista.estado === 'Activa' ? '1' : '0'));
-    if (!serviciosParaSelect?.length) cargarServiciosParaSelect?.();
+    const estado = contratista.estado_contratista ?? (contratista.estado === 'Activa' ? '1' : '0');
+    setEstadoServicio(String(estado));
     setModalEditar(true);
-  }, [serviciosParaSelect?.length, cargarServiciosParaSelect]);
+  }, []);
 
   const handleCerrarEditar = () => {
     setModalEditar(false);
     setEnEdicion(null);
     setNombre('');
-    setServicioId('');
     setEstadoServicio('1');
   };
 
   const handleGuardarEditar = async () => {
-    if (!enEdicion || !nombre.trim() || !servicioId) return;
+    if (!enEdicion || !nombre.trim()) return;
     setGuardandoEditar(true);
     try {
       await api.actualizarContratista(enEdicion.id, {
         nombre: nombre.trim(),
-        servicio_id: Number(servicioId),
         estado_contratista: estadoServicio,
       });
       showSnackbar('Contratista actualizado correctamente', 'success');
@@ -203,8 +195,6 @@ export function useContratistas(pagina, setPagina, busqueda, filtroEstado, activ
     modalEliminar,
     nombre,
     setNombre,
-    servicioId,
-    setServicioId,
     estadoServicio,
     setEstadoServicio,
     enEdicion,

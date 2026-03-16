@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Table,
@@ -14,6 +15,7 @@ import { useThemeMode } from '../../../context/ThemeContext';
 import { TableLoader } from '../../../components/loading';
 import { EmpresaRow } from './EmpresaRow';
 import { EmpresaModals } from './EmpresaModals';
+import { RelacionModal } from '../../../components/configuracion/RelacionModal';
 import { EMPRESAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
@@ -21,6 +23,7 @@ const COLUMNS = ['Nombre', 'Estado', 'Opciones'];
 
 export function EmpresaConfigSection({ empresa, pagina, setPagina }) {
   const { isDark } = useThemeMode();
+  const [rowForRelacion, setRowForRelacion] = useState(null);
   const totalItems = empresa.empresasTotal;
   const totalPages = Math.max(1, Math.ceil(totalItems / EMPRESAS_POR_PAGINA));
   const inicio = totalItems === 0 ? 0 : (pagina - 1) * EMPRESAS_POR_PAGINA + 1;
@@ -76,6 +79,7 @@ export function EmpresaConfigSection({ empresa, pagina, setPagina }) {
                     row={row}
                     onEdit={empresa.handleAbrirEditar}
                     onDelete={empresa.handleAbrirEliminar}
+                    onRelacionar={setRowForRelacion}
                   />
                 </TableRow>
               ))
@@ -142,6 +146,13 @@ export function EmpresaConfigSection({ empresa, pagina, setPagina }) {
         handleGuardarEditar={empresa.handleGuardarEditar}
         handleCerrarEliminar={empresa.handleCerrarEliminar}
         handleConfirmarEliminar={empresa.handleConfirmarEliminar}
+      />
+      <RelacionModal
+        open={Boolean(rowForRelacion)}
+        onClose={() => setRowForRelacion(null)}
+        origen_tipo="servicio"
+        origen_id={rowForRelacion?.id}
+        nombre_entidad="Servicio"
       />
     </>
   );

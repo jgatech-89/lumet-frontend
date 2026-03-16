@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Table,
@@ -14,6 +15,7 @@ import { useThemeMode } from '../../../context/ThemeContext';
 import { TableLoader } from '../../../components/loading';
 import { VendedorRow } from './VendedorRow';
 import { VendedorModals } from './VendedorModals';
+import { RelacionModal } from '../../../components/configuracion/RelacionModal';
 import { VENDEDORES_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
@@ -21,6 +23,7 @@ const COLUMNS = ['Nombre', 'Nº identificación', 'Tipo identificación', 'Estad
 
 export function VendedorConfigSection({ vendedores, pagina, setPagina }) {
   const { isDark } = useThemeMode();
+  const [rowForRelacion, setRowForRelacion] = useState(null);
   const totalItems = vendedores.total;
   const totalPages = Math.max(1, Math.ceil(totalItems / VENDEDORES_POR_PAGINA));
   const inicio = totalItems === 0 ? 0 : (pagina - 1) * VENDEDORES_POR_PAGINA + 1;
@@ -76,6 +79,7 @@ export function VendedorConfigSection({ vendedores, pagina, setPagina }) {
                     row={row}
                     onEdit={vendedores.handleAbrirEditar}
                     onDelete={vendedores.handleAbrirEliminar}
+                    onRelacionar={setRowForRelacion}
                   />
                 </TableRow>
               ))
@@ -147,6 +151,13 @@ export function VendedorConfigSection({ vendedores, pagina, setPagina }) {
         handleGuardarEditar={vendedores.handleGuardarEditar}
         handleCerrarEliminar={vendedores.handleCerrarEliminar}
         handleConfirmarEliminar={vendedores.handleConfirmarEliminar}
+      />
+      <RelacionModal
+        open={Boolean(rowForRelacion)}
+        onClose={() => setRowForRelacion(null)}
+        origen_tipo="vendedor"
+        origen_id={rowForRelacion?.id}
+        nombre_entidad="Vendedor"
       />
     </>
   );

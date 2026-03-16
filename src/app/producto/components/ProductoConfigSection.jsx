@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Table,
@@ -14,6 +15,7 @@ import { useThemeMode } from '../../../context/ThemeContext';
 import { TableLoader } from '../../../components/loading';
 import { ProductoRow } from './ProductoRow';
 import { ProductoModals } from './ProductoModals';
+import { RelacionModal } from '../../../components/configuracion/RelacionModal';
 import { PRODUCTOS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
@@ -21,6 +23,7 @@ const COLUMNS = ['Nombre', 'Estado', 'Opciones'];
 
 export function ProductoConfigSection({ productos, pagina, setPagina }) {
   const { isDark } = useThemeMode();
+  const [rowForRelacion, setRowForRelacion] = useState(null);
   const totalItems = productos.total;
   const totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTOS_POR_PAGINA));
   const inicio = totalItems === 0 ? 0 : (pagina - 1) * PRODUCTOS_POR_PAGINA + 1;
@@ -76,6 +79,7 @@ export function ProductoConfigSection({ productos, pagina, setPagina }) {
                     row={row}
                     onEdit={productos.handleAbrirEditar}
                     onDelete={productos.handleAbrirEliminar}
+                    onRelacionar={setRowForRelacion}
                   />
                 </TableRow>
               ))
@@ -142,6 +146,13 @@ export function ProductoConfigSection({ productos, pagina, setPagina }) {
         handleGuardarEditar={productos.handleGuardarEditar}
         handleCerrarEliminar={productos.handleCerrarEliminar}
         handleConfirmarEliminar={productos.handleConfirmarEliminar}
+      />
+      <RelacionModal
+        open={Boolean(rowForRelacion)}
+        onClose={() => setRowForRelacion(null)}
+        origen_tipo="producto"
+        origen_id={rowForRelacion?.id}
+        nombre_entidad="Producto"
       />
     </>
   );

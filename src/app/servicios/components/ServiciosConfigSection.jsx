@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Table,
@@ -14,13 +15,15 @@ import { useThemeMode } from '../../../context/ThemeContext';
 import { TableLoader } from '../../../components/loading';
 import { ContratistaRow } from './ServicioRow';
 import { ContratistaModals } from './ServicioModals';
+import { RelacionModal } from '../../../components/configuracion/RelacionModal';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
-const COLUMNS = ['Contratista', 'Tipo de servicio', 'Estado', 'Opciones'];
+const COLUMNS = ['Contratista', 'Estado', 'Opciones'];
 
 export function ContratistasConfigSection({ contratistas, empresasParaSelect, cargarEmpresasParaSelect, pagina, setPagina }) {
   const { isDark } = useThemeMode();
+  const [rowForRelacion, setRowForRelacion] = useState(null);
   const totalItems = contratistas.contratistasTotal ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / CONFIG_FILAS_POR_PAGINA));
   const filasPagina = contratistas.contratistas ?? [];
@@ -77,6 +80,7 @@ export function ContratistasConfigSection({ contratistas, empresasParaSelect, ca
                   row={row}
                   onEdit={contratistas.handleAbrirEditar}
                   onDelete={contratistas.handleAbrirEliminar}
+                  onRelacionar={setRowForRelacion}
                 />
               </TableRow>
             ))
@@ -126,14 +130,11 @@ export function ContratistasConfigSection({ contratistas, empresasParaSelect, ca
       </Stack>
 
       <ContratistaModals
-        serviciosParaSelect={empresasParaSelect}
         modalNueva={contratistas.modalNueva}
         modalEditar={contratistas.modalEditar}
         modalEliminar={contratistas.modalEliminar}
         nombre={contratistas.nombre}
         setNombre={contratistas.setNombre}
-        servicioId={contratistas.servicioId}
-        setServicioId={contratistas.setServicioId}
         estadoServicio={contratistas.estadoServicio}
         setEstadoServicio={contratistas.setEstadoServicio}
         aEliminar={contratistas.aEliminar}
@@ -146,6 +147,13 @@ export function ContratistasConfigSection({ contratistas, empresasParaSelect, ca
         handleGuardarEditar={contratistas.handleGuardarEditar}
         handleCerrarEliminar={contratistas.handleCerrarEliminar}
         handleConfirmarEliminar={contratistas.handleConfirmarEliminar}
+      />
+      <RelacionModal
+        open={Boolean(rowForRelacion)}
+        onClose={() => setRowForRelacion(null)}
+        origen_tipo="contratista"
+        origen_id={rowForRelacion?.id}
+        nombre_entidad="Contratista"
       />
     </>
   );

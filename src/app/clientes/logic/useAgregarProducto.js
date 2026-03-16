@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import * as apiCliente from './apiCliente';
+import { useOpcionesPorEntidad } from './opcionesEntidad';
 import * as apiCampos from '../../campos/logic/apiCampos';
 import { listarContratistasPorServicio } from '../../servicios/logic/apiServicios';
 import { listarServiciosActivasParaSelect } from '../../empresa/logic/apiEmpresa';
@@ -43,22 +44,42 @@ export function useAgregarProducto(cliente, onExito) {
   const [vendedores, setVendedores] = useState([]);
   const [cargandoVendedores, setCargandoVendedores] = useState(false);
   const [servicios, setServicios] = useState([]);
-  const [camposFormulario, setCamposFormulario] = useState([]);
-  const [camposGlobales, setCamposGlobales] = useState([]);
+  const [camposPorSeccion, setCamposPorSeccion] = useState({
+    cliente: [],
+    campos_formulario: [],
+    vendedor: [],
+  });
   const [opcionesProducto, setOpcionesProducto] = useState([]);
   const [guardando, setGuardando] = useState(false);
   const [cargandoEmpresas, setCargandoEmpresas] = useState(false);
   const [cargandoServicios, setCargandoServicios] = useState(false);
   const [cargandoCampos, setCargandoCampos] = useState(false);
-  const [cargandoCamposGlobales, setCargandoCamposGlobales] = useState(false);
+  const loadedSeccionesRef = useRef({ cliente: false, campos_formulario: false, vendedor: false });
+  const lastProductoIdFormularioRef = useRef(null);
+  const promesaSeccionRef = useRef({});
 
   const tipoClienteOptionsFallback = getOptions('tipo_cliente');
-  const campoTipoCliente = camposGlobales.find(esCampoTipoCliente) ?? camposFormulario.find(esCampoTipoCliente);
+  const todosLosCamposRaw = [
+    ...(camposPorSeccion.cliente || []),
+    ...(camposPorSeccion.campos_formulario || []),
+    ...(camposPorSeccion.vendedor || []),
+  ];
+  const todosLosCamposUnicos = (() => {
+    const seen = new Set();
+    return todosLosCamposRaw.filter((c) => {
+      const key = c.id ?? c.nombre;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
+  const campoTipoCliente = (camposPorSeccion.cliente || []).find(esCampoTipoCliente)
+    ?? (camposPorSeccion.campos_formulario || []).find(esCampoTipoCliente);
   const tipoClienteOptions = campoTipoCliente?.opciones?.length
     ? campoTipoCliente.opciones
     : tipoClienteOptionsFallback;
 
-  const campEstadoVenta = camposFormulario.find(esCampoEstadoVenta) ?? camposGlobales.find(esCampoEstadoVenta);
+  const campEstadoVenta = todosLosCamposUnicos.find(esCampoEstadoVenta);
 
   const cargarEmpresas = useCallback(async () => {
     setCargandoEmpresas(true);
@@ -95,23 +116,9 @@ export function useAgregarProducto(cliente, onExito) {
     }
   }, [empresa?.id, servicio?.id, cargarVendedores]);
 
-  const cargarCamposGlobales = useCallback(async () => {
-    setCargandoCamposGlobales(true);
-    try {
-      const campos = await apiCliente.obtenerCamposFormulario();
-      setCamposGlobales(Array.isArray(campos) ? campos : []);
-    } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');
-      setCamposGlobales([]);
-    } finally {
-      setCargandoCamposGlobales(false);
-    }
-  }, [showSnackbar]);
-
   useEffect(() => {
     cargarEmpresas();
-    cargarCamposGlobales();
-  }, [cargarEmpresas, cargarCamposGlobales]);
+  }, [cargarEmpresas]);
 
   useEffect(() => {
     if (!cliente?.id) {
@@ -163,30 +170,6 @@ export function useAgregarProducto(cliente, onExito) {
     }
   }, [empresa?.id, servicio?.id]);
 
-  const cargarCamposFormulario = useCallback(async () => {
-    if (!empresa?.id || !servicio?.id) {
-      setCamposFormulario([]);
-      return;
-    }
-    setCargandoCampos(true);
-    try {
-      const productoSeleccionado = (producto && producto !== '__todos__' && String(producto).trim()) ? producto.trim() : null;
-      const soloSinProducto = !productoSeleccionado;
-      const campos = await apiCliente.obtenerCamposFormulario(
-        empresa.id,
-        servicio.id,
-        productoSeleccionado || undefined,
-        soloSinProducto
-      );
-      setCamposFormulario(Array.isArray(campos) ? campos : []);
-    } catch (e) {
-      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');
-      setCamposFormulario([]);
-    } finally {
-      setCargandoCampos(false);
-    }
-  }, [empresa?.id, servicio?.id, producto, showSnackbar]);
-
   useEffect(() => {
     if (empresa?.id && servicio?.id) {
       cargarOpcionesProducto();
@@ -195,14 +178,65 @@ export function useAgregarProducto(cliente, onExito) {
     }
   }, [empresa?.id, servicio?.id, cargarOpcionesProducto]);
 
+  /** Una sola consulta por sección al montar el paso. En campos_formulario, al cambiar producto se recarga con producto_id. */
   useEffect(() => {
-    if (empresa?.id && servicio?.id) {
-      cargarCamposFormulario();
-    } else {
-      setCamposFormulario([]);
-      setRespuestas({});
+    const seccionPorPaso = { 1: 'cliente', 2: 'campos_formulario', 3: 'vendedor' };
+    const seccion = seccionPorPaso[paso];
+    if (!seccion) return;
+    if (seccion === 'campos_formulario' && producto !== lastProductoIdFormularioRef.current) {
+      lastProductoIdFormularioRef.current = producto;
+      loadedSeccionesRef.current[seccion] = false;
     }
-  }, [empresa?.id, servicio?.id, producto, cargarCamposFormulario]);
+    if (loadedSeccionesRef.current[seccion]) return;
+    if ((seccion === 'campos_formulario' || seccion === 'vendedor') && (!empresa?.id || !servicio?.id)) return;
+    const servicioId = (empresa?.id != null && servicio?.id != null) ? empresa.id : null;
+    const contratistaId = (empresa?.id != null && servicio?.id != null) ? servicio.id : null;
+    const esCamposFormulario = seccion === 'campos_formulario';
+    const productoVal = (producto && producto !== '__todos__' && String(producto).trim()) ? producto.trim() : null;
+    const soloSinProducto = !productoVal;
+    const productoId = esCamposFormulario && productoVal ? (Number(productoVal) || productoVal) : null;
+
+    let promise = promesaSeccionRef.current[seccion];
+    if (promise) {
+      setCargandoCampos(true);
+      promise
+        .then((campos) => {
+          setCamposPorSeccion((prev) => ({ ...prev, [seccion]: Array.isArray(campos) ? campos : [] }));
+          loadedSeccionesRef.current[seccion] = true;
+        })
+        .catch(() => {})
+        .finally(() => setCargandoCampos(false));
+      return;
+    }
+
+    let cancelled = false;
+    setCargandoCampos(true);
+    promise = apiCliente
+      .obtenerCamposFormulario(servicioId, contratistaId, productoVal || undefined, soloSinProducto, seccion, productoId)
+      .then((campos) => Array.isArray(campos) ? campos : []);
+    promesaSeccionRef.current[seccion] = promise;
+
+    promise
+      .then((campos) => {
+        if (!cancelled) {
+          setCamposPorSeccion((prev) => ({ ...prev, [seccion]: campos }));
+          loadedSeccionesRef.current[seccion] = true;
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar campos del formulario'), 'error');
+          setCamposPorSeccion((prev) => ({ ...prev, [seccion]: [] }));
+          loadedSeccionesRef.current[seccion] = false;
+        }
+      })
+      .finally(() => {
+        promesaSeccionRef.current[seccion] = null;
+        setCargandoCampos(false);
+        if (cancelled) loadedSeccionesRef.current[seccion] = false;
+      });
+    return () => { cancelled = true; };
+  }, [paso, empresa?.id, servicio?.id, producto, showSnackbar]);
 
   const actualizarRespuesta = (nombreCampo, valor) => {
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
@@ -265,6 +299,9 @@ export function useAgregarProducto(cliente, onExito) {
     setRespuestas({});
     setProducto('');
     setVendedorId('');
+    setCamposPorSeccion({ cliente: [], campos_formulario: [], vendedor: [] });
+    loadedSeccionesRef.current = { cliente: false, campos_formulario: false, vendedor: false };
+    promesaSeccionRef.current = {};
   };
 
   const handleGuardar = async () => {
@@ -288,8 +325,7 @@ export function useAgregarProducto(cliente, onExito) {
       const nombresValidos = new Set([
         'vendedor',
         'Vendedor',
-        ...(camposFormulario || []).map((c) => c.nombre).filter(Boolean),
-        ...(camposGlobales || []).map((c) => c.nombre).filter(Boolean),
+        ...todosLosCamposUnicos.map((c) => c.nombre).filter(Boolean),
       ]);
       const esNombreValido = (nombre) =>
         nombresValidos.has(nombre) || [...nombresValidos].some((n) => norm(n) === norm(nombre));
@@ -328,33 +364,78 @@ export function useAgregarProducto(cliente, onExito) {
   const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c.nombre) === norm(n));
 
   const esVisibleSiCambioTitular = (c) => {
-    const vs = (c.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
-    return vs.includes('cambio') && vs.includes('titular');
+    const vs = c.visible_si;
+    if (!vs) return false;
+    if (typeof vs === 'object' && vs.campo) {
+      const name = String(vs.campo).toLowerCase().replace(/_/g, ' ');
+      return name.includes('cambio') && name.includes('titular');
+    }
+    const str = (vs || '').toLowerCase().replace(/_/g, ' ').trim();
+    return str.includes('cambio') && str.includes('titular');
   };
 
-  const campoTitular = camposFormulario.find(esCambioTitular) ?? camposGlobales.find(esCambioTitular);
+  const seccion = (c) => (c.seccion || 'campos_formulario').toLowerCase();
+  const campoTitular = todosLosCamposUnicos.find(esCambioTitular);
   const nombreCampoTitular = campoTitular?.nombre ?? 'Cambio de titular';
   const cambioTitularMarcado = (respuestas[nombreCampoTitular] === '1' || respuestas[nombreCampoTitular] === 'si' || respuestas[nombreCampoTitular] === true);
 
-  const todosLosCampos = (() => {
-    const seen = new Set();
-    return [...camposFormulario, ...camposGlobales].filter((c) => {
-      const key = c.id ?? c.nombre;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  })();
-  const seccion = (c) => (c.seccion || 'campos_formulario').toLowerCase();
-  const campoTipoProducto = todosLosCampos.find(esCampoProducto);
-  const camposSeccionFormulario = todosLosCampos
+  const campoTipoProducto = todosLosCamposUnicos.find(esCampoProducto);
+  const camposSeccionFormulario = todosLosCamposUnicos
     .filter((c) => seccion(c) === 'campos_formulario')
-    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCampoEstadoVenta(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c))
+    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCampoEstadoVenta(c) && !esCambioTitular(c))
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
-  const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
+  const camposSeccionVendedor = todosLosCamposUnicos.filter((c) => seccion(c) === 'vendedor');
   const camposFormularioSinTipoCliente = camposSeccionFormulario;
 
-  const camposTitularDependientesRaw = todosLosCampos
+  const camposDelPaso = useMemo(() => {
+    if (paso === 1) return camposPorSeccion.cliente || [];
+    if (paso === 2) return camposPorSeccion.campos_formulario || [];
+    if (paso === 3) return camposPorSeccion.vendedor || [];
+    return [];
+  }, [paso, camposPorSeccion.cliente, camposPorSeccion.campos_formulario, camposPorSeccion.vendedor]);
+
+  /** Lista que incluye cliente + paso actual para resolver depende_de y cargar opciones vía /api/relaciones/opciones/. */
+  const listaCamposConPadres = useMemo(() => {
+    const base = camposPorSeccion.cliente || [];
+    const delPaso = camposDelPaso || [];
+    const byId = new Map();
+    [...base, ...delPaso].forEach((c) => {
+      if (c.id != null && !byId.has(c.id)) byId.set(c.id, c);
+    });
+    return Array.from(byId.values());
+  }, [camposPorSeccion.cliente, camposDelPaso]);
+
+  /** Valor del campo padre (por depende_de). Usar lista que incluya padres (listaCamposConPadres). */
+  const getValorPadre = useCallback(
+    (campo, camposList) => {
+      if (!campo.depende_de) return true;
+      const lista = Array.isArray(camposList) ? camposList : listaCamposConPadres;
+      const padre = lista.find((f) => f.id === campo.depende_de);
+      if (!padre?.nombre) return false;
+      const v = respuestas[padre.nombre];
+      return v !== undefined && v !== null && String(v).trim() !== '';
+    },
+    [listaCamposConPadres, respuestas]
+  );
+
+  const entidadesParaOpciones = useMemo(() => {
+    const lista = listaCamposConPadres;
+    return [
+      ...new Set(
+        (lista || [])
+          .filter((c) => c.tipo === 'entity_select' && c.entidad && !c.depende_de && getValorPadre(c, lista))
+          .map((c) => String(c.entidad).toLowerCase().trim())
+      ),
+    ];
+  }, [listaCamposConPadres, getValorPadre]);
+
+  const { opcionesPorEntidad, loadingEntidad } = useOpcionesPorEntidad(
+    entidadesParaOpciones,
+    listaCamposConPadres,
+    respuestas
+  );
+
+  const camposTitularDependientesRaw = todosLosCamposUnicos
     .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && esVisibleSiCambioTitular(c));
   const seenIdsTitular = new Set();
   const camposTitularDependientes = camposTitularDependientesRaw.filter((c) => {
@@ -380,7 +461,7 @@ export function useAgregarProducto(cliente, onExito) {
     opcionesProducto,
     respuestas,
     actualizarRespuesta,
-    camposFormulario,
+    camposFormulario: camposPorSeccion.campos_formulario || [],
     camposFormularioSinTipoCliente,
     campEstadoVenta,
     empresas,
@@ -389,7 +470,7 @@ export function useAgregarProducto(cliente, onExito) {
     cargandoEmpresas,
     cargandoServicios,
     cargandoCampos,
-    cargandoCamposGlobales,
+    cargandoCamposGlobales: false,
     handleSiguiente,
     handleAnterior,
     handleLimpiar,
@@ -405,5 +486,10 @@ export function useAgregarProducto(cliente, onExito) {
     camposTitularDependientes,
     camposSeccionVendedor,
     campoTipoProducto,
+    opcionesPorEntidad,
+    loadingEntidad,
+    todosLosCamposUnicos,
+    listaCamposConPadres,
+    getValorPadre,
   };
 }

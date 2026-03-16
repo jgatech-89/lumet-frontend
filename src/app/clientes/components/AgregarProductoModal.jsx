@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -24,6 +25,7 @@ import { CloseIcon } from '../../../utils/icons';
 import { LoadingButton } from '../../../components/loading';
 import { useChoices } from '../../../context/ChoicesContext';
 import { useAgregarProducto } from '../logic/useAgregarProducto';
+import { esVisible, buildIdToNombreMap } from '../logic/formularioVisible';
 
 const selectFieldSx = {
   width: '100%',
@@ -54,30 +56,48 @@ function labelConAsterisco(nombre, requerido) {
 const ES_TIPO_IDENTIFICACION = (n) => /tipo\s*(de)?\s*identificaci[oó]n/i.test(n || '');
 const ES_VENDEDOR = (n) => /vendedor/i.test(n || '');
 
-function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor }) {
-  const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
+function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor, opcionesPorEntidad = {}, loadingEntidad = {}, opcionesKey, placeholderCuandoDeshabilitado, disabled: disabledProp = false }) {
+  const { nombre, tipo, placeholder, requerido, opciones = [], entidad } = campo;
   const id = `agregar-campo-${nombre}`;
   const label = labelBase(nombre);
+  const esEntitySelect = tipo === 'entity_select' && entidad;
+  const key = opcionesKey != null ? opcionesKey : (entidad || '').toLowerCase().trim();
+  const opcionesEntity = esEntitySelect ? (opcionesPorEntidad[key] || []) : [];
+  const cargandoEntity = esEntitySelect && !!loadingEntidad[key];
+  const disabled = disabledProp || cargandoEntity;
   const opcionesSelect = (opcionesTipoIdentificacion?.length && ES_TIPO_IDENTIFICACION(nombre))
     ? opcionesTipoIdentificacion
     : (opcionesVendedor?.length && ES_VENDEDOR(nombre))
       ? opcionesVendedor.map((v) => ({ value: String(v.id), label: v.nombre }))
-      : opciones;
+      : (esEntitySelect ? opcionesEntity : opciones);
 
-  if (tipo === 'select' || (opcionesSelect?.length && (ES_TIPO_IDENTIFICACION(nombre) || ES_VENDEDOR(nombre)))) {
+  if (tipo === 'select' || tipo === 'entity_select' || (opcionesSelect?.length && (ES_TIPO_IDENTIFICACION(nombre) || ES_VENDEDOR(nombre)))) {
+    const valueStr = value != null && value !== '' ? String(value) : '';
+    const placeholderEfectivo = disabled && placeholderCuandoDeshabilitado ? placeholderCuandoDeshabilitado : (placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder);
     return (
-      <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: 280 }} required={requerido}>
+      <FormControl size="small" sx={{ flex: 1, width: '100%', maxWidth: 280 }} required={requerido} disabled={disabled}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
         <Select
           labelId={`${id}-label`}
           id={id}
-          value={value ?? ''}
+          value={valueStr}
           label={label}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          displayEmpty={cargandoEntity || (disabled && !!placeholderCuandoDeshabilitado)}
+          renderValue={(v) => {
+            if (cargandoEntity) return 'Cargando...';
+            if (disabled && placeholderCuandoDeshabilitado && (v == null || v === '')) return placeholderCuandoDeshabilitado;
+            if (v != null && v !== '') {
+              const opt = (opcionesSelect || []).find((o) => String(o.value) === String(v));
+              return opt ? opt.label : v;
+            }
+            return undefined;
+          }}
         >
-          <MenuItem value="">Seleccionar</MenuItem>
-          {opcionesSelect.map((o) => (
-            <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+          <MenuItem value="">{disabled && placeholderCuandoDeshabilitado ? placeholderCuandoDeshabilitado : 'Seleccionar'}</MenuItem>
+          {(opcionesSelect || []).map((o) => (
+            <MenuItem key={o.value} value={String(o.value)}>{o.label}</MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -178,10 +198,17 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
     camposTitularDependientes,
     camposSeccionVendedor,
     campoTipoProducto,
+    opcionesPorEntidad = {},
+    loadingEntidad = {},
+    todosLosCamposUnicos = [],
+    listaCamposConPadres = [],
+    getValorPadre,
   } = useAgregarProducto(cliente, () => {
     onExito?.();
     onClose?.();
   });
+
+  const idToNombreMap = useMemo(() => buildIdToNombreMap(todosLosCamposUnicos), [todosLosCamposUnicos]);
 
   const handleCerrar = () => {
     handleLimpiar();
@@ -224,7 +251,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
             <Typography variant="subtitle2" fontWeight={600} color="text.primary">
               Tipo de cliente, empresa y servicio
             </Typography>
-            {cargandoCamposGlobales ? (
+            {(paso === 1 && cargandoCampos) ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <CircularProgress size={24} />
                 <Typography variant="body2" color="text.secondary">Cargando...</Typography>
@@ -237,6 +264,8 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                     value={respuestas[campoTipoCliente.nombre]}
                     onChange={(v) => actualizarRespuesta(campoTipoCliente.nombre, v)}
                     opcionesTipoIdentificacion={tiposIdentificacion}
+                    opcionesPorEntidad={opcionesPorEntidad}
+                    loadingEntidad={loadingEntidad}
                   />
                 </Box>
                 {respuestas[campoTipoCliente?.nombre] && (cargandoEmpresas ? (
@@ -353,24 +382,36 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
             ) : (
               <>
                 <Grid container spacing={3} sx={{ width: '100%' }}>
-                  {camposFormularioSinTipoCliente.map((c) => (
-                    <Grid item xs={12} sm={6} key={c.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
-                        {c.tipo !== 'checkbox' && (
-                          <Typography variant="body2" color="text.secondary" component="label">
-                            {labelConAsterisco(c.nombre, c.requerido)}
-                          </Typography>
-                        )}
-                        <CampoDinamicoInput
-                          campo={c}
-                          value={respuestas[c.nombre]}
-                          onChange={(v) => actualizarRespuesta(c.nombre, v)}
-                          opcionesTipoIdentificacion={tiposIdentificacion}
-                          opcionesVendedor={vendedores}
-                        />
-                      </Box>
-                    </Grid>
-                  ))}
+                  {camposFormularioSinTipoCliente.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => {
+                    const lista = listaCamposConPadres.length ? listaCamposConPadres : (camposFormularioSinTipoCliente || []);
+                    const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                    const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                    const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                    const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                    return (
+                      <Grid item xs={12} sm={6} key={c.id}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
+                          {c.tipo !== 'checkbox' && (
+                            <Typography variant="body2" color="text.secondary" component="label">
+                              {labelConAsterisco(c.nombre, c.requerido)}
+                            </Typography>
+                          )}
+                          <CampoDinamicoInput
+                            campo={c}
+                            value={respuestas[c.nombre]}
+                            onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                            disabled={!habilitado}
+                            opcionesTipoIdentificacion={tiposIdentificacion}
+                            opcionesVendedor={vendedores}
+                            opcionesPorEntidad={opcionesPorEntidad}
+                            loadingEntidad={loadingEntidad}
+                            opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                            placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                          />
+                        </Box>
+                      </Grid>
+                    );
+                  })}
                 </Grid>
                 {campoTitular && (
                   <Box sx={{ mt: 3 }}>
@@ -386,24 +427,36 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                     />
                     {cambioTitularMarcado && (
                       <Grid container spacing={3} sx={{ width: '100%', mt: 2 }}>
-                        {camposTitularDependientes.map((c) => (
-                          <Grid item xs={12} sm={6} key={c.id}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
-                              {c.tipo !== 'checkbox' && (
-                                <Typography variant="body2" color="text.secondary" component="label">
-                                  {labelConAsterisco(c.nombre, c.requerido)}
-                                </Typography>
-                              )}
-                              <CampoDinamicoInput
-                                campo={c}
-                                value={respuestas[c.nombre]}
-                                onChange={(v) => actualizarRespuesta(c.nombre, v)}
-                                opcionesTipoIdentificacion={tiposIdentificacion}
-                                opcionesVendedor={vendedores}
-                              />
-                            </Box>
-                          </Grid>
-                        ))}
+                        {camposTitularDependientes.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => {
+                          const lista = listaCamposConPadres.length ? listaCamposConPadres : [...(camposFormularioSinTipoCliente || []), campoTitular, ...(camposTitularDependientes || [])];
+                          const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                          const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                          const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                          const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                          return (
+                            <Grid item xs={12} sm={6} key={c.id}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
+                                {c.tipo !== 'checkbox' && (
+                                  <Typography variant="body2" color="text.secondary" component="label">
+                                    {labelConAsterisco(c.nombre, c.requerido)}
+                                  </Typography>
+                                )}
+                                <CampoDinamicoInput
+                                  campo={c}
+                                  value={respuestas[c.nombre]}
+                                  onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                                  disabled={!habilitado}
+                                  opcionesTipoIdentificacion={tiposIdentificacion}
+                                  opcionesVendedor={vendedores}
+                                  opcionesPorEntidad={opcionesPorEntidad}
+                                  loadingEntidad={loadingEntidad}
+                                  opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                                  placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                                />
+                              </Box>
+                            </Grid>
+                          );
+                        })}
                       </Grid>
                     )}
                   </Box>
@@ -440,27 +493,39 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
               </Typography>
             ) : (
               <Grid container spacing={3} sx={{ width: '100%' }}>
-                {camposSeccionVendedor.map((c) => (
-                  <Grid item xs={12} sm={6} key={c.id}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
-                      {c.tipo !== 'checkbox' && (
-                        <Typography variant="body2" color="text.secondary" component="label">
-                          {labelConAsterisco(c.nombre, c.requerido)}
-                        </Typography>
-                      )}
-                      <CampoDinamicoInput
-                        campo={c}
-                        value={/vendedor/i.test(c.nombre || '') ? (respuestas[c.nombre] ?? vendedorId ?? '') : respuestas[c.nombre]}
-                        onChange={(v) => {
-                          actualizarRespuesta(c.nombre, v);
-                          if (/vendedor/i.test(c.nombre || '')) setVendedorId(v || '');
-                        }}
-                        opcionesTipoIdentificacion={tiposIdentificacion}
-                        opcionesVendedor={vendedores}
-                      />
-                    </Box>
-                  </Grid>
-                ))}
+                {camposSeccionVendedor.map((c) => {
+                  const lista = listaCamposConPadres.length ? listaCamposConPadres : (camposSeccionVendedor || []);
+                  const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                  const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                  const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                  const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                  return (
+                    <Grid item xs={12} sm={6} key={c.id}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
+                        {c.tipo !== 'checkbox' && (
+                          <Typography variant="body2" color="text.secondary" component="label">
+                            {labelConAsterisco(c.nombre, c.requerido)}
+                          </Typography>
+                        )}
+                        <CampoDinamicoInput
+                          campo={c}
+                          value={/vendedor/i.test(c.nombre || '') ? (respuestas[c.nombre] ?? vendedorId ?? '') : respuestas[c.nombre]}
+                          onChange={(v) => {
+                            actualizarRespuesta(c.nombre, v);
+                            if (/vendedor/i.test(c.nombre || '')) setVendedorId(v || '');
+                          }}
+                          disabled={!habilitado}
+                          opcionesTipoIdentificacion={tiposIdentificacion}
+                          opcionesVendedor={vendedores}
+                          opcionesPorEntidad={opcionesPorEntidad}
+                          loadingEntidad={loadingEntidad}
+                          opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                          placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                        />
+                      </Box>
+                    </Grid>
+                  );
+                })}
               </Grid>
             )}
           </Stack>

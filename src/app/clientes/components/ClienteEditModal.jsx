@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -23,12 +23,19 @@ import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { useChoices } from '../../../context/ChoicesContext';
 import * as apiCliente from '../logic/apiCliente';
 import * as apiCampos from '../../campos/logic/apiCampos';
+import { esVisible, buildIdToNombreMap } from '../logic/formularioVisible';
 
 const CAMBIO_TITULAR_NAMES = ['cambio de titular', 'Cambio de titular', 'cambio titular', 'Cambio titular'];
 const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
 const esVisibleSiCambioTitular = (c) => {
-  const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
-  return vs.includes('cambio') && vs.includes('titular');
+  const vs = c?.visible_si;
+  if (!vs) return false;
+  if (typeof vs === 'object' && vs.campo) {
+    const name = String(vs.campo).toLowerCase().replace(/_/g, ' ');
+    return name.includes('cambio') && name.includes('titular');
+  }
+  const str = (vs || '').toLowerCase().replace(/_/g, ' ').trim();
+  return str.includes('cambio') && str.includes('titular');
 };
 
 const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo producto', 'tipo de producto'];
@@ -213,6 +220,7 @@ export function ClienteEditModal({
   const camposEnviados = [...camposFormulario, ...camposGlobales]
     .filter((c) => !esCampoProducto(c) && respuestasNombres.has(c.nombre));
   const camposParaEditar = camposEnviados.filter((c) => !esCambioTitular(c) && !esVisibleSiCambioTitular(c));
+  const idToNombreMap = useMemo(() => buildIdToNombreMap([...camposFormulario, ...camposGlobales]), [camposFormulario, camposGlobales]);
 
   const actualizarRespuesta = useCallback((nombreCampo, valor) => {
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
@@ -339,7 +347,7 @@ export function ClienteEditModal({
                 </Box>
               ) : (
                 <Stack spacing={2}>
-                  {camposParaEditar.map((c) => (
+                  {camposParaEditar.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => (
                     <CampoDinamicoInput
                       key={c.nombre}
                       campo={c}
@@ -360,7 +368,7 @@ export function ClienteEditModal({
                         }
                         label={campoTitular.nombre}
                       />
-                      {cambioTitularMarcado && camposTitularDependientes.map((c) => (
+                      {cambioTitularMarcado && camposTitularDependientes.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => (
                         <CampoDinamicoInput
                           key={c.nombre}
                           campo={c}

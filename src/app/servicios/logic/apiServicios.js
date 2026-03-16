@@ -1,24 +1,23 @@
 import { get, post, patch, del } from '../../../utils/funciones';
+import { listarOpcionesDestino } from '../../configuracion/logic/apiRelaciones';
 
 const BASE = '/api/contratistas/';
 
 export const mapContratistaFromApi = (item) => ({
   id: item.id,
   nombre: item.nombre ?? '',
-  servicio_id: item.servicio_id,
-  servicio_nombre: item.servicio_nombre ?? '',
   estado: item.estado_contratista === '1' ? 'Activa' : 'Inactiva',
   estado_contratista: item.estado_contratista ?? (item.estado === 'Activa' ? '1' : '0'),
 });
 
 /**
- * Lista contratistas con paginación, búsqueda y filtro por estado/servicio.
+ * Lista contratistas con paginación, búsqueda y filtro por estado.
+ * La relación con Servicio se gestiona vía app relaciones.
  */
 export const listarContratistas = async (page = 1, pageSize = 5, params = {}) => {
   const query = { page, page_size: pageSize };
   if (params.search?.trim()) query.search = params.search.trim();
   if (params.estado === '1' || params.estado === '0') query.estado = params.estado;
-  if (params.servicio != null) query.servicio = params.servicio;
   const { data } = await get(BASE, query);
   const results = Array.isArray(data) ? data : data?.results ?? [];
   const count = data?.count ?? results.length;
@@ -29,13 +28,16 @@ export const listarContratistas = async (page = 1, pageSize = 5, params = {}) =>
 };
 
 /**
- * Lista contratistas de un servicio para select.
+ * Lista contratistas relacionados con un servicio (vía app relaciones) para select.
  * @param {number} servicioId
- * @returns {Promise<Array>}
+ * @returns {Promise<Array<{ id: number, nombre: string }>>}
  */
 export const listarContratistasPorServicio = async (servicioId) => {
-  const { results } = await listarContratistas(1, 100, { servicio: Number(servicioId), estado: '1' });
-  return results;
+  const opciones = await listarOpcionesDestino('servicio', Number(servicioId), 'contratista');
+  const ids = opciones.map((o) => o.id);
+  if (!ids.length) return [];
+  const { results } = await listarContratistas(1, 500, { estado: '1' });
+  return results.filter((c) => ids.includes(c.id));
 };
 
 /**

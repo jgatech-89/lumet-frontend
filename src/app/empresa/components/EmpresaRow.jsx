@@ -1,14 +1,15 @@
 import { TableCell, Chip, IconButton, Stack } from '@mui/material';
 import { useThemeMode } from '../../../context/ThemeContext';
 import { getChipEstadoActivo, getChipEstadoInactivo } from '../../../utils/chipColors';
-import { getActionBtnBlue, getActionBtnRed } from '../../../components/shared/actionButtonStyles';
-import { EditIcon, DeleteIcon } from '../../../utils/icons';
+import { getActionBtnBlue, getActionBtnRed, getActionBtnGray } from '../../../components/shared/actionButtonStyles';
+import { EditIcon, DeleteIcon, LinkIcon } from '../../../utils/icons';
 
-export function EmpresaRow({ row, onEdit, onDelete }) {
+export function EmpresaRow({ row, onEdit, onDelete, onRelacionar }) {
   const { isDark } = useThemeMode();
   const chip = row.estado === 'Activa' ? getChipEstadoActivo(isDark) : getChipEstadoInactivo(isDark);
   const actionBtnBlue = getActionBtnBlue(isDark);
   const actionBtnRed = getActionBtnRed(isDark);
+  const actionBtnGray = getActionBtnGray(isDark);
 
   return (
     <>
@@ -36,6 +37,11 @@ export function EmpresaRow({ row, onEdit, onDelete }) {
           <IconButton size="small" aria-label="Eliminar" title="Eliminar" sx={actionBtnRed} onClick={() => onDelete(row)}>
             <DeleteIcon />
           </IconButton>
+          {onRelacionar && (
+            <IconButton size="small" aria-label="Relacionar" title="Relacionar" sx={actionBtnGray} onClick={() => onRelacionar(row)}>
+              <LinkIcon />
+            </IconButton>
+          )}
         </Stack>
       </TableCell>
     </>

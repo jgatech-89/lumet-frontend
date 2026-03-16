@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Table,
@@ -13,13 +14,17 @@ import {
 import { useThemeMode } from '../../../context/ThemeContext';
 import { CampoRow } from './CampoRow';
 import { CampoModals } from './CampoModals';
+import { RelacionModal } from '../../../components/configuracion/RelacionModal';
+import { CampoDetalleModal } from '../../../components/configuracion/campos/CampoDetalleModal';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
-const COLUMNS = ['Campo', 'Servicio', 'Contratista', 'Producto', 'Tipo de campo', 'Estado', 'Opciones'];
+const COLUMNS = ['Campo', 'Tipo de campo', 'Estado', 'Opciones'];
 
 export function CamposConfigSection({ campos, pagina, setPagina }) {
   const { isDark } = useThemeMode();
+  const [rowForRelacion, setRowForRelacion] = useState(null);
+  const [rowForDetalle, setRowForDetalle] = useState(null);
   const totalItems = campos.totalItems ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / CONFIG_FILAS_POR_PAGINA));
   const filasPagina = campos.campos ?? [];
@@ -70,11 +75,13 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
                 }}
               >
                 <CampoRow
-                row={row}
-                opcionesProducto={campos.opcionesProducto}
-                onEdit={campos.handleAbrirEditar}
-                onDelete={campos.handleAbrirEliminar}
-              />
+                  row={row}
+                  onEdit={campos.handleAbrirEditar}
+                  onDelete={campos.handleAbrirEliminar}
+                  onRelacionar={setRowForRelacion}
+                  onVerDetalles={setRowForDetalle}
+                  getTipoLabel={campos.getTipoLabel}
+                />
               </TableRow>
             ))}
           </TableBody>
@@ -139,6 +146,12 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         setServicioId={campos.setServicioId}
         tipoCampo={campos.tipoCampo}
         setTipoCampo={campos.setTipoCampo}
+        entidad={campos.entidad}
+        setEntidad={campos.setEntidad}
+        entidadOptions={campos.entidadOptions}
+        depende_de_id={campos.depende_de_id}
+        setDepende_de_id={campos.setDepende_de_id}
+        camposMismaSeccion={campos.camposMismaSeccion}
         seccion={campos.seccion}
         setSeccion={campos.setSeccion}
         orden={campos.orden}
@@ -177,6 +190,20 @@ export function CamposConfigSection({ campos, pagina, setPagina }) {
         handleGuardarEditar={campos.handleGuardarEditar}
         handleCerrarEliminar={campos.handleCerrarEliminar}
         handleConfirmarEliminar={campos.handleConfirmarEliminar}
+      />
+      <RelacionModal
+        open={Boolean(rowForRelacion)}
+        onClose={() => setRowForRelacion(null)}
+        origen_tipo="campo"
+        origen_id={rowForRelacion?.id}
+        nombre_entidad="Campo"
+      />
+      <CampoDetalleModal
+        open={Boolean(rowForDetalle)}
+        onClose={() => setRowForDetalle(null)}
+        campo={rowForDetalle}
+        getTipoLabel={campos.getTipoLabel}
+        getSeccionLabel={campos.getSeccionLabel}
       />
     </>
   );

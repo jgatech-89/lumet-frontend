@@ -79,20 +79,6 @@ export function ProductoModals({
               required
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
-            <FormControl size="small" fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="nuevo-producto-estado-label">Estado producto</InputLabel>
-              <Select
-                labelId="nuevo-producto-estado-label"
-                value={estadoProducto}
-                label="Estado producto"
-                onChange={(e) => setEstadoProducto(e.target.value)}
-              >
-                <MenuItem value="">Seleccionar una opción</MenuItem>
-                {estadosProducto.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>

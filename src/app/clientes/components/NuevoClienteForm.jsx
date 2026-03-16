@@ -1,8 +1,10 @@
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 import { LoadingButton } from '../../../components/loading';
 import { useChoices } from '../../../context/ChoicesContext';
 import { useNuevoCliente } from '../logic/useNuevoCliente';
+import { esVisible, buildIdToNombreMap } from '../logic/formularioVisible';
 import {
   Box,
   Typography,
@@ -62,28 +64,63 @@ const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
 /** Detecta si el campo es de vendedor (por nombre). Las opciones vienen de la tabla vendedores. */
 const esCampoVendedor = (n) => /vendedor/i.test(n || '');
 
-function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor }) {
-  const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
+function CampoDinamicoInput({
+  campo,
+  value,
+  onChange,
+  opcionesTipoIdentificacion,
+  opcionesVendedor,
+  opcionesPorEntidad = {},
+  loadingEntidad = {},
+  disabled: disabledProp = false,
+  /** Clave para opciones (entidad o entidad_valorPadre cuando hay depende_de). */
+  opcionesKey,
+  /** Placeholder cuando el campo está deshabilitado por dependencia (ej. "Seleccione primero Servicio"). */
+  placeholderCuandoDeshabilitado,
+}) {
+  const { nombre, tipo, placeholder, requerido, opciones = [], entidad } = campo;
   const id = `campo-${nombre}`;
   const label = labelBase(nombre);
   const usarChoicesTipoId = opcionesTipoIdentificacion?.length && esCampoTipoIdentificacion(nombre);
   const usarOpcionesVendedor = opcionesVendedor?.length && esCampoVendedor(nombre);
-  const opcionesSelect = usarChoicesTipoId ? opcionesTipoIdentificacion : (usarOpcionesVendedor ? opcionesVendedor.map((v) => ({ value: String(v.id), label: v.nombre })) : opciones);
+  const esEntitySelect = tipo === 'entity_select' && entidad;
+  const key = opcionesKey != null ? opcionesKey : entidad;
+  const opcionesEntity = esEntitySelect ? (opcionesPorEntidad[key] || []) : [];
+  const cargandoEntity = esEntitySelect && !!loadingEntidad[key];
+  const opcionesSelect = usarChoicesTipoId
+    ? opcionesTipoIdentificacion
+    : (usarOpcionesVendedor ? opcionesVendedor.map((v) => ({ value: String(v.id), label: v.nombre })) : (esEntitySelect ? opcionesEntity : opciones));
+  const disabled = disabledProp || cargandoEntity;
+  const placeholderEfectivo = disabled && placeholderCuandoDeshabilitado
+    ? placeholderCuandoDeshabilitado
+    : (placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder);
 
-  if (tipo === 'select' || usarChoicesTipoId || usarOpcionesVendedor) {
+  if (tipo === 'select' || tipo === 'entity_select' || usarChoicesTipoId || usarOpcionesVendedor) {
+    const valueStr = value != null && value !== '' ? String(value) : '';
     return (
-      <FormControl size="small" fullWidth sx={campoDinamicoSx} required={requerido}>
+      <FormControl size="small" fullWidth sx={campoDinamicoSx} required={requerido} disabled={disabled}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
         <Select
           labelId={`${id}-label`}
           id={id}
-          value={value ?? ''}
+          value={valueStr}
           label={label}
           onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          displayEmpty={cargandoEntity || (disabled && !!placeholderCuandoDeshabilitado)}
+          renderValue={(v) => {
+            if (cargandoEntity) return 'Cargando...';
+            if (disabled && placeholderCuandoDeshabilitado && (v == null || v === '')) return placeholderCuandoDeshabilitado;
+            if (v != null && v !== '') {
+              const opt = (opcionesSelect || []).find((o) => String(o.value) === String(v));
+              return opt ? opt.label : v;
+            }
+            return undefined;
+          }}
         >
-          <MenuItem value="">Seleccionar</MenuItem>
+          <MenuItem value="">{disabled && placeholderCuandoDeshabilitado ? placeholderCuandoDeshabilitado : 'Seleccionar'}</MenuItem>
           {(opcionesSelect || []).map((o) => (
-            <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+            <MenuItem key={o.value} value={String(o.value)}>{o.label}</MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -99,6 +136,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
             checked={!!isChecked}
             onChange={(e) => onChange(e.target.checked ? '1' : '0')}
             size="small"
+            disabled={disabled}
           />
         }
         label={labelConAsterisco(nombre, requerido)}
@@ -107,7 +145,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
   }
 
   if (tipo === 'textarea') {
-    const ph = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
+    const ph = placeholderEfectivo ?? (placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder);
     return (
       <TextField
         id={id}
@@ -120,13 +158,14 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         onChange={(e) => onChange(e.target.value)}
         required={requerido}
         fullWidth
+        disabled={disabled}
         sx={campoDinamicoSx}
       />
     );
   }
 
   const inputType = tipo === 'number' ? 'number' : tipo === 'date' ? 'date' : 'text';
-  const placeholderLimpio = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
+  const placeholderLimpio = placeholderEfectivo ?? (placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder);
   return (
     <TextField
       id={id}
@@ -138,6 +177,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       onChange={(e) => onChange(e.target.value)}
       required={requerido}
       fullWidth
+      disabled={disabled}
       sx={campoDinamicoSx}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
     />
@@ -156,15 +196,17 @@ export function NuevoClienteForm() {
     campoTipoCliente,
     actualizarRespuesta,
     respuestas,
+    camposOrdenadosCliente,
+    listaCamposConPadres = [],
+    actualizarRespuestaClienteConReset,
+    actualizarRespuestaConResetDependientes,
     empresa,
     setEmpresa,
     servicio,
     setServicio,
-    producto,
-    setProducto,
-    opcionesProducto,
     baseData,
     setBaseData,
+    getValorPadre,
     camposFormularioSinTipoCliente,
     campEstadoVenta = null,
     empresas,
@@ -191,8 +233,12 @@ export function NuevoClienteForm() {
     camposSeccionCliente,
     camposSeccionDatosBase,
     camposSeccionVendedor,
-    campoTipoProducto,
+    opcionesPorEntidad = {},
+    loadingEntidad = {},
+    todosLosCamposUnicos = [],
   } = useNuevoCliente();
+
+  const idToNombreMap = useMemo(() => buildIdToNombreMap(todosLosCamposUnicos), [todosLosCamposUnicos]);
 
   const { getOptions } = useChoices();
   const tiposIdentificacion = getOptions('tipo_identificacion') || [
@@ -204,6 +250,14 @@ export function NuevoClienteForm() {
     { value: 'PPT', label: 'Permiso provisional de trabajo' },
     { value: 'OTRO', label: 'Otro' },
   ];
+
+  // DEBUG: validación paso 1 — quitar cuando confirmes que el botón Siguiente se habilita bien
+  useEffect(() => {
+    if (paso === 1) {
+      console.log('formState', respuestas);
+      console.log('isFormValid', puedeSiguientePaso());
+    }
+  }, [paso, respuestas, puedeSiguientePaso]);
 
   return (
     <Paper
@@ -295,112 +349,50 @@ export function NuevoClienteForm() {
               <Typography variant="subtitle1" fontWeight={600} color="text.primary">
                 Cliente
               </Typography>
-              {cargandoCamposGlobales ? (
+              {(paso === 1 && cargandoCampos) ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <CircularProgress size={24} />
-                  <Typography variant="body2" color="text.secondary">Cargando...</Typography>
+                  <Typography variant="body2" color="text.secondary">Cargando campos...</Typography>
                 </Box>
-              ) : campoTipoCliente ? (
-                <>
-                  <Box sx={{ width: '100%', maxWidth: { sm: 320 } }}>
-                    <CampoDinamicoInput
-                      campo={campoTipoCliente}
-                      value={respuestas[campoTipoCliente.nombre]}
-                      onChange={(v) => actualizarRespuesta(campoTipoCliente.nombre, v)}
-                    />
-                  </Box>
-                  {respuestas[campoTipoCliente?.nombre] && (cargandoEmpresas ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CircularProgress size={24} />
-                      <Typography variant="body2" color="text.secondary">Cargando servicios...</Typography>
-                    </Box>
-                  ) : (
-                    <FormControl size="small" sx={selectFieldSx} required>
-                      <InputLabel id="empresa-label">Servicio</InputLabel>
-                      <Select
-                        labelId="empresa-label"
-                        value={empresa?.id ?? ''}
-                        label="Servicio *"
-                        onChange={(e) => {
-                          const emp = empresas.find((x) => x.id === Number(e.target.value));
-                          setEmpresa(emp ?? null);
-                          setServicio(null);
-                        }}
-                      >
-                        <MenuItem value="">Seleccionar servicio</MenuItem>
-                        {empresas.map((e) => (
-                          <MenuItem key={e.id} value={e.id}>{e.nombre}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  ))}
-                  {respuestas[campoTipoCliente?.nombre] && empresa && (cargandoServicios ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CircularProgress size={24} />
-                      <Typography variant="body2" color="text.secondary">Cargando contratistas...</Typography>
-                    </Box>
-                  ) : (
-                    <FormControl size="small" sx={selectFieldSx} required>
-                      <InputLabel id="servicio-label">Contratista</InputLabel>
-                      <Select
-                        labelId="servicio-label"
-                        value={servicio?.id ?? ''}
-                        label="Contratista"
-                        onChange={(e) => {
-                          const s = servicios.find((x) => x.id === Number(e.target.value));
-                          setServicio(s ?? null);
-                        }}
-                      >
-                        <MenuItem value="">Seleccionar contratista</MenuItem>
-                        {servicios.map((s) => (
-                          <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  ))}
-                </>
-              ) : (
+              ) : !camposOrdenadosCliente?.length ? (
                 <Typography variant="body2" color="text.secondary">
-                  Configure el campo &quot;Tipo de cliente&quot; en Configuración de campos para continuar.
+                  Configure los campos de la sección Cliente en Configuración de campos para continuar.
                 </Typography>
-              )}
-              {campoTipoProducto && campoTipoCliente && respuestas[campoTipoCliente?.nombre] && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'cliente' && opcionesProducto?.length > 0 && servicio && (
-                <FormControl size="small" sx={selectFieldSx} required>
-                  <InputLabel id="producto-form-label">Producto</InputLabel>
-                  <Select
-                    labelId="producto-form-label"
-                    value={producto}
-                    label="Producto"
-                    onChange={(e) => setProducto(e.target.value)}
-                  >
-                    <MenuItem value="">Seleccionar producto</MenuItem>
-                    {opcionesProducto.map((o) => (
-                      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-              {campoTipoCliente && respuestas[campoTipoCliente?.nombre] && camposSeccionCliente?.length > 0 && (
-                <Grid container spacing={3} sx={{ width: '100%' }}>
-                  {camposSeccionCliente.map((c) => (
-                    <Grid item xs={12} sm={6} key={c.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
-                        {c.tipo !== 'checkbox' && (
-                          <Typography variant="body2" color="text.secondary" component="label">
-                            {labelConAsterisco(c.nombre, c.requerido)}
-                          </Typography>
-                        )}
-                        <CampoDinamicoInput
-                          campo={c}
-                          value={respuestas[c.nombre]}
-                          onChange={(v) => actualizarRespuesta(c.nombre, v)}
-                          opcionesTipoIdentificacion={tiposIdentificacion}
-                          opcionesVendedor={vendedores}
-                        />
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
+              ) : (
+                <>
+                  <Grid container spacing={3} sx={{ width: '100%' }}>
+                    {camposOrdenadosCliente.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c, idx) => {
+                      const lista = listaCamposConPadres.length ? listaCamposConPadres : (camposOrdenadosCliente || []);
+                      const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                      const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                      const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                      const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                      return (
+                        <Grid item xs={12} sm={6} key={c.id ?? c.nombre}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
+                            {c.tipo !== 'checkbox' && (
+                              <Typography variant="body2" color="text.secondary" component="label">
+                                {labelConAsterisco(c.nombre, c.requerido)}
+                              </Typography>
+                            )}
+                            <CampoDinamicoInput
+                              campo={c}
+                              value={respuestas[c.nombre]}
+                              onChange={(v) => actualizarRespuestaClienteConReset(c.nombre, v, idx)}
+                              disabled={!habilitado}
+                              opcionesTipoIdentificacion={tiposIdentificacion}
+                              opcionesVendedor={vendedores}
+                              opcionesPorEntidad={opcionesPorEntidad}
+                              loadingEntidad={loadingEntidad}
+                              opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                              placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                            />
+                          </Box>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                </>
               )}
             </Stack>
           )}
@@ -410,24 +402,6 @@ export function NuevoClienteForm() {
               <Typography variant="subtitle1" fontWeight={600} color="text.primary" sx={{ mb: 3 }}>
                 Datos base del cliente
               </Typography>
-              {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'datos_base' && opcionesProducto?.length > 0 && servicio && (
-                <Box sx={{ mb: 3 }}>
-                  <FormControl size="small" sx={{ width: '100%', maxWidth: 400, '& .MuiOutlinedInput-root': { borderRadius: 2 } }} required>
-                    <InputLabel id="producto-form-label">Producto</InputLabel>
-                    <Select
-                      labelId="producto-form-label"
-                      value={producto}
-                      label="Producto"
-                      onChange={(e) => setProducto(e.target.value)}
-                    >
-                      <MenuItem value="">Seleccionar producto</MenuItem>
-                      {opcionesProducto.map((o) => (
-                        <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-              )}
               <Grid container spacing={3} sx={{ width: '100%' }}>
                 <Grid item xs={12} sm={6}>
                   <TextField
@@ -501,26 +475,43 @@ export function NuevoClienteForm() {
                   />
                 </Grid>
               </Grid>
-              {camposSeccionDatosBase?.length > 0 && (
+              {cargandoCampos && !camposSeccionDatosBase?.length ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+                  <CircularProgress size={24} />
+                  <Typography variant="body2" color="text.secondary">Cargando campos adicionales...</Typography>
+                </Box>
+              ) : camposSeccionDatosBase?.length > 0 ? (
                 <Grid container spacing={3} sx={{ width: '100%', mt: 3 }}>
-                  {camposSeccionDatosBase.map((c) => (
-                    <Grid item xs={12} sm={6} key={c.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Typography variant="body2" color="text.secondary" component="label">
-                          {labelConAsterisco(c.nombre, c.requerido)}
-                        </Typography>
-                        <CampoDinamicoInput
-                          campo={c}
-                          value={respuestas[c.nombre]}
-                          onChange={(v) => actualizarRespuesta(c.nombre, v)}
-                          opcionesTipoIdentificacion={tiposIdentificacion}
-                          opcionesVendedor={vendedores}
-                        />
-                      </Box>
-                    </Grid>
-                  ))}
+                  {camposSeccionDatosBase.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => {
+                    const lista = listaCamposConPadres.length ? listaCamposConPadres : (camposSeccionDatosBase || []);
+                    const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                    const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                    const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                    const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                    return (
+                      <Grid item xs={12} sm={6} key={c.id}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Typography variant="body2" color="text.secondary" component="label">
+                            {labelConAsterisco(c.nombre, c.requerido)}
+                          </Typography>
+                          <CampoDinamicoInput
+                            campo={c}
+                            value={respuestas[c.nombre]}
+                            onChange={(v) => (actualizarRespuestaConResetDependientes ? actualizarRespuestaConResetDependientes(c.nombre, v, todosLosCamposUnicos) : actualizarRespuesta(c.nombre, v))}
+                            disabled={!habilitado}
+                            opcionesTipoIdentificacion={tiposIdentificacion}
+                            opcionesVendedor={vendedores}
+                            opcionesPorEntidad={opcionesPorEntidad}
+                            loadingEntidad={loadingEntidad}
+                            opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                            placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                          />
+                        </Box>
+                      </Grid>
+                    );
+                  })}
                 </Grid>
-              )}
+              ) : null}
             </Box>
           )}
 
@@ -531,29 +522,6 @@ export function NuevoClienteForm() {
                   <Typography variant="subtitle1" fontWeight={600} color="text.primary">
                     Campos del formulario
                   </Typography>
-                  {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'campos_formulario' && opcionesProducto?.length > 0 && (
-                    <>
-                      <FormControl size="small" sx={selectFieldSx} required>
-                        <InputLabel id="producto-form-label">Producto</InputLabel>
-                        <Select
-                          labelId="producto-form-label"
-                          value={producto}
-                          label="Producto"
-                          onChange={(e) => setProducto(e.target.value)}
-                        >
-                          <MenuItem value="">Seleccionar producto</MenuItem>
-                          {opcionesProducto.map((o) => (
-                            <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      {!producto && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1 }}>
-                          Seleccione un producto para ver todos los campos. Sin selección se muestran solo los que aplican a todos.
-                        </Typography>
-                      )}
-                    </>
-                  )}
                   {cargandoCampos ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <CircularProgress size={24} />
@@ -566,22 +534,34 @@ export function NuevoClienteForm() {
                   ) : (
                     <>
                       <Stack spacing={2} sx={{ width: '100%', maxWidth: { sm: 520 } }}>
-                        {camposFormularioSinTipoCliente.map((c) => (
-                          <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 160 }, flexShrink: 0 }}>
-                              {labelConAsterisco(c.nombre, c.requerido)}
-                            </Typography>
-                            <Box sx={{ flex: 1, width: '100%', minWidth: 0 }}>
-                              <CampoDinamicoInput
-                                campo={c}
-                                value={respuestas[c.nombre]}
-                                onChange={(v) => actualizarRespuesta(c.nombre, v)}
-                                opcionesTipoIdentificacion={tiposIdentificacion}
-                                opcionesVendedor={vendedores}
-                              />
-                            </Box>
-                          </Stack>
-                        ))}
+                        {camposFormularioSinTipoCliente.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => {
+                          const lista = listaCamposConPadres.length ? listaCamposConPadres : (camposFormularioSinTipoCliente || []);
+                          const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                          const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                          const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                          const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                          return (
+                            <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
+                              <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 160 }, flexShrink: 0 }}>
+                                {labelConAsterisco(c.nombre, c.requerido)}
+                              </Typography>
+                              <Box sx={{ flex: 1, width: '100%', minWidth: 0 }}>
+                                <CampoDinamicoInput
+                                  campo={c}
+                                  value={respuestas[c.nombre]}
+                                  onChange={(v) => (actualizarRespuestaConResetDependientes ? actualizarRespuestaConResetDependientes(c.nombre, v, todosLosCamposUnicos) : actualizarRespuesta(c.nombre, v))}
+                                  disabled={!habilitado}
+                                  opcionesTipoIdentificacion={tiposIdentificacion}
+                                  opcionesVendedor={vendedores}
+                                  opcionesPorEntidad={opcionesPorEntidad}
+                                  loadingEntidad={loadingEntidad}
+                                  opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                                  placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                                />
+                              </Box>
+                            </Stack>
+                          );
+                        })}
                       </Stack>
                       {campoTitular && (
                 <Stack spacing={2} sx={{ width: '100%', maxWidth: { sm: 520 } }}>
@@ -595,22 +575,34 @@ export function NuevoClienteForm() {
                     }
                     label={labelConAsterisco(campoTitular.nombre, campoTitular.requerido)}
                   />
-                  {cambioTitularMarcado && camposTitularDependientes.map((c) => (
-                    <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                        {labelConAsterisco(c.nombre, c.requerido)}
-                      </Typography>
-                      <Box sx={{ flex: 1, width: '100%' }}>
-                        <CampoDinamicoInput
-                          campo={c}
-                          value={respuestas[c.nombre]}
-                          onChange={(v) => actualizarRespuesta(c.nombre, v)}
-                          opcionesTipoIdentificacion={tiposIdentificacion}
-                          opcionesVendedor={vendedores}
-                        />
-                      </Box>
-                    </Stack>
-                  ))}
+                  {cambioTitularMarcado && camposTitularDependientes.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => {
+                    const lista = listaCamposConPadres.length ? listaCamposConPadres : [...(camposFormularioSinTipoCliente || []), campoTitular, ...(camposTitularDependientes || [])];
+                    const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                    const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                    const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                    const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                    return (
+                      <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
+                          {labelConAsterisco(c.nombre, c.requerido)}
+                        </Typography>
+                        <Box sx={{ flex: 1, width: '100%' }}>
+                          <CampoDinamicoInput
+                            campo={c}
+                            value={respuestas[c.nombre]}
+                            onChange={(v) => (actualizarRespuestaConResetDependientes ? actualizarRespuestaConResetDependientes(c.nombre, v, todosLosCamposUnicos) : actualizarRespuesta(c.nombre, v))}
+                            disabled={!habilitado}
+                            opcionesTipoIdentificacion={tiposIdentificacion}
+                            opcionesVendedor={vendedores}
+                            opcionesPorEntidad={opcionesPorEntidad}
+                            loadingEntidad={loadingEntidad}
+                            opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                            placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                          />
+                        </Box>
+                      </Stack>
+                    );
+                  })}
                 </Stack>
               )}
                     </>
@@ -625,49 +617,46 @@ export function NuevoClienteForm() {
               <Typography variant="subtitle1" fontWeight={600} color="text.primary">
                 Vendedor
               </Typography>
-              {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'vendedor' && opcionesProducto?.length > 0 && (
-                <FormControl size="small" sx={selectFieldSx} required>
-                  <InputLabel id="producto-form-label">Producto</InputLabel>
-                  <Select
-                    labelId="producto-form-label"
-                    value={producto}
-                    label="Producto"
-                    onChange={(e) => setProducto(e.target.value)}
-                  >
-                    <MenuItem value="">Seleccionar producto</MenuItem>
-                    {opcionesProducto.map((o) => (
-                      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
               {camposSeccionVendedor?.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
                   No hay campos configurados para esta sección. Agregue campos con sección &quot;Vendedor&quot; en Configuración.
                 </Typography>
               ) : (
                 <Grid container spacing={3} sx={{ width: '100%' }}>
-                  {camposSeccionVendedor.map((c) => (
-                    <Grid item xs={12} sm={6} key={c.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
-                        {c.tipo !== 'checkbox' && (
-                          <Typography variant="body2" color="text.secondary" component="label">
-                            {labelConAsterisco(c.nombre, c.requerido)}
-                          </Typography>
-                        )}
-                        <CampoDinamicoInput
-                          campo={c}
-                          value={esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId ?? '') : respuestas[c.nombre]}
-                          onChange={(v) => {
-                            actualizarRespuesta(c.nombre, v);
-                            if (esCampoVendedor(c.nombre)) setVendedorId(v || '');
-                          }}
-                          opcionesTipoIdentificacion={tiposIdentificacion}
-                          opcionesVendedor={vendedores}
-                        />
-                      </Box>
-                    </Grid>
-                  ))}
+                  {camposSeccionVendedor.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => {
+                    const lista = listaCamposConPadres.length ? listaCamposConPadres : (camposSeccionVendedor || []);
+                    const habilitado = getValorPadre ? getValorPadre(c, lista) : true;
+                    const padre = c.depende_de ? lista.find((f) => f.id === c.depende_de) : null;
+                    const opcionesKey = c.depende_de && padre ? `${(c.entidad || '').toLowerCase().trim()}_${respuestas[padre.nombre] ?? ''}` : (c.entidad || '').toLowerCase().trim();
+                    const placeholderCuandoDeshabilitado = c.depende_de && c.depende_de_nombre ? `Seleccione primero ${c.depende_de_nombre}` : null;
+                    return (
+                      <Grid item xs={12} sm={6} key={c.id}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
+                          {c.tipo !== 'checkbox' && (
+                            <Typography variant="body2" color="text.secondary" component="label">
+                              {labelConAsterisco(c.nombre, c.requerido)}
+                            </Typography>
+                          )}
+                          <CampoDinamicoInput
+                            campo={c}
+                            value={esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId ?? '') : respuestas[c.nombre]}
+                            onChange={(v) => {
+                              if (actualizarRespuestaConResetDependientes) actualizarRespuestaConResetDependientes(c.nombre, v, todosLosCamposUnicos);
+                              else actualizarRespuesta(c.nombre, v);
+                              if (esCampoVendedor(c.nombre)) setVendedorId(v || '');
+                            }}
+                            disabled={!habilitado}
+                            opcionesTipoIdentificacion={tiposIdentificacion}
+                            opcionesVendedor={vendedores}
+                            opcionesPorEntidad={opcionesPorEntidad}
+                            loadingEntidad={loadingEntidad}
+                            opcionesKey={c.tipo === 'entity_select' ? opcionesKey : undefined}
+                            placeholderCuandoDeshabilitado={placeholderCuandoDeshabilitado}
+                          />
+                        </Box>
+                      </Grid>
+                    );
+                  })}
                 </Grid>
               )}
             </Stack>

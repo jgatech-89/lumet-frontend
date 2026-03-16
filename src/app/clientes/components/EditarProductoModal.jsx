@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -26,6 +26,7 @@ import { listarVendedores } from '../../vendedores/logic/apiVendedores';
 import { listarServiciosActivasParaSelect } from '../../empresa/logic/apiEmpresa';
 import { listarContratistasPorServicio } from '../../servicios/logic/apiServicios';
 import { useChoices } from '../../../context/ChoicesContext';
+import { esVisible, buildIdToNombreMap } from '../logic/formularioVisible';
 
 const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
 const NOMBRES_VENDEDOR = ['vendedor', 'Vendedor'];
@@ -39,8 +40,14 @@ const esTipoCliente = (c) => NOMBRES_TIPO_CLIENTE.some((n) => norm(c?.nombre) ==
 const esVendedor = (c) => NOMBRES_VENDEDOR.some((n) => norm(c?.nombre) === norm(n));
 const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
 const esVisibleSiCambioTitular = (c) => {
-  const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
-  return vs.includes('cambio') && vs.includes('titular');
+  const vs = c?.visible_si;
+  if (!vs) return false;
+  if (typeof vs === 'object' && vs.campo) {
+    const name = String(vs.campo).toLowerCase().replace(/_/g, ' ');
+    return name.includes('cambio') && name.includes('titular');
+  }
+  const str = (vs || '').toLowerCase().replace(/_/g, ' ').trim();
+  return str.includes('cambio') && str.includes('titular');
 };
 
 function labelBase(nombre) {
@@ -245,6 +252,7 @@ export function EditarProductoModal({
   const camposParaEditar = camposFormulario.filter(
     (c) => !esTipoCliente(c) && !esVendedor(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c)
   );
+  const idToNombreMap = useMemo(() => buildIdToNombreMap(camposFormulario), [camposFormulario]);
 
   const labelEstado = opcionesEstadoVenta?.length > 0
     ? opcionesEstadoVenta.find(
@@ -401,7 +409,7 @@ export function EditarProductoModal({
               </Box>
             ) : (
               <Stack spacing={2} sx={{ mb: 2 }}>
-                {camposParaEditar.map((c) => (
+                {camposParaEditar.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => (
                   <CampoDinamicoInput
                     key={c.nombre}
                     campo={c}
@@ -422,7 +430,7 @@ export function EditarProductoModal({
                       }
                       label={campoTitular.nombre}
                     />
-                    {cambioTitularMarcado && camposTitularDependientes.map((c) => (
+                    {cambioTitularMarcado && camposTitularDependientes.filter((c) => esVisible(c, respuestas, idToNombreMap)).map((c) => (
                       <CampoDinamicoInput
                         key={c.nombre}
                         campo={c}

@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -18,10 +19,16 @@ import {
   FormControlLabel,
   Checkbox,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
+import * as apiCampos from '../logic/apiCampos';
+import { listarServiciosActivasParaSelect } from '../../empresa/logic/apiEmpresa';
+import { listarContratistas } from '../../servicios/logic/apiServicios';
+import { listarProductos } from '../../producto/logic/apiProducto';
+import { listarVendedores } from '../../vendedores/logic/apiVendedores';
 
 const btnCancelSx = {
   borderRadius: 2,
@@ -80,6 +87,180 @@ const dialogActionsSx = {
   justifyContent: 'flex-end',
 };
 
+const OPERADORES_VISIBLE_SI = [
+  { value: 'igual', label: 'igual' },
+  { value: 'diferente', label: 'diferente' },
+  { value: 'contiene', label: 'contiene' },
+  { value: 'mayor', label: 'mayor' },
+  { value: 'menor', label: 'menor' },
+];
+
+function CondicionVisibilidadUI({ visible_si, setVisible_si, inputSx, formControlSx, selectMenuProps }) {
+  const [listaCampos, setListaCampos] = useState([]);
+  const [loadingLista, setLoadingLista] = useState(false);
+  const [opcionesEntidad, setOpcionesEntidad] = useState([]);
+  const [loadingOpciones, setLoadingOpciones] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingLista(true);
+    apiCampos.listarCamposParaCondicionVisibleSi()
+      .then((list) => { if (!cancelled) setListaCampos(list || []); })
+      .catch(() => { if (!cancelled) setListaCampos([]); })
+      .finally(() => { if (!cancelled) setLoadingLista(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Resolver legacy: si visible_si tiene "campo" (nombre) pero no campo_id, buscar en la lista
+  useEffect(() => {
+    if (!listaCampos.length || !visible_si || visible_si.campo_id != null) return;
+    const nombre = visible_si.campo;
+    if (!nombre || typeof nombre !== 'string') return;
+    const found = listaCampos.find((c) => (c.nombre || '').trim().toLowerCase() === String(nombre).trim().toLowerCase());
+    if (found) {
+      setVisible_si({ campo_id: found.id, operador: visible_si.operador || 'igual', valor: visible_si.valor ?? '' });
+    }
+  }, [listaCampos, visible_si, setVisible_si]);
+
+  const selectedCampo = useMemo(() => {
+    if (!visible_si?.campo_id && !visible_si?.campo) return null;
+    if (visible_si.campo_id) return listaCampos.find((c) => c.id === visible_si.campo_id) ?? null;
+    return listaCampos.find((c) => (c.nombre || '').trim().toLowerCase() === String(visible_si.campo || '').trim().toLowerCase()) ?? null;
+  }, [listaCampos, visible_si?.campo_id, visible_si?.campo]);
+
+  useEffect(() => {
+    if (!selectedCampo || selectedCampo.tipo !== 'entity_select' || !selectedCampo.entidad) {
+      setOpcionesEntidad([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingOpciones(true);
+    const ent = (selectedCampo.entidad || '').toLowerCase().trim();
+    const prom =
+      ent === 'servicio' ? listarServiciosActivasParaSelect()
+        : ent === 'contratista' ? listarContratistas(1, 500, { estado: '1' }).then((r) => (r.results || []).map((c) => ({ id: c.id, nombre: c.nombre ?? '' })))
+        : ent === 'producto' ? listarProductos(1, 500, { estado: '1' }).then((r) => (r.results || []).map((c) => ({ id: c.id, nombre: c.nombre ?? '' })))
+        : ent === 'vendedor' ? listarVendedores(1, 500, { estado: '1' }).then((r) => (r.results || []).map((v) => ({ id: v.id, nombre: v.nombre ?? v.nombre_completo ?? '' })))
+        : Promise.resolve([]);
+    prom
+      .then((arr) => {
+        if (cancelled) return;
+        setOpcionesEntidad(Array.isArray(arr) ? arr.map((o) => ({ value: String(o.id ?? o.value ?? ''), label: o.nombre ?? o.label ?? '' })) : []);
+      })
+      .catch(() => { if (!cancelled) setOpcionesEntidad([]); })
+      .finally(() => { if (!cancelled) setLoadingOpciones(false); });
+    return () => { cancelled = true; };
+  }, [selectedCampo?.id, selectedCampo?.tipo, selectedCampo?.entidad]);
+
+  const valorControl = useMemo(() => {
+    if (!selectedCampo) return null;
+    if (selectedCampo.tipo === 'select' && Array.isArray(selectedCampo.opciones) && selectedCampo.opciones.length > 0) {
+      return (
+        <FormControl size="small" sx={{ minWidth: 180, ...formControlSx }}>
+          <InputLabel id="visible-si-valor-select-label">Valor</InputLabel>
+          <Select
+            labelId="visible-si-valor-select-label"
+            label="Valor"
+            value={visible_si?.valor ?? ''}
+            onChange={(e) => setVisible_si((prev) => (prev ? { ...prev, valor: e.target.value } : null))}
+            MenuProps={selectMenuProps}
+            sx={{ borderRadius: 2 }}
+          >
+            <MenuItem value="">Seleccionar</MenuItem>
+            {selectedCampo.opciones.map((opt) => (
+              <MenuItem key={String(opt.value ?? opt.label)} value={opt.value ?? opt.label ?? ''}>
+                {opt.label ?? opt.value ?? ''}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      );
+    }
+    if (selectedCampo.tipo === 'entity_select' && selectedCampo.entidad) {
+      return (
+        <FormControl size="small" sx={{ minWidth: 180, ...formControlSx }} disabled={loadingOpciones}>
+          <InputLabel id="visible-si-valor-entity-label">Valor</InputLabel>
+          <Select
+            labelId="visible-si-valor-entity-label"
+            label="Valor"
+            value={visible_si?.valor ?? ''}
+            onChange={(e) => setVisible_si((prev) => (prev ? { ...prev, valor: e.target.value } : null))}
+            MenuProps={selectMenuProps}
+            sx={{ borderRadius: 2 }}
+            endAdornment={loadingOpciones ? <CircularProgress size={20} sx={{ position: 'absolute', right: 32 }} /> : null}
+          >
+            <MenuItem value="">Seleccionar</MenuItem>
+            {opcionesEntidad.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      );
+    }
+    return (
+      <TextField
+        size="small"
+        label="Valor"
+        placeholder="Valor esperado"
+        value={visible_si?.valor ?? ''}
+        onChange={(e) => setVisible_si((prev) => (prev ? { ...prev, valor: e.target.value } : null))}
+        sx={{ ...inputSx, minWidth: 180 }}
+      />
+    );
+  }, [selectedCampo, visible_si?.valor, opcionesEntidad, loadingOpciones, setVisible_si, formControlSx, inputSx, selectMenuProps]);
+
+  return (
+    <>
+      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+        Condición de visibilidad
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+        Mostrar este campo cuando se cumpla la siguiente condición. Use &quot;Sin condición&quot; para mostrarlo siempre.
+      </Typography>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'flex-end' }} flexWrap="wrap" useFlexGap>
+        <FormControl size="small" sx={{ minWidth: 200, ...formControlSx }} disabled={loadingLista}>
+          <InputLabel id="visible-si-campo-label">Campo dependiente</InputLabel>
+          <Select
+            labelId="visible-si-campo-label"
+            label="Campo dependiente"
+            value={visible_si?.campo_id ?? ''}
+            onChange={(e) => {
+              const id = e.target.value === '' ? null : Number(e.target.value);
+              setVisible_si(id ? { campo_id: id, operador: visible_si?.operador || 'igual', valor: '' } : null);
+            }}
+            MenuProps={selectMenuProps}
+            sx={{ borderRadius: 2 }}
+          >
+            <MenuItem value="">Ninguno (siempre visible)</MenuItem>
+            {listaCampos.map((c) => (
+              <MenuItem key={c.id} value={c.id}>{c.nombre || `Campo ${c.id}`}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 120, ...formControlSx }} disabled={!visible_si?.campo_id}>
+          <InputLabel id="visible-si-operador-label">Operador</InputLabel>
+          <Select
+            labelId="visible-si-operador-label"
+            label="Operador"
+            value={visible_si?.operador ?? 'igual'}
+            onChange={(e) => setVisible_si((prev) => prev ? { ...prev, operador: e.target.value } : null)}
+            MenuProps={selectMenuProps}
+            sx={{ borderRadius: 2 }}
+          >
+            {OPERADORES_VISIBLE_SI.map((op) => (
+              <MenuItem key={op.value} value={op.value}>{op.label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {valorControl}
+        <Button size="small" variant="outlined" onClick={() => setVisible_si(null)} sx={{ textTransform: 'none' }}>
+          Sin condición
+        </Button>
+      </Stack>
+    </>
+  );
+}
+
 export function CampoModals({
   tipoCampoOptions = [],
   seccionOptions = [],
@@ -98,8 +279,14 @@ export function CampoModals({
   setServicioId,
   tipoCampo,
   setTipoCampo,
+  entidad = '',
+  setEntidad = () => {},
+  entidadOptions = [],
   seccion,
   setSeccion,
+  depende_de_id = '',
+  setDepende_de_id = () => {},
+  camposMismaSeccion = [],
   orden,
   setOrden,
   activo,
@@ -147,247 +334,8 @@ export function CampoModals({
 
   const renderFormDatos = (prefix = '') => (
     <>
-      {/* Sección: destino (dónde aplica el campo) */}
-      <Typography sx={sectionTitleSx}>Destino del campo</Typography>
-      <Box sx={gridTwoColSx}>
-        {setAplicarTodosEmpresas && (
-          <Box sx={{ gridColumn: '1 / -1', mb: 1 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!aplicarTodosEmpresas}
-                  onChange={(e) => {
-                    setAplicarTodosEmpresas(e.target.checked);
-                    if (e.target.checked) {
-                      setEmpresaId?.('');
-                      setServicioId?.('');
-                    }
-                  }}
-                  size="small"
-                  disabled={!!empresaId || !!servicioId}
-                />
-              }
-              label="Aplicar a todos los servicios y contratistas"
-            />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Si lo activas, este campo aparecerá en todos los formularios, sin importar el servicio ni el contratista.
-            </Typography>
-          </Box>
-        )}
-        {!aplicarTodosEmpresas && (
-        <Box sx={{ minWidth: 0, position: 'relative' }}>
-          <FormControl size="small" fullWidth required error={!!errors?.empresa} sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-empresa-label`} shrink>Servicio</InputLabel>
-            <Select
-              key={`empresa-select-${(empresasParaSelect ?? []).length}`}
-              labelId={`${prefix}campo-empresa-label`}
-              value={empresaId}
-              label="Servicio *"
-              onChange={(e) => {
-                const v = e.target.value;
-                if (handleChangeEmpresa) handleChangeEmpresa(v);
-                else { setEmpresaId(v); setServicioId?.(''); }
-              }}
-              displayEmpty
-              renderValue={(v) => {
-                if (!v) return 'Seleccionar';
-                const opt = (empresasParaSelect ?? []).find((e) => String(e.id) === String(v));
-                return opt?.nombre ?? v;
-              }}
-              MenuProps={selectMenuProps}
-              sx={{ width: '100%' }}
-            >
-              <MenuItem value="">Seleccionar</MenuItem>
-              {(empresasParaSelect ?? []).map((e) => (
-                <MenuItem key={e.id} value={String(e.id)}>{e.nombre}</MenuItem>
-              ))}
-            </Select>
-            {errors?.empresa && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.empresa}</Typography>}
-          </FormControl>
-          {empresaId && (
-            <Box
-              aria-label="Limpiar servicio"
-              onClick={() => {
-                setEmpresaId?.('');
-                setServicioId?.('');
-              }}
-              sx={{
-                position: 'absolute',
-                right: 34,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 1,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'text.disabled',
-                '&:hover': {
-                  color: 'text.primary',
-                },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </Box>
-          )}
-        </Box>
-        )}
-        {!aplicarTodosEmpresas && setAplicarTodosServicios && (
-          <Box sx={{ gridColumn: '1 / -1', mb: 1 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!aplicarTodosServicios}
-                  onChange={(e) => {
-                    setAplicarTodosServicios(e.target.checked);
-                    if (e.target.checked) setServicioId?.('');
-                  }}
-                  size="small"
-                  disabled={!!servicioId}
-                />
-              }
-              label="Aplicar a todos los contratistas"
-            />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Actívalo para que el campo aplique a todos los contratistas del servicio seleccionado.
-            </Typography>
-          </Box>
-        )}
-        {!aplicarTodosEmpresas && (
-        <Box sx={{ minWidth: 0, position: 'relative' }}>
-          <FormControl size="small" fullWidth required={!aplicarTodosServicios} error={!!errors?.servicio} sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-servicio-label`} shrink>Contratista</InputLabel>
-            <Select
-              labelId={`${prefix}campo-servicio-label`}
-              value={aplicarTodosServicios ? '__todos__' : (servicioId ?? '')}
-              label="Contratista"
-              onChange={(e) => setServicioId(e.target.value === '__todos__' ? '' : e.target.value)}
-              disabled={!empresaId || cargandoServicios || aplicarTodosServicios}
-              displayEmpty
-              renderValue={(v) => {
-                if (v === '__todos__') return 'Todos los contratistas';
-                if (!v) return cargandoServicios ? 'Cargando...' : 'Seleccionar';
-                const opt = (serviciosFiltrados ?? []).find((s) => String(s.id) === String(v));
-                return opt?.nombre ?? opt?.servicio ?? v;
-              }}
-              MenuProps={selectMenuProps}
-              sx={{ width: '100%' }}
-            >
-              <MenuItem value="">Seleccionar</MenuItem>
-              {(serviciosFiltrados ?? []).map((s) => (
-                <MenuItem key={s.id} value={String(s.id)}>{s.nombre ?? s.servicio}</MenuItem>
-              ))}
-            </Select>
-            {errors?.servicio && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.servicio}</Typography>}
-          </FormControl>
-          {!aplicarTodosServicios && servicioId && (
-            <Box
-              aria-label="Limpiar contratista"
-              onClick={() => setServicioId?.('')}
-              sx={{
-                position: 'absolute',
-                right: 34,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 1,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'text.disabled',
-                '&:hover': {
-                  color: 'text.primary',
-                },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </Box>
-          )}
-        </Box>
-        )}
-        {(aplicarTodosServicios || !!servicioId || opcionesProducto?.length > 0 || aplicarTodosProductos || aplicarTodosEmpresas) && (
-        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
-          <FormControlLabel
-            control={(
-              <Switch
-                size="small"
-                checked={!!aplicarTodosProductos}
-                onChange={(e) => {
-                  setAplicarTodosProductos?.(e.target.checked);
-                  if (e.target.checked) setProductoId?.('');
-                }}
-                disabled={!!productoId}
-              />
-            )}
-            label="Aplicar a todos los productos"
-          />
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, mb: 1.5, display: 'block' }}>
-            Úsalo cuando el campo deba mostrarse para todos los productos de este servicio.
-          </Typography>
-          <Box sx={{ position: 'relative', minWidth: 0 }}>
-            <FormControl size="small" fullWidth sx={formControlSx}>
-              <InputLabel id={`${prefix}campo-producto-label`} shrink>Producto al que pertenece</InputLabel>
-              <Select
-                labelId={`${prefix}campo-producto-label`}
-                value={aplicarTodosProductos ? '__todos__' : (productoId ?? '')}
-                label="Producto al que pertenece"
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === '__todos__') {
-                    setAplicarTodosProductos?.(true);
-                    setProductoId?.('');
-                  } else {
-                    setAplicarTodosProductos?.(false);
-                    setProductoId?.(v);
-                  }
-                }}
-                displayEmpty
-                renderValue={(v) => {
-                  if (aplicarTodosProductos) return 'Todos los productos';
-                  if (!v) return 'Seleccionar producto';
-                  const opt = (opcionesProducto ?? []).find((o) => o.value === v);
-                  return opt?.label ?? v;
-                }}
-                MenuProps={selectMenuProps}
-                sx={{ width: '100%' }}
-                >
-                  <MenuItem value="">Seleccionar producto</MenuItem>
-                  <MenuItem value="__todos__">Todos los productos</MenuItem>
-                  {(opcionesProducto ?? []).map((o) => (
-                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {productoId && !aplicarTodosProductos && (
-              <Box
-                aria-label="Limpiar producto"
-                onClick={() => setProductoId?.('')}
-                sx={{
-                  position: 'absolute',
-                  right: 34,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 1,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'text.disabled',
-                  '&:hover': {
-                    color: 'text.primary',
-                  },
-                }}
-              >
-                <CloseIcon fontSize="small" />
-              </Box>
-            )}
-          </Box>
-        </Box>
-        )}
-      </Box>
-
       {/* Sección: definición del campo (nombre, tipo y opciones) */}
-      <Box sx={{ mt: 4 }}>
+      <Box>
         <Typography sx={sectionTitleSx}>Definición del campo</Typography>
         <Box sx={gridTwoColSx}>
           <Box sx={{ minWidth: 0 }}>
@@ -429,6 +377,33 @@ export function CampoModals({
               {errors?.tipo && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.tipo}</Typography>}
             </FormControl>
           </Box>
+          {tipoCampo === 'entity_select' && (
+            <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+              <FormControl size="small" fullWidth required error={!!errors?.entidad} sx={formControlSx}>
+                <InputLabel id="campo-entidad-label" shrink>Entidad</InputLabel>
+                <Select
+                  labelId="campo-entidad-label"
+                  value={entidad ?? ''}
+                  label="Entidad"
+                  onChange={(e) => setEntidad(e.target.value)}
+                  displayEmpty
+                  renderValue={(v) => {
+                    if (!v) return 'Seleccionar';
+                    const opt = (entidadOptions ?? []).find((e) => e.value === v);
+                    return opt?.label ?? v;
+                  }}
+                  MenuProps={selectMenuProps}
+                  sx={{ width: '100%' }}
+                >
+                  <MenuItem value="">Seleccionar</MenuItem>
+                  {(entidadOptions ?? []).map((e) => (
+                    <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>
+                  ))}
+                </Select>
+                {errors?.entidad && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.entidad}</Typography>}
+              </FormControl>
+            </Box>
+          )}
           {tipoCampo === 'select' && (
             <Box sx={{ gridColumn: '1 / -1', mt: 0.5 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Opciones</Typography>
@@ -497,6 +472,37 @@ export function CampoModals({
           {errors?.seccion && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.seccion}</Typography>}
         </FormControl>
       </Box>
+      {/* Depende de: campo padre (misma sección). Evitar ciclos y auto-referencia. */}
+      {seccion && camposMismaSeccion?.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <FormControl size="small" fullWidth error={!!errors?.depende_de_id} sx={formControlSx}>
+            <InputLabel id="campo-depende-de-label" shrink>Depende de</InputLabel>
+            <Select
+              labelId="campo-depende-de-label"
+              value={depende_de_id ?? ''}
+              label="Depende de"
+              onChange={(e) => setDepende_de_id(e.target.value)}
+              displayEmpty
+              renderValue={(v) => {
+                if (!v) return 'Ninguno';
+                const c = (camposMismaSeccion || []).find((f) => String(f.id) === String(v));
+                return c ? (c.nombre ?? c.campo ?? String(v)) : v;
+              }}
+              MenuProps={selectMenuProps}
+              sx={{ width: '100%' }}
+            >
+              <MenuItem value="">Ninguno</MenuItem>
+              {(camposMismaSeccion || []).map((c) => (
+                <MenuItem key={c.id} value={String(c.id)}>{c.nombre ?? c.campo ?? c.id}</MenuItem>
+              ))}
+            </Select>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Si elige un campo, este quedará deshabilitado hasta que el usuario seleccione un valor en el campo padre (ej. Contratista depende de Servicio).
+            </Typography>
+            {errors?.depende_de_id && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.depende_de_id}</Typography>}
+          </FormControl>
+        </Box>
+      )}
       {/* Fila: Orden (input pequeño) | Obligatorio | Activo — flex, no grid */}
       <Box
         sx={{
@@ -544,16 +550,13 @@ export function CampoModals({
             sx={inputSx}
           />
         </Box>
-        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Visible si"
-            placeholder="Ej: cambio titular (mostrar solo cuando Cambio de titular = Sí)"
-            value={visible_si}
-            onChange={(e) => setVisible_si(e.target.value)}
-            sx={inputSx}
-            helperText="Escribe 'cambio titular' para campos que solo deben mostrarse cuando el usuario marca Sí en Cambio de titular."
+        <Box sx={{ gridColumn: '1 / -1' }}>
+          <CondicionVisibilidadUI
+            visible_si={visible_si}
+            setVisible_si={setVisible_si}
+            inputSx={inputSx}
+            formControlSx={formControlSx}
+            selectMenuProps={selectMenuProps}
           />
         </Box>
       </Box>

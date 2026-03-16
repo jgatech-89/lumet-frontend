@@ -33,14 +33,11 @@ const btnPrimarySx = {
 };
 
 export function ContratistaModals({
-  serviciosParaSelect,
   modalNueva,
   modalEditar,
   modalEliminar,
   nombre,
   setNombre,
-  servicioId,
-  setServicioId,
   estadoServicio = '1',
   setEstadoServicio,
   aEliminar,
@@ -55,8 +52,10 @@ export function ContratistaModals({
   handleConfirmarEliminar,
 }) {
   const { getOptions } = useChoices();
-  const estadosContratista = getOptions('estado_contratista');
-  const list = serviciosParaSelect ?? [];
+  const opcionesEstado = getOptions('estado_contratista');
+  const estadosContratista = opcionesEstado?.length
+    ? opcionesEstado
+    : [{ value: '1', label: 'Activo' }, { value: '0', label: 'Inactivo' }];
 
   return (
     <>
@@ -71,39 +70,23 @@ export function ContratistaModals({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Completa la información para registrar un contratista.
           </Typography>
-          <Stack spacing={2}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Nombre del contratista"
-              placeholder="Introduce el nombre..."
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
-            <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="servicio-label">Servicio</InputLabel>
-              <Select
-                labelId="servicio-label"
-                value={servicioId}
-                label="Servicio"
-                onChange={(e) => setServicioId(e.target.value)}
-              >
-                <MenuItem value="">Seleccionar una opción</MenuItem>
-                {list.map((e) => (
-                  <MenuItem key={e.id} value={e.id.toString()}>{e.nombre}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
+          <TextField
+            fullWidth
+            size="small"
+            label="Nombre del contratista"
+            placeholder="Introduce el nombre..."
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            required
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+          />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 0, gap: 1 }}>
           <Button variant="outlined" onClick={handleCerrarNueva} disabled={guardandoNuevo} sx={btnCancelSx}>Cancelar</Button>
           <Button
             variant="contained"
             onClick={handleGuardarNueva}
-            disabled={!nombre.trim() || !servicioId || guardandoNuevo}
+            disabled={!nombre.trim() || guardandoNuevo}
             sx={btnPrimarySx}
           >
             {guardandoNuevo ? 'Guardando...' : 'Guardar contratista'}
@@ -133,31 +116,17 @@ export function ContratistaModals({
               required
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
-            <FormControl size="small" fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="editar-servicio-label">Servicio</InputLabel>
-              <Select
-                labelId="editar-servicio-label"
-                value={servicioId}
-                label="Servicio"
-                onChange={(e) => setServicioId(e.target.value)}
-              >
-                <MenuItem value="">Seleccionar una opción</MenuItem>
-                {list.map((e) => (
-                  <MenuItem key={e.id} value={e.id.toString()}>{e.nombre}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
             <FormControl size="small" fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
               <InputLabel id="editar-servicio-estado-label">Estado del contratista</InputLabel>
               <Select
                 labelId="editar-servicio-estado-label"
-                value={estadoServicio}
+                value={String(estadoServicio ?? '')}
                 label="Estado del contratista"
                 onChange={(e) => setEstadoServicio(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
                 {estadosContratista.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                  <MenuItem key={String(o.value)} value={String(o.value)}>{o.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -168,7 +137,7 @@ export function ContratistaModals({
           <Button
             variant="contained"
             onClick={handleGuardarEditar}
-            disabled={!nombre.trim() || !servicioId || guardandoEditar}
+            disabled={!nombre.trim() || guardandoEditar}
             sx={btnPrimarySx}
           >
             {guardandoEditar ? 'Guardando...' : 'Guardar'}
@@ -182,7 +151,7 @@ export function ContratistaModals({
         onConfirm={() => { handleConfirmarEliminar(); return Promise.resolve(); }}
         title="Eliminar contratista"
         message="¿Está seguro que desea eliminar este contratista?"
-        itemName={aEliminar?.servicio ?? aEliminar?.nombre}
+        itemName={aEliminar?.nombre}
         loading={eliminando}
         confirmLabel="Eliminar"
       />
