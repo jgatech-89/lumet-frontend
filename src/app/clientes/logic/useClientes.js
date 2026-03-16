@@ -1,37 +1,58 @@
-import { useState, useMemo } from 'react';
-import { CLIENTES_INICIAL, FILAS_POR_PAGINA } from './constants';
+import { useState, useEffect, useCallback } from 'react';
+import { useSnackbar } from '../../../context/SnackbarContext';
+import { getErrorMessage } from '../../../utils/funciones';
+import * as api from './apiCliente';
+import { FILAS_POR_PAGINA } from './constants';
 
 /**
- * Hook con la lógica del listado de clientes: filtros, paginación y datos (mock).
+ * Hook con la lógica del listado de clientes: filtros, paginación y datos desde API.
  */
 export function useClientes() {
+  const { showSnackbar } = useSnackbar();
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [pagina, setPagina] = useState(1);
+  const [clientes, setClientes] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [opcionesEstadoVenta, setOpcionesEstadoVenta] = useState([]);
 
-  const filtrados = useMemo(() => {
-    let list = [...CLIENTES_INICIAL];
-    const q = busqueda.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (c) =>
-          (c.nombre && c.nombre.toLowerCase().includes(q)) ||
-          (c.telefono && c.telefono.includes(q)) ||
-          (c.correo && c.correo.toLowerCase().includes(q)) ||
-          (c.vendedor && c.vendedor.toLowerCase().includes(q))
-      );
-    }
-    if (filtroEstado !== 'todos' && filtroEstado !== '') {
-      list = list.filter((c) => c.estado === filtroEstado);
-    }
-    return list;
-  }, [busqueda, filtroEstado]);
+  useEffect(() => {
+    let cancelled = false;
+    api.obtenerOpcionesEstadoVenta()
+      .then((list) => {
+        if (!cancelled) setOpcionesEstadoVenta(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (!cancelled) setOpcionesEstadoVenta([]);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
-  const total = filtrados.length;
-  const filasPagina = filtrados.slice(
-    (pagina - 1) * FILAS_POR_PAGINA,
-    pagina * FILAS_POR_PAGINA
-  );
+  const estadoVentaParam = filtroEstado && filtroEstado !== 'todos' ? filtroEstado : undefined;
+
+  const cargarClientes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const filters = { search: busqueda.trim() || undefined };
+      if (estadoVentaParam) filters.estado_venta = estadoVentaParam;
+      const { results, count } = await api.listarClientes(pagina, FILAS_POR_PAGINA, filters);
+      setClientes(results);
+      setTotal(count);
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar clientes'), 'error');
+      setClientes([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [pagina, busqueda, estadoVentaParam, showSnackbar]);
+
+  useEffect(() => {
+    const t = setTimeout(cargarClientes, 300);
+    return () => clearTimeout(t);
+  }, [cargarClientes]);
+
   const inicio = total === 0 ? 0 : (pagina - 1) * FILAS_POR_PAGINA + 1;
   const fin = total === 0 ? 0 : Math.min(pagina * FILAS_POR_PAGINA, total);
   const totalPaginas = Math.max(1, Math.ceil(total / FILAS_POR_PAGINA));
@@ -39,7 +60,7 @@ export function useClientes() {
   const handleChangePagina = (_, value) => setPagina(value);
 
   return {
-    clientes: filasPagina,
+    clientes,
     total,
     pagina,
     setPagina,
@@ -52,5 +73,8 @@ export function useClientes() {
     setFiltroEstado,
     handleChangePagina,
     pageSize: FILAS_POR_PAGINA,
+    loading,
+    recargar: cargarClientes,
+    opcionesEstadoVenta,
   };
 }

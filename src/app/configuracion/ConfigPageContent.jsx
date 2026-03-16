@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { COMPACT_MEDIA } from '../../utils/theme';
 import {
   Box,
@@ -18,22 +18,24 @@ import {
 import { SearchIcon } from '../../utils/icons';
 import { useChoices } from '../../context/ChoicesContext';
 import { useEmpresas, EmpresaConfigSection } from '../empresa';
-import { useServicios, ServiciosConfigSection } from '../servicios';
+import { useContratistas, ContratistasConfigSection } from '../servicios';
 import { useCampos, CamposConfigSection } from '../campos';
 import { useVendedores, VendedorConfigSection } from '../vendedores';
+import { listarEmpresasActivasParaSelect } from '../empresa/logic/apiEmpresa';
+import { listarServiciosPorEmpresa } from '../servicios/logic/apiServicios';
 
-const TAB_KEYS = ['empresa', 'servicios', 'campos', 'vendedor'];
+const TAB_KEYS = ['servicios', 'contratistas', 'campos', 'vendedor'];
 
 const ADD_LABELS = {
-  empresa: 'Añadir empresa',
   servicios: 'Añadir servicio',
+  contratistas: 'Añadir contratista',
   campos: 'Añadir campo',
   vendedor: 'Añadir vendedor',
 };
 
 const SEARCH_PLACEHOLDERS = {
-  empresa: 'Buscar empresa...',
   servicios: 'Buscar servicio...',
+  contratistas: 'Buscar contratista...',
   campos: 'Buscar campo...',
   vendedor: 'Buscar vendedor...',
 };
@@ -42,14 +44,18 @@ const SEARCH_PLACEHOLDERS = {
  * Orquestador de la pantalla de configuración: tabs, búsqueda y filtro independientes por tab,
  * renderizado de la sección activa. La lógica de cada dominio vive en sus módulos (app/empresa, etc.).
  */
-const INIT_BUSQUEDA = { empresa: '', servicios: '', campos: '', vendedor: '' };
-const INIT_FILTRO = { empresa: 'todos', servicios: 'todos', campos: 'todos', vendedor: 'todos' };
-const INIT_PAGINA = { empresa: 1, servicios: 1, campos: 1, vendedor: 1 };
+const INIT_BUSQUEDA = { servicios: '', contratistas: '', campos: '', vendedor: '' };
+const INIT_FILTRO = { servicios: 'todos', contratistas: 'todos', campos: 'todos', vendedor: 'todos' };
+const INIT_FILTRO_EMPRESA_CAMPOS = '';
+const INIT_FILTRO_SERVICIO_CAMPOS = '';
+const INIT_PAGINA = { servicios: 1, contratistas: 1, campos: 1, vendedor: 1 };
 
 export function ConfigPageContent() {
   const [tabActual, setTabActual] = useState(0);
   const [busquedaPorTab, setBusquedaPorTab] = useState(INIT_BUSQUEDA);
   const [filtroEstadoPorTab, setFiltroEstadoPorTab] = useState(INIT_FILTRO);
+  const [filtroEmpresaCampos, setFiltroEmpresaCampos] = useState(INIT_FILTRO_EMPRESA_CAMPOS);
+  const [filtroServicioCampos, setFiltroServicioCampos] = useState(INIT_FILTRO_SERVICIO_CAMPOS);
   const [paginaPorTab, setPaginaPorTab] = useState(INIT_PAGINA);
 
   const tabKey = TAB_KEYS[tabActual];
@@ -71,7 +77,7 @@ export function ConfigPageContent() {
   const { getOptions, loading: choicesLoading } = useChoices();
   const opcionesEstado = getOptions('estado');
 
-  const empresa = useEmpresas(paginaPorTab.empresa, setPagina, busquedaPorTab.empresa, filtroEstadoPorTab.empresa, TAB_KEYS[tabActual] === 'empresa');
+  const empresa = useEmpresas(paginaPorTab.servicios, setPagina, busquedaPorTab.servicios, filtroEstadoPorTab.servicios, TAB_KEYS[tabActual] === 'servicios');
   const vendedores = useVendedores(
     paginaPorTab.vendedor,
     setPagina,
@@ -79,12 +85,12 @@ export function ConfigPageContent() {
     filtroEstadoPorTab.vendedor,
     TAB_KEYS[tabActual] === 'vendedor'
   );
-  const servicios = useServicios(
-    paginaPorTab.servicios,
+  const contratistas = useContratistas(
+    paginaPorTab.contratistas,
     setPagina,
-    busquedaPorTab.servicios,
-    filtroEstadoPorTab.servicios,
-    TAB_KEYS[tabActual] === 'servicios',
+    busquedaPorTab.contratistas,
+    filtroEstadoPorTab.contratistas,
+    TAB_KEYS[tabActual] === 'contratistas',
     empresa.empresasParaSelect,
     empresa.cargarEmpresasParaSelect
   );
@@ -93,7 +99,10 @@ export function ConfigPageContent() {
     paginaPorTab.campos,
     setPagina,
     busquedaPorTab.campos,
-    filtroEstadoPorTab.campos
+    filtroEstadoPorTab.campos,
+    filtroEmpresaCampos,
+    filtroServicioCampos,
+    ''
   );
 
   const handleChangeTab = (_, value) => {
@@ -101,12 +110,37 @@ export function ConfigPageContent() {
     setPagina(1);
   };
 
+  const [empresasParaFiltroCampos, setEmpresasParaFiltroCampos] = useState([]);
+  const [serviciosParaFiltroCampos, setServiciosParaFiltroCampos] = useState([]);
+
+  useEffect(() => {
+    if (tabKey !== 'campos') return;
+    let cancelled = false;
+    listarEmpresasActivasParaSelect()
+      .then((list) => { if (!cancelled) setEmpresasParaFiltroCampos(Array.isArray(list) ? list : []); })
+      .catch(() => { if (!cancelled) setEmpresasParaFiltroCampos([]); });
+    return () => { cancelled = true; };
+  }, [tabKey]);
+
+  useEffect(() => {
+    if (!filtroEmpresaCampos) {
+      setServiciosParaFiltroCampos([]);
+      setFiltroServicioCampos('');
+      return;
+    }
+    let cancelled = false;
+    listarServiciosPorEmpresa(filtroEmpresaCampos)
+      .then((list) => { if (!cancelled) setServiciosParaFiltroCampos(Array.isArray(list) ? list : []); })
+      .catch(() => { if (!cancelled) setServiciosParaFiltroCampos([]); });
+    return () => { cancelled = true; };
+  }, [filtroEmpresaCampos]);
+
   // No cargar datos al cambiar de tab: cada hook carga solo cuando su tab está activo (active).
   // Los selects (empresas/servicios) se cargan bajo demanda al abrir los modales (handleAbrirNueva).
 
   const handleAddClick = () => {
-    if (tabKey === 'empresa') empresa.handleAbrirNueva();
-    else if (tabKey === 'servicios') servicios.handleAbrirNueva();
+    if (tabKey === 'servicios') empresa.handleAbrirNueva();
+    else if (tabKey === 'contratistas') contratistas.handleAbrirNueva();
     else if (tabKey === 'campos') campos.handleAbrirNueva();
     else if (tabKey === 'vendedor') vendedores.handleAbrirNueva();
   };
@@ -195,8 +229,8 @@ export function ConfigPageContent() {
               '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
             }}
           >
-            <Tab label="Empresa" />
             <Tab label="Servicios" />
+            <Tab label="Contratistas" />
             <Tab label="Campos" />
             <Tab label="Vendedor" />
           </Tabs>
@@ -236,17 +270,56 @@ export function ConfigPageContent() {
               ))}
             </Select>
           </FormControl>
+          {tabKey === 'campos' && (
+            <>
+              <FormControl size="small" sx={{ width: { xs: '100%', sm: 200 }, minWidth: { xs: 0, sm: 200 } }}>
+                <InputLabel id="filtro-empresa-campos-label">Servicio</InputLabel>
+                <Select
+                  labelId="filtro-empresa-campos-label"
+                  value={filtroEmpresaCampos}
+                  label="Servicio"
+                  onChange={(e) => {
+                    setFiltroEmpresaCampos(e.target.value);
+                    setPaginaPorTab((p) => ({ ...p, campos: 1 }));
+                  }}
+                >
+                  <MenuItem value="">Todos los servicios</MenuItem>
+                  {empresasParaFiltroCampos.map((e) => (
+                    <MenuItem key={e.id} value={String(e.id)}>{e.nombre}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ width: { xs: '100%', sm: 200 }, minWidth: { xs: 0, sm: 200 } }}>
+                <InputLabel id="filtro-servicio-campos-label">Contratista</InputLabel>
+                <Select
+                  labelId="filtro-servicio-campos-label"
+                  value={filtroServicioCampos}
+                  label="Contratista"
+                  onChange={(e) => {
+                    setFiltroServicioCampos(e.target.value);
+                    setPaginaPorTab((p) => ({ ...p, campos: 1 }));
+                  }}
+                  disabled={!filtroEmpresaCampos}
+                >
+                  <MenuItem value="">Todos los contratistas</MenuItem>
+                  {serviciosParaFiltroCampos.map((s) => (
+                    <MenuItem key={s.id} value={String(s.id)}>{s.nombre ?? s.servicio}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </>
+          )}
         </Stack>
 
-        {tabKey === 'empresa' && (
-          <EmpresaConfigSection empresa={empresa} pagina={paginaPorTab.empresa} setPagina={setPagina} />
-        )}
         {tabKey === 'servicios' && (
-          <ServiciosConfigSection
-            servicios={servicios}
+          <EmpresaConfigSection empresa={empresa} pagina={paginaPorTab.servicios} setPagina={setPagina} />
+        )}
+        {tabKey === 'contratistas' && (
+          <ContratistasConfigSection
+            contratistas={contratistas}
             empresasParaSelect={empresa.empresasParaSelect}
             cargarEmpresasParaSelect={empresa.cargarEmpresasParaSelect}
-            pagina={paginaPorTab.servicios}
+            pagina={paginaPorTab.contratistas}
             setPagina={setPagina}
           />
         )}

@@ -69,11 +69,24 @@ const AppNavbar = ({ onMenuClick }) => {
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}
     >
-      <Toolbar sx={{ minHeight: '64px !important', px: 2 }}>
+      <Toolbar sx={{ minHeight: '64px !important', px: { xs: 1.5, sm: 2 } }}>
+        {onMenuClick && (
+          <IconButton
+            aria-label="Abrir menú"
+            onClick={onMenuClick}
+            sx={{
+              mr: 1,
+              color: 'text.primary',
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         <Box
           component={Link}
           to="/dashboard"
-          sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', mr: 4 }}
+          sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', mr: { xs: 2, sm: 4 } }}
         >
           <Logo size="small" />
         </Box>

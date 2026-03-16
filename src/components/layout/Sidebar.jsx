@@ -16,7 +16,7 @@ const SettingsIcon = () => (
 );
 
 const SIDEBAR_ITEMS = [
-  { to: '/dashboard', label: 'Clientes', icon: PeopleIcon },
+  { to: '/clientes', label: 'Clientes', icon: PeopleIcon },
   { to: '/configuracion', label: 'Configuración', icon: SettingsIcon, permission: PERMISSIONS.ACCESS_SETTINGS },
 ];
 
@@ -46,7 +46,7 @@ const Sidebar = ({ onNavigate }) => {
     >
       <List disablePadding sx={{ py: 1.5, px: 1 }}>
         {visibleItems.map(({ to, label, icon: Icon }) => {
-          const active = location.pathname === to || (to === '/dashboard' && location.pathname === '/');
+          const active = location.pathname === to || (to === '/clientes' && (location.pathname === '/' || location.pathname === '/dashboard'));
           return (
             <ListItemButton
               key={to}

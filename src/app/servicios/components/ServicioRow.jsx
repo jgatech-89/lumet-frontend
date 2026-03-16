@@ -6,7 +6,7 @@ import { getActionBtnBlue, getActionBtnRed } from '../../../components/shared/ac
 import { compactCellSx, compactChipSx } from '../../../components/shared/actionButtonStyles';
 import { EditIcon, DeleteIcon } from '../../../utils/icons';
 
-export function ServicioRow({ row, onEdit, onDelete }) {
+export function ContratistaRow({ row, onEdit, onDelete }) {
   const { isDark } = useThemeMode();
   const isActivo = row.estado === 'Activa' || row.estado === 'Activo';
   const chipEstado = isActivo ? getChipEstadoActivo(isDark) : getChipEstadoInactivo(isDark);

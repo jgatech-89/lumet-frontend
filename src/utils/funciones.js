@@ -40,5 +40,6 @@ export const getErrorMessage = (first, second, third, fourth) => {
   if (status === 400 && response) return mostrarError(response);
   if (response && typeof response.detail === "string") return response.detail;
   if (response && typeof response.message === "string") return response.message;
+  if (response && typeof response.mensaje === "string") return response.mensaje;
   return defaultMsg;
 };

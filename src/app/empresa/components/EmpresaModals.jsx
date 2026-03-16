@@ -59,19 +59,19 @@ export function EmpresaModals({
     <>
       <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Nueva empresa</Typography>
+          <Typography variant="h6" fontWeight={600}>Nuevo servicio</Typography>
           <IconButton size="small" onClick={handleCerrarNueva} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Completa la información para registrar una empresa.
+            Completa la información para registrar un servicio.
           </Typography>
           <TextField
             fullWidth
             size="small"
-            label="Nombre de la empresa"
+            label="Nombre del servicio"
             placeholder="Introduce el nombre..."
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
@@ -89,27 +89,27 @@ export function EmpresaModals({
             loadingText="Guardando..."
             sx={btnPrimarySx}
           >
-            Guardar empresa
+            Guardar servicio
           </LoadingButton>
         </DialogActions>
       </Dialog>
 
       <Dialog open={modalEditar} onClose={handleCerrarEditar} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Editar empresa</Typography>
+          <Typography variant="h6" fontWeight={600}>Editar servicio</Typography>
           <IconButton size="small" onClick={handleCerrarEditar} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Modifica los datos de la empresa.
+            Modifica los datos del servicio.
           </Typography>
           <Stack spacing={2}>
             <TextField
               fullWidth
               size="small"
-              label="Nombre de la empresa"
+              label="Nombre del servicio"
               placeholder="Introduce el nombre..."
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
@@ -117,11 +117,11 @@ export function EmpresaModals({
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
             <FormControl fullWidth size="small" sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="editar-empresa-estado-label">Estado de la empresa</InputLabel>
+              <InputLabel id="editar-empresa-estado-label">Estado del servicio</InputLabel>
               <Select
                 labelId="editar-empresa-estado-label"
                 value={estado}
-                label="Estado de la empresa"
+                label="Estado del servicio"
                 onChange={(e) => setEstado(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
@@ -151,8 +151,8 @@ export function EmpresaModals({
         open={modalEliminar}
         onClose={handleCerrarEliminar}
         onConfirm={handleConfirmarEliminar}
-        title="Eliminar empresa"
-        message="¿Está seguro que desea eliminar esta empresa?"
+        title="Eliminar servicio"
+        message="¿Está seguro que desea eliminar este servicio?"
         itemName={aEliminar?.nombre}
         loading={eliminando}
       />

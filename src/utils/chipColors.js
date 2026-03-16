@@ -3,7 +3,14 @@
  * Adaptados a modo claro y oscuro para buena legibilidad.
  */
 
-export const getChipEstadosVenta = (isDark) => ({
+export const getChipEstadosVenta = (isDark) => {
+  const ventaIniciadaStyle = {
+    bg: isDark ? 'rgba(129, 199, 132, 0.28)' : 'rgba(56, 142, 60, 0.12)',
+    color: isDark ? '#66bb6a' : '#2e7d32',
+  };
+  return {
+  'Venta iniciada': ventaIniciadaStyle,
+  'venta_iniciada': ventaIniciadaStyle,
   'Venta completada': {
     bg: isDark ? 'rgba(102, 187, 106, 0.28)' : 'rgba(46, 125, 50, 0.12)',
     color: isDark ? '#81c784' : '#1b5e20',
@@ -20,7 +27,7 @@ export const getChipEstadosVenta = (isDark) => ({
     bg: isDark ? 'rgba(100, 181, 246, 0.28)' : 'rgba(21, 101, 192, 0.12)',
     color: isDark ? '#64b5f6' : '#0d47a1',
   },
-});
+}; };
 
 export const getChipEstadoActivo = (isDark) => ({
   bg: isDark ? 'rgba(102, 187, 106, 0.28)' : 'rgba(46, 125, 50, 0.12)',
