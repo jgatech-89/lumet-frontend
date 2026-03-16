@@ -30,7 +30,24 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
   return (
     <>
       <TableCell sx={{ ...compactCellSx, fontWeight: 500 }}>{row.nombre}</TableCell>
+      {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.tipo_identificacion || '-'}</TableCell>}
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.numero_identificacion || '-'}</TableCell>}
+      {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.cups || '-'}</TableCell>}
+      {!compact && (
+        <TableCell
+          sx={{
+            ...compactCellSx,
+            color: 'text.secondary',
+            maxWidth: 180,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={row.direccion}
+        >
+          {row.direccion || '-'}
+        </TableCell>
+      )}
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.telefono}</TableCell>}
       {!compact && (
         <TableCell
@@ -42,9 +59,9 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
             textOverflow: 'ellipsis',
             wordBreak: 'break-all',
           }}
-          title={row.correo}
+          title={row.correo_electronico_o_carta}
         >
-          {row.correo || '-'}
+          {row.correo_electronico_o_carta || '-'}
         </TableCell>
       )}
       <TableCell align="center" sx={compactCellSx}>

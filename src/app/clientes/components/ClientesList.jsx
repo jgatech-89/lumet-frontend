@@ -6,6 +6,7 @@ import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { useClientes } from '../logic/useClientes';
 import { ClienteRow } from './ClienteRow';
 import { ClienteDetalleModal } from './ClienteDetalleModal';
+import { ImportarClientesModal } from './ImportarClientesModal';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
 import { TableLoader, LoadingButton } from '../../../components/loading';
 import { SearchIcon } from '../../../utils/icons';
@@ -41,6 +42,12 @@ const DownloadExcelIcon = () => (
   </svg>
 );
 
+const UploadExcelIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+  </svg>
+);
+
 export function ClientesList() {
   const theme = useTheme();
   const isCompactView = useMediaQuery(theme.breakpoints.down('sm'));
@@ -70,6 +77,7 @@ export function ClientesList() {
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
   const [exportando, setExportando] = useState(false);
+  const [modalImportar, setModalImportar] = useState(false);
 
   // Solo abrir modal con la fila; el detalle se carga dentro del modal (una sola consulta).
   const handleAbrirVer = useCallback((row) => {
@@ -260,6 +268,25 @@ export function ClientesList() {
               ))}
             </Select>
           </FormControl>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<UploadExcelIcon />}
+            onClick={() => setModalImportar(true)}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 0.75,
+              px: 2.5,
+              minHeight: 40,
+              minWidth: { xs: '100%', sm: 160 },
+              flexShrink: 0,
+              fontSize: '0.875rem',
+            }}
+          >
+            Importar
+          </Button>
           <LoadingButton
             variant="outlined"
             size="small"
@@ -290,10 +317,11 @@ export function ClientesList() {
               borderRadius: 2,
               border: 1,
               borderColor: 'divider',
+              overflowX: 'auto',
               [COMPACT_MEDIA]: { borderRadius: 1 },
             }}
           >
-            <Table size="small" sx={{ minWidth: 400 }}>
+            <Table size="small" sx={{ minWidth: 900 }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                   <TableCell
@@ -316,7 +344,43 @@ export function ClientesList() {
                         py: 1.5,
                       }}
                     >
+                      Tipo identificación
+                    </TableCell>
+                  )}
+                  {!isCompactView && (
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        fontSize: '0.8125rem',
+                        py: 1.5,
+                      }}
+                    >
                       Nº identificación
+                    </TableCell>
+                  )}
+                  {!isCompactView && (
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        fontSize: '0.8125rem',
+                        py: 1.5,
+                      }}
+                    >
+                      CUPS
+                    </TableCell>
+                  )}
+                  {!isCompactView && (
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        fontSize: '0.8125rem',
+                        py: 1.5,
+                      }}
+                    >
+                      Dirección
                     </TableCell>
                   )}
                   {!isCompactView && (
@@ -359,7 +423,7 @@ export function ClientesList() {
               </TableHead>
               <TableBody>
                 {loading ? (
-                  <TableLoader columnCount={isCompactView ? 2 : 5} message="Cargando clientes..." />
+                  <TableLoader columnCount={isCompactView ? 2 : 8} message="Cargando clientes..." />
                 ) : (
                   clientes.map((row) => (
                     <TableRow
@@ -427,6 +491,12 @@ export function ClientesList() {
         </Stack>
         </Box>
       </Box>
+
+      <ImportarClientesModal
+        open={modalImportar}
+        onClose={() => setModalImportar(false)}
+        onExito={recargar}
+      />
 
       <ClienteDetalleModal
         open={modalVerDetalle}

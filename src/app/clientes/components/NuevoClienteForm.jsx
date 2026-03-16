@@ -175,7 +175,6 @@ export function NuevoClienteForm() {
     cargandoCampos,
     cargandoCamposGlobales,
     validarTelefono,
-    validarCorreo,
     handleSiguiente,
     handleAnterior,
     handleLimpiar,
@@ -503,20 +502,12 @@ export function NuevoClienteForm() {
                 <Box sx={{ width: '100%' }}>
                   <TextField
                     size="small"
-                    type="email"
-                    label="Correo"
-                    value={baseData.correo}
-                    onChange={(e) => setBaseData((p) => ({ ...p, correo: e.target.value }))}
+                    label="Correo electrónico o carta"
+                    value={baseData.correo_electronico_o_carta ?? ''}
+                    onChange={(e) => setBaseData((p) => ({ ...p, correo_electronico_o_carta: e.target.value }))}
                     fullWidth
                     required
-                    error={!!baseData.correo && !validarCorreo(baseData.correo)}
-                    helperText={
-                      !baseData.correo?.trim()
-                        ? 'Obligatorio'
-                        : !validarCorreo(baseData.correo)
-                          ? 'Correo no válido'
-                          : ''
-                    }
+                    placeholder="ejemplo@correo.com o Carta"
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -526,6 +517,52 @@ export function NuevoClienteForm() {
                     value={baseData.direccion ?? ''}
                     onChange={(e) => setBaseData((p) => ({ ...p, direccion: e.target.value }))}
                     fullWidth
+                  />
+                </Box>
+                <Box sx={{ width: '100%' }}>
+                  <TextField
+                    size="small"
+                    label="CUPS"
+                    value={baseData.cups ?? ''}
+                    onChange={(e) => setBaseData((p) => ({ ...p, cups: e.target.value }))}
+                    fullWidth
+                  />
+                </Box>
+                <Box sx={{ width: '100%' }}>
+                  <TextField
+                    size="small"
+                    label="Cuenta bancaria"
+                    value={baseData.cuenta_bancaria ?? ''}
+                    onChange={(e) => setBaseData((p) => ({ ...p, cuenta_bancaria: e.target.value }))}
+                    fullWidth
+                  />
+                </Box>
+                <Box sx={{ width: '100%' }}>
+                  <TextField
+                    size="small"
+                    label="Compañía anterior"
+                    value={baseData.compania_anterior ?? ''}
+                    onChange={(e) => setBaseData((p) => ({ ...p, compania_anterior: e.target.value }))}
+                    fullWidth
+                  />
+                </Box>
+                <Box sx={{ width: '100%' }}>
+                  <TextField
+                    size="small"
+                    label="Compañía actual"
+                    value={baseData.compania_actual ?? ''}
+                    onChange={(e) => setBaseData((p) => ({ ...p, compania_actual: e.target.value }))}
+                    fullWidth
+                  />
+                </Box>
+                <Box sx={{ width: '100%' }}>
+                  <TextField
+                    size="small"
+                    label="Producto"
+                    value={producto}
+                    onChange={(e) => setProducto(e.target.value)}
+                    fullWidth
+                    placeholder="Escriba el producto"
                   />
                 </Box>
                 {camposSeccionDatosBase?.length > 0 &&

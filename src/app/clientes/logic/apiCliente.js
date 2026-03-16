@@ -1,6 +1,7 @@
 import { get, post, patch, del } from '../../../utils/funciones';
 import { api } from '../../../utils/config';
 import { getToken } from '../../../utils/auth';
+import http from '../../../utils/api';
 
 const BASE = '/api/clientes/';
 const BASE_FORMULARIO = '/api/formulario/';
@@ -42,8 +43,10 @@ export const listarClientes = async (page = 1, pageSize = 20, filters = {}) => {
       nombre: c.nombre,
       tipo_identificacion: c.tipo_identificacion,
       numero_identificacion: c.numero_identificacion,
+      cups: c.cups,
+      direccion: c.direccion,
       telefono: c.telefono,
-      correo: c.correo,
+      correo_electronico_o_carta: c.correo_electronico_o_carta,
       estado_venta: c.estado_venta ?? 'pendiente',
       vendedor: c.vendedor_nombre ?? '-',
       estado: c.estado === '1' ? 'Activo' : 'Inactivo',
@@ -88,7 +91,7 @@ export const obtenerCliente = async (id) => {
 /**
  * Actualiza un cliente y sus respuestas del formulario.
  * @param {number|string} id
- * @param {Object} payload - nombre, tipo_identificacion, numero_identificacion, telefono, correo, respuestas
+ * @param {Object} payload - nombre, tipo_identificacion, numero_identificacion, telefono, correo_electronico_o_carta, respuestas
  */
 export const actualizarCliente = async (id, payload) => {
   const { data } = await patch(`${BASE}${id}/`, payload);
@@ -131,6 +134,44 @@ export const descargarPdfCliente = async (id) => {
 };
 
 /**
+ * Descarga la plantilla Excel para importación masiva de clientes.
+ * @returns {Promise<Blob>}
+ */
+export const descargarPlantillaClientes = async () => {
+  try {
+    const { data } = await http.get('/api/clientes/descargar-plantilla/', {
+      responseType: 'blob',
+    });
+    return data;
+  } catch (e) {
+    const err = e?.response?.data;
+    const msg = err?.error || err?.detail || (typeof err === 'string' ? err : null);
+    throw new Error(msg || 'Error al descargar plantilla');
+  }
+};
+
+/**
+ * Importa clientes desde un archivo Excel.
+ * @param {File} archivo - Archivo Excel
+ * @returns {Promise<{ creados: number, errores: string[] }>}
+ */
+export const importarExcelClientes = async (archivo) => {
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+  const token = getToken();
+  const response = await fetch(`${api}/api/clientes/importar-excel/`, {
+    method: 'POST',
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+    body: formData,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || 'Error al importar');
+  }
+  return data;
+};
+
+/**
  * Exporta clientes a Excel/CSV con los filtros actuales.
  * @param {{ search?: string, estado_venta?: string }} filters
  * @returns {Promise<Blob>}
@@ -152,7 +193,7 @@ export const exportarExcelClientes = async (filters = {}) => {
 /**
  * Crea un cliente con sus respuestas del formulario.
  * POST /api/clientes/
- * @param {Object} payload - servicio_id, nombre, tipo_identificacion, numero_identificacion, telefono, correo, respuestas
+ * @param {Object} payload - servicio_id, nombre, tipo_identificacion, numero_identificacion, telefono, correo_electronico_o_carta, respuestas
  * @param {Array} payload.respuestas - [{ nombre_campo, respuesta_campo }]
  */
 export const crearCliente = async (payload) => {
