@@ -381,9 +381,15 @@ export function NuevoClienteForm() {
                 </FormControl>
               )}
               {campoTipoCliente && respuestas[campoTipoCliente?.nombre] && camposSeccionCliente?.length > 0 && (
-                <Grid container spacing={3} sx={{ width: '100%' }}>
+                <Grid
+                  container
+                  spacing={3}
+                  sx={{
+                    width: '100%',
+                  }}
+                >
                   {camposSeccionCliente.map((c) => (
-                    <Grid item xs={12} sm={6} key={c.id}>
+                    <Grid item xs={12} sm={6} md={4} key={c.id}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
                         {c.tipo !== 'checkbox' && (
                           <Typography variant="body2" color="text.secondary" component="label">
@@ -406,30 +412,19 @@ export function NuevoClienteForm() {
           )}
 
           {paso === 2 && (
-            <Box sx={{ width: '100%', minWidth: 0, maxWidth: 800 }}>
+            <Box sx={{ width: '100%', minWidth: 0 }}>
               <Typography variant="subtitle1" fontWeight={600} color="text.primary" sx={{ mb: 3 }}>
                 Datos base del cliente
               </Typography>
-              {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'datos_base' && opcionesProducto?.length > 0 && servicio && (
-                <Box sx={{ mb: 3 }}>
-                  <FormControl size="small" sx={{ width: '100%', maxWidth: 400, '& .MuiOutlinedInput-root': { borderRadius: 2 } }} required>
-                    <InputLabel id="producto-form-label">Producto</InputLabel>
-                    <Select
-                      labelId="producto-form-label"
-                      value={producto}
-                      label="Producto"
-                      onChange={(e) => setProducto(e.target.value)}
-                    >
-                      <MenuItem value="">Seleccionar producto</MenuItem>
-                      {opcionesProducto.map((o) => (
-                        <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-              )}
-              <Grid container spacing={3} sx={{ width: '100%' }}>
-                <Grid item xs={12} sm={6}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 2,
+                  width: '100%',
+                }}
+              >
+                <Box sx={{ width: '100%' }}>
                   <TextField
                     size="small"
                     label="Nombre"
@@ -438,35 +433,56 @@ export function NuevoClienteForm() {
                     required
                     fullWidth
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl size="small" required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-                    <InputLabel id="tipo-identificacion-datos-label">Tipo de identificación</InputLabel>
+                </Box>
+                <Box sx={{ width: '100%' }}>
+                  <FormControl
+                    size="small"
+                    required
+                    fullWidth
+                    sx={{
+                      '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                    }}
+                  >
+                    <InputLabel id="tipo-identificacion-datos-label" shrink>
+                      Tipo de identificación
+                    </InputLabel>
                     <Select
                       labelId="tipo-identificacion-datos-label"
-                      value={baseData.tipo_identificacion}
+                      value={baseData.tipo_identificacion ?? ''}
                       label="Tipo de identificación"
-                      onChange={(e) => setBaseData((p) => ({ ...p, tipo_identificacion: e.target.value }))}
+                      onChange={(e) =>
+                        setBaseData((p) => ({ ...p, tipo_identificacion: e.target.value }))
+                      }
                       MenuProps={{ PaperProps: { sx: { maxHeight: 320 } } }}
+                      displayEmpty
+                      renderValue={(selected) => {
+                        if (!selected) return 'Seleccionar';
+                        const match = tiposIdentificacion.find((o) => o.value === selected);
+                        return match?.label ?? selected;
+                      }}
                     >
                       <MenuItem value="">Seleccionar</MenuItem>
                       {tiposIdentificacion.map((o) => (
-                        <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                        <MenuItem key={o.value} value={o.value}>
+                          {o.label}
+                        </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box sx={{ width: '100%' }}>
                   <TextField
                     size="small"
                     label="Número de identificación"
                     value={baseData.numero_identificacion}
-                    onChange={(e) => setBaseData((p) => ({ ...p, numero_identificacion: e.target.value }))}
+                    onChange={(e) =>
+                      setBaseData((p) => ({ ...p, numero_identificacion: e.target.value }))
+                    }
                     fullWidth
                     required
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box sx={{ width: '100%' }}>
                   <TextField
                     size="small"
                     label="Teléfono"
@@ -475,10 +491,16 @@ export function NuevoClienteForm() {
                     fullWidth
                     required
                     error={!!baseData.telefono && !validarTelefono(baseData.telefono)}
-                    helperText={!baseData.telefono?.trim() ? 'Obligatorio' : !validarTelefono(baseData.telefono) ? 'Mínimo 5 dígitos' : ''}
+                    helperText={
+                      !baseData.telefono?.trim()
+                        ? 'Obligatorio'
+                        : !validarTelefono(baseData.telefono)
+                          ? 'Mínimo 5 dígitos'
+                          : ''
+                    }
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box sx={{ width: '100%' }}>
                   <TextField
                     size="small"
                     type="email"
@@ -488,10 +510,16 @@ export function NuevoClienteForm() {
                     fullWidth
                     required
                     error={!!baseData.correo && !validarCorreo(baseData.correo)}
-                    helperText={!baseData.correo?.trim() ? 'Obligatorio' : !validarCorreo(baseData.correo) ? 'Correo no válido' : ''}
+                    helperText={
+                      !baseData.correo?.trim()
+                        ? 'Obligatorio'
+                        : !validarCorreo(baseData.correo)
+                          ? 'Correo no válido'
+                          : ''
+                    }
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box sx={{ width: '100%' }}>
                   <TextField
                     size="small"
                     label="Dirección"
@@ -499,13 +527,19 @@ export function NuevoClienteForm() {
                     onChange={(e) => setBaseData((p) => ({ ...p, direccion: e.target.value }))}
                     fullWidth
                   />
-                </Grid>
-              </Grid>
-              {camposSeccionDatosBase?.length > 0 && (
-                <Grid container spacing={3} sx={{ width: '100%', mt: 3 }}>
-                  {camposSeccionDatosBase.map((c) => (
-                    <Grid item xs={12} sm={6} key={c.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                </Box>
+                {camposSeccionDatosBase?.length > 0 &&
+                  camposSeccionDatosBase.map((c) => (
+                    <Box sx={{ width: '100%' }} key={c.id}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.5,
+                          width: '100%',
+                          minWidth: 0,
+                        }}
+                      >
                         <Typography variant="body2" color="text.secondary" component="label">
                           {labelConAsterisco(c.nombre, c.requerido)}
                         </Typography>
@@ -517,10 +551,9 @@ export function NuevoClienteForm() {
                           opcionesVendedor={vendedores}
                         />
                       </Box>
-                    </Grid>
+                    </Box>
                   ))}
-                </Grid>
-              )}
+              </Box>
             </Box>
           )}
 
@@ -567,13 +600,28 @@ export function NuevoClienteForm() {
                     </Typography>
                   ) : (
                     <>
-                      <Stack spacing={2} sx={{ width: '100%', maxWidth: { sm: 520 } }}>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, 1fr)',
+                          gap: 2,
+                          width: '100%',
+                        }}
+                      >
                         {camposFormularioSinTipoCliente.map((c) => (
-                          <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 160 }, flexShrink: 0 }}>
-                              {labelConAsterisco(c.nombre, c.requerido)}
-                            </Typography>
-                            <Box sx={{ flex: 1, width: '100%', minWidth: 0 }}>
+                          <Box sx={{ width: '100%' }} key={c.id}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                                width: '100%',
+                                minWidth: 0,
+                              }}
+                            >
+                              <Typography variant="body2" color="text.secondary" component="label">
+                                {labelConAsterisco(c.nombre, c.requerido)}
+                              </Typography>
                               <CampoDinamicoInput
                                 campo={c}
                                 value={respuestas[c.nombre]}
@@ -582,39 +630,64 @@ export function NuevoClienteForm() {
                                 opcionesVendedor={vendedores}
                               />
                             </Box>
-                          </Stack>
+                          </Box>
                         ))}
-                      </Stack>
-                      {campoTitular && (
-                <Stack spacing={2} sx={{ width: '100%', maxWidth: { sm: 520 } }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={!!cambioTitularMarcado}
-                        onChange={(e) => actualizarRespuesta(campoTitular.nombre, e.target.checked ? '1' : '0')}
-                        size="small"
-                      />
-                    }
-                    label={labelConAsterisco(campoTitular.nombre, campoTitular.requerido)}
-                  />
-                  {cambioTitularMarcado && camposTitularDependientes.map((c) => (
-                    <Stack key={c.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} sx={{ width: '100%', minWidth: 0 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ minWidth: { sm: 180 } }}>
-                        {labelConAsterisco(c.nombre, c.requerido)}
-                      </Typography>
-                      <Box sx={{ flex: 1, width: '100%' }}>
-                        <CampoDinamicoInput
-                          campo={c}
-                          value={respuestas[c.nombre]}
-                          onChange={(v) => actualizarRespuesta(c.nombre, v)}
-                          opcionesTipoIdentificacion={tiposIdentificacion}
-                          opcionesVendedor={vendedores}
-                        />
                       </Box>
-                    </Stack>
-                  ))}
-                </Stack>
-              )}
+                      {campoTitular && (
+                        <Stack spacing={2} sx={{ width: '100%', mt: 3 }}>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={!!cambioTitularMarcado}
+                                onChange={(e) =>
+                                  actualizarRespuesta(campoTitular.nombre, e.target.checked ? '1' : '0')
+                                }
+                                size="small"
+                              />
+                            }
+                            label={labelConAsterisco(campoTitular.nombre, campoTitular.requerido)}
+                          />
+                          {cambioTitularMarcado && (
+                            <Box
+                              sx={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: 2,
+                                width: '100%',
+                              }}
+                            >
+                              {camposTitularDependientes.map((c) => (
+                                <Box sx={{ width: '100%' }} key={c.id}>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 0.5,
+                                      width: '100%',
+                                      minWidth: 0,
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      component="label"
+                                    >
+                                      {labelConAsterisco(c.nombre, c.requerido)}
+                                    </Typography>
+                                    <CampoDinamicoInput
+                                      campo={c}
+                                      value={respuestas[c.nombre]}
+                                      onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                                      opcionesTipoIdentificacion={tiposIdentificacion}
+                                      opcionesVendedor={vendedores}
+                                    />
+                                  </Box>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                        </Stack>
+                      )}
                     </>
                   )}
                 </Stack>
@@ -625,7 +698,7 @@ export function NuevoClienteForm() {
           {paso === 4 && (
             <Stack spacing={3}>
               <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-                Vendedor
+                Datos del Vendedor
               </Typography>
               {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'vendedor' && opcionesProducto?.length > 0 && (
                 <FormControl size="small" sx={selectFieldSx} required>
@@ -648,10 +721,25 @@ export function NuevoClienteForm() {
                   No hay campos configurados para esta sección. Agregue campos con sección &quot;Vendedor&quot; en Configuración.
                 </Typography>
               ) : (
-                <Grid container spacing={3} sx={{ width: '100%' }}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: 2,
+                    width: '100%',
+                  }}
+                >
                   {camposSeccionVendedor.map((c) => (
-                    <Grid item xs={12} sm={6} key={c.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
+                    <Box sx={{ width: '100%' }} key={c.id}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 0.5,
+                          width: '100%',
+                          minWidth: 0,
+                        }}
+                      >
                         {c.tipo !== 'checkbox' && (
                           <Typography variant="body2" color="text.secondary" component="label">
                             {labelConAsterisco(c.nombre, c.requerido)}
@@ -668,9 +756,9 @@ export function NuevoClienteForm() {
                           opcionesVendedor={vendedores}
                         />
                       </Box>
-                    </Grid>
+                    </Box>
                   ))}
-                </Grid>
+                </Box>
               )}
             </Stack>
           )}
