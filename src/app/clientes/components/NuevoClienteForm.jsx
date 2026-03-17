@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 import { LoadingButton } from '../../../components/loading';
 import { useChoices } from '../../../context/ChoicesContext';
@@ -41,7 +42,7 @@ const campoDinamicoSx = {
   '& .MuiInputBase-root': { width: '100%' },
 };
 
-const STEPS = ['Cliente', 'Datos base', 'Campos del formulario', 'Vendedor'];
+/** STEPS se construye dinámicamente en useNuevoCliente según servicio (ONG, ENERGÍA) */
 
 /** Quita asteriscos dobles del nombre; devuelve base limpia. MUI añade * automáticamente cuando required. */
 function labelBase(nombre) {
@@ -59,8 +60,10 @@ const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
   (x) => (n || '').toLowerCase().replace(/\s+/g, '_').includes((x || '').toLowerCase().replace(/\s+/g, '_'))
 );
 
-/** Detecta si el campo es de vendedor (por nombre). Las opciones vienen de la tabla vendedores. */
-const esCampoVendedor = (n) => /vendedor/i.test(n || '');
+/** Detecta si el campo es de vendedor/comercial (por nombre). Las opciones vienen de la tabla vendedores. */
+const esCampoVendedor = (n) => /vendedor|comercial/i.test(n || '') && !/cerrador/i.test(n || '');
+/** Detecta si el campo es cerrador. */
+const esCampoCerrador = (n) => /cerrador/i.test(n || '');
 
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor }) {
   const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
@@ -175,6 +178,8 @@ export function NuevoClienteForm() {
     cargandoCampos,
     cargandoCamposGlobales,
     validarTelefono,
+    validarCorreoOCarta,
+    validarCuentaBancaria,
     handleSiguiente,
     handleAnterior,
     handleLimpiar,
@@ -191,17 +196,29 @@ export function NuevoClienteForm() {
     camposSeccionDatosBase,
     camposSeccionVendedor,
     campoTipoProducto,
+    steps,
+    totalSteps,
+    stepType,
+    esOngOTelefonia,
+    cerradorId,
+    setCerradorId,
+    tieneCerrador,
+    setTieneCerrador,
+    documentoDni,
+    setDocumentoDni,
+    documentoFactura,
+    setDocumentoFactura,
   } = useNuevoCliente();
+
+  const { user } = useAuth();
+  const esAdmin = user?.perfil === 'admin';
 
   const { getOptions } = useChoices();
   const tiposIdentificacion = getOptions('tipo_identificacion') || [
-    { value: 'CC', label: 'Cédula de ciudadanía' },
-    { value: 'CE', label: 'Cédula de extranjería' },
-    { value: 'DNI', label: 'DNI' },
-    { value: 'NIT', label: 'NIT' },
-    { value: 'PAS', label: 'Pasaporte' },
-    { value: 'PPT', label: 'Permiso provisional de trabajo' },
-    { value: 'OTRO', label: 'Otro' },
+    { value: 'NIE', label: 'NIE - NÚMERO DE IDENTIFICACIÓN EXTRANJERO' },
+    { value: 'PAS', label: 'PAS - PASAPORTE' },
+    { value: 'DNI', label: 'DNI - DOCUMENTO NACIONAL DE IDENTIDAD' },
+    { value: 'CIF', label: 'CIF - CÓDIGO DE IDENTIFICACIÓN FISCAL' },
   ];
 
   return (
@@ -247,11 +264,11 @@ export function NuevoClienteForm() {
           </Typography>
           {isMobile ? (
             <Typography variant="body1" color="primary.main" fontWeight={600} sx={{ fontSize: '0.9375rem' }}>
-              Paso {paso} de 4 — {STEPS[paso - 1]}
+              Paso {paso} de {totalSteps} — {steps[paso - 1]}
             </Typography>
           ) : (
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.8125rem', sm: '1rem' } }}>
-              Completa la información en 4 pasos
+              Completa la información en {totalSteps} pasos
             </Typography>
           )}
         </Box>
@@ -264,7 +281,7 @@ export function NuevoClienteForm() {
               '& .MuiStepLabel-label': { fontSize: '0.875rem' },
             }}
           >
-            {STEPS.map((label) => (
+            {steps.map((label) => (
               <Step key={label}>
                 <StepLabel>{label}</StepLabel>
               </Step>
@@ -289,7 +306,7 @@ export function NuevoClienteForm() {
           }}
         >
           <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          {paso === 1 && (
+          {stepType === 'cliente' && (
             <Stack spacing={3}>
               <Typography variant="subtitle1" fontWeight={600} color="text.primary">
                 Cliente
@@ -336,11 +353,11 @@ export function NuevoClienteForm() {
                   {respuestas[campoTipoCliente?.nombre] && empresa && (cargandoServicios ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <CircularProgress size={24} />
-                      <Typography variant="body2" color="text.secondary">Cargando contratistas...</Typography>
+                      <Typography variant="body2" color="text.secondary">Cargando compañías...</Typography>
                     </Box>
                   ) : (
                     <FormControl size="small" sx={selectFieldSx} required>
-                      <InputLabel id="servicio-label">Contratista</InputLabel>
+                      <InputLabel id="servicio-label">Compañía actual</InputLabel>
                       <Select
                         labelId="servicio-label"
                         value={servicio?.id ?? ''}
@@ -350,7 +367,7 @@ export function NuevoClienteForm() {
                           setServicio(s ?? null);
                         }}
                       >
-                        <MenuItem value="">Seleccionar contratista</MenuItem>
+                        <MenuItem value="">Seleccionar compañía</MenuItem>
                         {servicios.map((s) => (
                           <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
                         ))}
@@ -479,6 +496,14 @@ export function NuevoClienteForm() {
                     }
                     fullWidth
                     required
+                    error={!!baseData.numero_identificacion && baseData.numero_identificacion.trim().length < 3}
+                    helperText={
+                      !baseData.numero_identificacion?.trim()
+                        ? 'Obligatorio'
+                        : baseData.numero_identificacion.trim().length < 3
+                          ? 'Mínimo 3 dígitos'
+                          : ''
+                    }
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -508,6 +533,14 @@ export function NuevoClienteForm() {
                     fullWidth
                     required
                     placeholder="ejemplo@correo.com o Carta"
+                    error={!!baseData.correo_electronico_o_carta?.trim() && !validarCorreoOCarta(baseData.correo_electronico_o_carta)}
+                    helperText={
+                      !baseData.correo_electronico_o_carta?.trim()
+                        ? 'Obligatorio'
+                        : !validarCorreoOCarta(baseData.correo_electronico_o_carta)
+                          ? 'Introduzca un email válido o "carta"/"papel"'
+                          : ''
+                    }
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -522,49 +555,29 @@ export function NuevoClienteForm() {
                 <Box sx={{ width: '100%' }}>
                   <TextField
                     size="small"
-                    label="CUPS"
-                    value={baseData.cups ?? ''}
-                    onChange={(e) => setBaseData((p) => ({ ...p, cups: e.target.value }))}
-                    fullWidth
-                  />
-                </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
                     label="Cuenta bancaria"
                     value={baseData.cuenta_bancaria ?? ''}
                     onChange={(e) => setBaseData((p) => ({ ...p, cuenta_bancaria: e.target.value }))}
                     fullWidth
+                    error={!!baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)}
+                    helperText={
+                      baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)
+                        ? '22 números y 2 letras'
+                        : ''
+                    }
                   />
                 </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
-                    label="Compañía anterior"
-                    value={baseData.compania_anterior ?? ''}
-                    onChange={(e) => setBaseData((p) => ({ ...p, compania_anterior: e.target.value }))}
-                    fullWidth
-                  />
-                </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
-                    label="Compañía actual"
-                    value={baseData.compania_actual ?? ''}
-                    onChange={(e) => setBaseData((p) => ({ ...p, compania_actual: e.target.value }))}
-                    fullWidth
-                  />
-                </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
-                    label="Producto"
-                    value={producto}
-                    onChange={(e) => setProducto(e.target.value)}
-                    fullWidth
-                    placeholder="Escriba el producto"
-                  />
-                </Box>
+                {!esOngOTelefonia && (
+                  <Box sx={{ width: '100%' }}>
+                    <TextField
+                      size="small"
+                      label="Compañía anterior"
+                      value={baseData.compania_anterior ?? ''}
+                      onChange={(e) => setBaseData((p) => ({ ...p, compania_anterior: e.target.value }))}
+                      fullWidth
+                    />
+                  </Box>
+                )}
                 {camposSeccionDatosBase?.length > 0 &&
                   camposSeccionDatosBase.map((c) => (
                     <Box sx={{ width: '100%' }} key={c.id}>
@@ -594,7 +607,7 @@ export function NuevoClienteForm() {
             </Box>
           )}
 
-          {paso === 3 && (
+          {stepType === 'campos_del_formulario' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <Box sx={{ overflowY: 'auto', flex: 1, minHeight: 0, pr: 0.5 }}>
                 <Stack spacing={3}>
@@ -732,10 +745,10 @@ export function NuevoClienteForm() {
             </Box>
           )}
 
-          {paso === 4 && (
+          {stepType === 'comercial' && (
             <Stack spacing={3}>
               <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-                Datos del Vendedor
+                Comercial
               </Typography>
               {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'vendedor' && opcionesProducto?.length > 0 && (
                 <FormControl size="small" sx={selectFieldSx} required>
@@ -797,6 +810,85 @@ export function NuevoClienteForm() {
                   ))}
                 </Box>
               )}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={tieneCerrador}
+                      onChange={(e) => {
+                        setTieneCerrador(e.target.checked);
+                        if (!e.target.checked) setCerradorId('');
+                      }}
+                      size="small"
+                    />
+                  }
+                  label="Cerrador"
+                />
+                {tieneCerrador && (
+                  <FormControl size="small" sx={{ ...selectFieldSx, maxWidth: 320 }} disabled={!esAdmin}>
+                    <InputLabel id="cerrador-select-label">Cerrador</InputLabel>
+                    <Select
+                      labelId="cerrador-select-label"
+                      value={cerradorId ?? ''}
+                      label="Cerrador"
+                      onChange={(e) => setCerradorId(e.target.value || '')}
+                    >
+                      <MenuItem value="">Seleccionar</MenuItem>
+                      {(vendedores || []).map((v) => (
+                        <MenuItem key={v.id} value={String(v.id)}>
+                          {v.nombre_completo ?? v.nombre ?? ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {!esAdmin && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                        Solo el administrador puede asignar el cerrador.
+                      </Typography>
+                    )}
+                  </FormControl>
+                )}
+              </Box>
+            </Stack>
+          )}
+
+          {stepType === 'documentos' && (
+            <Stack spacing={3}>
+              <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+                Documentos (PDF DNI y factura)
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Suba el PDF del DNI y/o el PDF de la factura del cliente.
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, maxWidth: 500 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    PDF DNI
+                  </Typography>
+                  <Button variant="outlined" component="label" fullWidth sx={{ borderRadius: 2 }}>
+                    {documentoDni?.name ?? 'Seleccionar archivo'}
+                    <input
+                      type="file"
+                      hidden
+                      accept=".pdf,application/pdf"
+                      onChange={(e) => setDocumentoDni(e.target.files?.[0] || null)}
+                    />
+                  </Button>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    PDF Factura
+                  </Typography>
+                  <Button variant="outlined" component="label" fullWidth sx={{ borderRadius: 2 }}>
+                    {documentoFactura?.name ?? 'Seleccionar archivo'}
+                    <input
+                      type="file"
+                      hidden
+                      accept=".pdf,application/pdf"
+                      onChange={(e) => setDocumentoFactura(e.target.files?.[0] || null)}
+                    />
+                  </Button>
+                </Box>
+              </Box>
             </Stack>
           )}
           </Box>
@@ -817,7 +909,7 @@ export function NuevoClienteForm() {
               >
                 {paso === 1 ? 'Cancelar' : 'Anterior'}
               </Button>
-              {paso < 4 && (
+              {paso < totalSteps && (
                 <Button
                   variant="contained"
                   onClick={handleSiguiente}
@@ -846,7 +938,7 @@ export function NuevoClienteForm() {
               >
                 Limpiar
               </Button>
-              {paso === 4 && (
+              {paso === totalSteps && (
                 <LoadingButton
                   variant="contained"
                   onClick={handleGuardar}

@@ -27,6 +27,7 @@ import { listarVendedores } from '../../vendedores/logic/apiVendedores';
 import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa';
 import { listarServiciosPorEmpresa } from '../../servicios/logic/apiServicios';
 import { useChoices } from '../../../context/ChoicesContext';
+import { useAuth } from '../../../context/AuthContext';
 
 const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
 const NOMBRES_VENDEDOR = ['vendedor', 'Vendedor'];
@@ -139,6 +140,8 @@ export function EditarProductoModal({
   guardando,
 }) {
   const { getOptions } = useChoices();
+  const { user } = useAuth();
+  const esAdmin = user?.perfil === 'admin';
   const [respuestas, setRespuestas] = useState({});
   const [tipoCliente, setTipoCliente] = useState('');
   const [empresaId, setEmpresaId] = useState('');
@@ -173,7 +176,12 @@ export function EditarProductoModal({
     if (vendedorVal) {
       r.vendedor = vendedorVal;
       r.Vendedor = vendedorVal;
-      Object.keys(r).forEach((k) => { if (k !== 'vendedor' && k !== 'Vendedor' && norm(k).includes('vendedor')) r[k] = vendedorVal; });
+      Object.keys(r).forEach((k) => { if (k !== 'vendedor' && k !== 'Vendedor' && norm(k).includes('vendedor') && !norm(k).includes('cerrador')) r[k] = vendedorVal; });
+    }
+    const cerradorVal = producto?.cerrador != null && String(producto.cerrador).trim() !== '' ? String(producto.cerrador).trim() : (r['cerrador'] ?? r['Cerrador'] ?? '');
+    if (cerradorVal) {
+      r.cerrador = cerradorVal;
+      r.Cerrador = cerradorVal;
     }
     setRespuestas(r);
     setTipoCliente(tipoClienteVal);
@@ -314,9 +322,15 @@ export function EditarProductoModal({
         });
       }
     }
-    const vendedorVal = respuestas['vendedor'] ?? respuestas['Vendedor'];
+    const vendedorVal = respuestas['vendedor'] ?? respuestas['Vendedor'] ?? respuestas['comercial'] ?? respuestas['Comercial'];
     if (vendedorVal != null && String(vendedorVal).trim() !== '') {
-      respuestasList.push({ nombre_campo: 'vendedor', respuesta_campo: String(vendedorVal).trim() });
+      respuestasList.push({ nombre_campo: 'comercial', respuesta_campo: String(vendedorVal).trim() });
+    }
+    if (esAdmin) {
+      const cerradorVal = respuestas['cerrador'] ?? respuestas['Cerrador'];
+      if (cerradorVal != null && String(cerradorVal).trim() !== '') {
+        respuestasList.push({ nombre_campo: 'cerrador', respuesta_campo: String(cerradorVal).trim() });
+      }
     }
     onGuardar?.({
       cliente_empresa_id: producto?.id,
@@ -329,7 +343,7 @@ export function EditarProductoModal({
 
   if (!producto || !open) return null;
 
-  const vendedorActual = respuestas['vendedor'] ?? respuestas['Vendedor'] ?? '';
+  const vendedorActual = respuestas['vendedor'] ?? respuestas['Vendedor'] ?? respuestas['comercial'] ?? respuestas['Comercial'] ?? '';
   const hayInformacionAdicional = camposParaEditar.length > 0 || campoTitular;
 
   return (
@@ -382,10 +396,10 @@ export function EditarProductoModal({
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Contratistas</InputLabel>
+            <InputLabel>Compañía actual</InputLabel>
             <Select
               value={servicioId}
-              label="Contratistas"
+              label="Compañía actual"
               onChange={(e) => setServicioId(e.target.value)}
               disabled={!empresaId}
             >
@@ -414,15 +428,15 @@ export function EditarProductoModal({
           </Stack>
         </Stack>
 
-        {/* 2. Vendedor */}
+        {/* 2. Comercial y Cerrador */}
         <Typography variant="subtitle2" fontWeight={600} color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Vendedor
+          Comercial
         </Typography>
         <FormControl size="small" sx={{ minWidth: 200, mb: 2 }}>
-          <InputLabel>Vendedor</InputLabel>
+          <InputLabel>Comercial</InputLabel>
           <Select
             value={vendedorActual}
-            label="Vendedor"
+            label="Comercial"
             onChange={(e) => {
               actualizarRespuesta('vendedor', e.target.value);
               actualizarRespuesta('Vendedor', e.target.value);
@@ -434,6 +448,24 @@ export function EditarProductoModal({
             ))}
           </Select>
         </FormControl>
+        {esAdmin && (
+          <FormControl size="small" sx={{ minWidth: 200, mb: 2, ml: 2 }}>
+            <InputLabel>Cerrador</InputLabel>
+            <Select
+              value={respuestas['cerrador'] ?? respuestas['Cerrador'] ?? ''}
+              label="Cerrador"
+              onChange={(e) => {
+                actualizarRespuesta('cerrador', e.target.value);
+                actualizarRespuesta('Cerrador', e.target.value);
+              }}
+            >
+              <MenuItem value="">Seleccionar</MenuItem>
+              {vendedores.map((v) => (
+                <MenuItem key={v.id} value={String(v.id)}>{v.nombre_completo ?? v.nombre ?? v.id}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
 
         {/* 3. Información adicional - solo cuando hay campos cargados */}
         {hayInformacionAdicional && (

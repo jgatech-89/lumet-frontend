@@ -16,7 +16,7 @@ import { CampoModals } from './CampoModals';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
-const COLUMNS = ['Campo', 'Servicio', 'Contratista', 'Producto', 'Tipo de campo', 'Estado', 'Opciones'];
+const COLUMNS = ['Campo', 'Servicio', 'Compañía actual', 'Producto', 'Tipo de campo', 'Estado', 'Opciones'];
 
 export function CamposConfigSection({ campos, pagina, setPagina }) {
   const { isDark } = useThemeMode();

@@ -40,7 +40,7 @@ const campoDinamicoSx = {
   '& .MuiInputBase-root': { width: '100%' },
 };
 
-const STEPS = ['Tipo / Servicio / Contratistas', 'Campos del formulario', 'Vendedor'];
+const STEPS = ['Tipo / Servicio / Compañía actual', 'Campos del formulario', 'Comercial'];
 
 function labelBase(nombre) {
   return (nombre || '').replace(/\s*\*+\s*$/g, '').trim();
@@ -52,7 +52,7 @@ function labelConAsterisco(nombre, requerido) {
 }
 
 const ES_TIPO_IDENTIFICACION = (n) => /tipo\s*(de)?\s*identificaci[oó]n/i.test(n || '');
-const ES_VENDEDOR = (n) => /vendedor/i.test(n || '');
+const ES_VENDEDOR = (n) => /vendedor|comercial/i.test(n || '') && !/cerrador/i.test(n || '');
 
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor }) {
   const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
@@ -267,11 +267,11 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                 {respuestas[campoTipoCliente?.nombre] && empresa && (cargandoServicios ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <CircularProgress size={24} />
-                    <Typography variant="body2" color="text.secondary">Cargando contratistas...</Typography>
+                    <Typography variant="body2" color="text.secondary">Cargando compañías...</Typography>
                   </Box>
                 ) : (
                   <FormControl size="small" sx={selectFieldSx} required>
-                    <InputLabel id="servicio-label">Contratistas</InputLabel>
+                    <InputLabel id="servicio-label">Compañía actual</InputLabel>
                     <Select
                       labelId="servicio-label"
                       value={servicio?.id ?? ''}
@@ -281,7 +281,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                         setServicio(s ?? null);
                       }}
                     >
-                      <MenuItem value="">Seleccionar contratista</MenuItem>
+                      <MenuItem value="">Seleccionar compañía</MenuItem>
                       {servicios.map((s) => (
                         <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
                       ))}
@@ -418,7 +418,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
         {paso === 3 && (
           <Stack spacing={3}>
             <Typography variant="subtitle2" fontWeight={600} color="text.primary">
-              Vendedor
+              Comercial
             </Typography>
             {campoTipoProducto && (campoTipoProducto.seccion || '').toLowerCase() === 'vendedor' && opcionesProducto?.length > 0 && (
               <FormControl size="small" sx={selectFieldSx} required>
@@ -452,10 +452,10 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                       )}
                       <CampoDinamicoInput
                         campo={c}
-                        value={/vendedor/i.test(c.nombre || '') ? (respuestas[c.nombre] ?? vendedorId ?? '') : respuestas[c.nombre]}
+                        value={ES_VENDEDOR(c.nombre) ? (respuestas[c.nombre] ?? vendedorId ?? '') : respuestas[c.nombre]}
                         onChange={(v) => {
                           actualizarRespuesta(c.nombre, v);
-                          if (/vendedor/i.test(c.nombre || '')) setVendedorId(v || '');
+                          if (ES_VENDEDOR(c.nombre)) setVendedorId(v || '');
                         }}
                         opcionesTipoIdentificacion={tiposIdentificacion}
                         opcionesVendedor={vendedores}

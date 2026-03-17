@@ -28,14 +28,14 @@ const TAB_KEYS = ['servicios', 'contratistas', 'campos', 'vendedor'];
 
 const ADD_LABELS = {
   servicios: 'Añadir servicio',
-  contratistas: 'Añadir contratista',
+  contratistas: 'Añadir compañía actual',
   campos: 'Añadir campo',
   vendedor: 'Añadir vendedor',
 };
 
 const SEARCH_PLACEHOLDERS = {
   servicios: 'Buscar servicio...',
-  contratistas: 'Buscar contratista...',
+  contratistas: 'Buscar compañía actual...',
   campos: 'Buscar campo...',
   vendedor: 'Buscar vendedor...',
 };
@@ -290,7 +290,7 @@ export function ConfigPageContent() {
                 </Select>
               </FormControl>
               <FormControl size="small" sx={{ width: { xs: '100%', sm: 200 }, minWidth: { xs: 0, sm: 200 } }}>
-                <InputLabel id="filtro-servicio-campos-label">Contratista</InputLabel>
+                <InputLabel id="filtro-servicio-campos-label">Compañía actual</InputLabel>
                 <Select
                   labelId="filtro-servicio-campos-label"
                   value={filtroServicioCampos}
@@ -301,7 +301,7 @@ export function ConfigPageContent() {
                   }}
                   disabled={!filtroEmpresaCampos}
                 >
-                  <MenuItem value="">Todos los contratistas</MenuItem>
+                  <MenuItem value="">Todas las compañías</MenuItem>
                   {serviciosParaFiltroCampos.map((s) => (
                     <MenuItem key={s.id} value={String(s.id)}>{s.nombre ?? s.servicio}</MenuItem>
                   ))}

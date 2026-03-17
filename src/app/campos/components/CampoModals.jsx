@@ -168,10 +168,10 @@ export function CampoModals({
                   disabled={!!empresaId || !!servicioId}
                 />
               }
-              label="Aplicar a todos los servicios y contratistas"
+              label="Aplicar a todos los servicios y compañías"
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Si lo activas, este campo aparecerá en todos los formularios, sin importar el servicio ni el contratista.
+              Si lo activas, este campo aparecerá en todos los formularios, sin importar el servicio ni la compañía.
             </Typography>
           </Box>
         )}
@@ -250,14 +250,14 @@ export function CampoModals({
               label="Aplicar a todos los contratistas"
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Actívalo para que el campo aplique a todos los contratistas del servicio seleccionado.
+              Actívalo para que el campo aplique a todas las compañías del servicio seleccionado.
             </Typography>
           </Box>
         )}
         {!aplicarTodosEmpresas && (
         <Box sx={{ minWidth: 0, position: 'relative' }}>
           <FormControl size="small" fullWidth required={!aplicarTodosServicios} error={!!errors?.servicio} sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-servicio-label`} shrink>Contratista</InputLabel>
+            <InputLabel id={`${prefix}campo-servicio-label`} shrink>Compañía actual</InputLabel>
             <Select
               labelId={`${prefix}campo-servicio-label`}
               value={aplicarTodosServicios ? '__todos__' : (servicioId ?? '')}
@@ -266,7 +266,7 @@ export function CampoModals({
               disabled={!empresaId || cargandoServicios || aplicarTodosServicios}
               displayEmpty
               renderValue={(v) => {
-                if (v === '__todos__') return 'Todos los contratistas';
+                if (v === '__todos__') return 'Todas las compañías';
                 if (!v) return cargandoServicios ? 'Cargando...' : 'Seleccionar';
                 const opt = (serviciosFiltrados ?? []).find((s) => String(s.id) === String(v));
                 return opt?.nombre ?? opt?.servicio ?? v;
@@ -283,7 +283,7 @@ export function CampoModals({
           </FormControl>
           {!aplicarTodosServicios && servicioId && (
             <Box
-              aria-label="Limpiar contratista"
+              aria-label="Limpiar compañía"
               onClick={() => setServicioId?.('')}
               sx={{
                 position: 'absolute',

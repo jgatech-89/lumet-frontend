@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Typography,
   IconButton,
   Stack,
@@ -14,6 +15,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { EyeIcon } from '../../../utils/icons';
@@ -32,6 +37,7 @@ import { CambiarEstadoProductoModal } from './CambiarEstadoProductoModal';
 import { ClienteEditModal } from './ClienteEditModal';
 import { EditarProductoModal } from './EditarProductoModal';
 import { AgregarProductoModal } from './AgregarProductoModal';
+import { LoadingButton } from '../../../components/loading';
 
 function DataRow({ label, value }) {
   return (
@@ -80,6 +86,12 @@ export function ClienteDetalleModal({
   const [modalAgregarProducto, setModalAgregarProducto] = useState(false);
   const [guardandoCliente, setGuardandoCliente] = useState(false);
   const [guardandoProducto, setGuardandoProducto] = useState(false);
+  const [modalSubirArchivos, setModalSubirArchivos] = useState(false);
+  const [modalDocumentoPdf, setModalDocumentoPdf] = useState(null); // 'dni' | 'factura'
+  const [archivoDni, setArchivoDni] = useState(null);
+  const [archivoFactura, setArchivoFactura] = useState(null);
+  const [subiendoArchivos, setSubiendoArchivos] = useState(false);
+  const [modalConfirmarReemplazo, setModalConfirmarReemplazo] = useState(false);
 
   // Consulta de detalle: solo cuando hace falta (si ya tenemos cliente_empresas = datos completos, reutilizar).
   useEffect(() => {
@@ -174,6 +186,68 @@ export function ClienteDetalleModal({
   const handleCerrarEditarCliente = useCallback(() => {
     setModalEditarCliente(false);
   }, []);
+
+  const ejecutarSubirArchivos = useCallback(async () => {
+    if (!clienteDetalle?.id || (!archivoDni && !archivoFactura)) return;
+    setSubiendoArchivos(true);
+    try {
+      await apiCliente.subirDocumentos(clienteDetalle.id, archivoDni, archivoFactura);
+      showSnackbar('Documentos subidos correctamente.', 'success');
+      setModalSubirArchivos(false);
+      setModalConfirmarReemplazo(false);
+      setArchivoDni(null);
+      setArchivoFactura(null);
+      const data = await apiCliente.obtenerCliente(clienteDetalle.id);
+      setClienteDetalle(data);
+      onExito?.();
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al subir documentos'), 'error');
+    } finally {
+      setSubiendoArchivos(false);
+    }
+  }, [clienteDetalle?.id, archivoDni, archivoFactura, showSnackbar, onExito]);
+
+  const handleSubirArchivos = useCallback(() => {
+    if (!clienteDetalle?.id || (!archivoDni && !archivoFactura)) return;
+    const reemplazaDni = archivoDni && clienteDetalle?.documento_dni;
+    const reemplazaFactura = archivoFactura && clienteDetalle?.documento_factura;
+    if (reemplazaDni || reemplazaFactura) {
+      setModalConfirmarReemplazo(true);
+      return;
+    }
+    ejecutarSubirArchivos();
+  }, [clienteDetalle?.id, clienteDetalle?.documento_dni, clienteDetalle?.documento_factura, archivoDni, archivoFactura, ejecutarSubirArchivos]);
+
+  const handleVerDocumento = useCallback(async (tipo) => {
+    if (!clienteDetalle?.id) return;
+    try {
+      const blob = tipo === 'dni'
+        ? await apiCliente.obtenerDocumentoDniBlob(clienteDetalle.id)
+        : await apiCliente.obtenerDocumentoFacturaBlob(clienteDetalle.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al abrir documento'), 'error');
+    }
+  }, [clienteDetalle?.id, showSnackbar]);
+
+  const handleDescargarDocumento = useCallback(async (tipo) => {
+    if (!clienteDetalle?.id) return;
+    try {
+      const blob = tipo === 'dni'
+        ? await apiCliente.descargarDocumentoDni(clienteDetalle.id)
+        : await apiCliente.descargarDocumentoFactura(clienteDetalle.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = tipo === 'dni' ? 'dni_cliente.pdf' : 'factura_cliente.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+      showSnackbar('Descarga iniciada.', 'success');
+    } catch (e) {
+      showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al descargar'), 'error');
+    }
+  }, [clienteDetalle?.id, showSnackbar]);
 
   const handleGuardarEditarProducto = useCallback(async (payload) => {
     if (!clienteDetalle?.id) return;
@@ -285,11 +359,40 @@ export function ClienteDetalleModal({
             <DataRow label="Nº identificación" value={clienteDetalle.numero_identificacion} />
             <DataRow label="Teléfono" value={clienteDetalle.telefono} />
             <DataRow label="Dirección" value={clienteDetalle.direccion} />
-            <DataRow label="CUPS" value={clienteDetalle.cups} />
             <DataRow label="Cuenta bancaria" value={clienteDetalle.cuenta_bancaria} />
             <DataRow label="Compañía anterior" value={clienteDetalle.compania_anterior} />
             <DataRow label="Compañía actual" value={clienteDetalle.compania_actual} />
             <DataRow label="Correo o carta" value={clienteDetalle.correo_electronico_o_carta} />
+            <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1.5 }}>
+              {clienteDetalle.documento_dni && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setModalDocumentoPdf('dni')}
+                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                >
+                  PDF DNI
+                </Button>
+              )}
+              {clienteDetalle.documento_factura && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setModalDocumentoPdf('factura')}
+                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                >
+                  PDF Factura
+                </Button>
+              )}
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setModalSubirArchivos(true)}
+                sx={{ borderRadius: 2, textTransform: 'none' }}
+              >
+                Subir archivos
+              </Button>
+            </Stack>
           </Box>
 
           {/* Derecha: Tabla de productos */}
@@ -330,7 +433,7 @@ export function ClienteDetalleModal({
                     <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '20%' }}>Producto</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Servicio</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Contratistas</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '18%' }}>Compañía actual</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '24%' }}>Estado</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', py: 1.25, width: '20%' }} align="center">Opciones</TableCell>
                     </TableRow>
@@ -486,6 +589,89 @@ export function ClienteDetalleModal({
         }}
         guardando={productoParaCambiarEstado ? guardandoPorProducto[productoParaCambiarEstado.id] : false}
       />
+
+      {/* Modal Subir archivos (carga masiva) */}
+      <Dialog open={modalSubirArchivos} onClose={() => setModalSubirArchivos(false)} maxWidth="sm" fullWidth PaperProps={{ sx: modalPaperSx }}>
+        <DialogTitle>Subir documentos</DialogTitle>
+        <DialogContent>
+          {(clienteDetalle?.documento_dni || clienteDetalle?.documento_factura) && (
+            <Typography variant="body2" color="warning.main" sx={{ mb: 2 }}>
+              Este cliente ya tiene documentos cargados. Subir nuevos reemplazará los existentes.
+            </Typography>
+          )}
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>PDF DNI</Typography>
+              <Button variant="outlined" component="label" fullWidth sx={{ borderRadius: 2 }}>
+                {archivoDni?.name ?? 'Seleccionar archivo'}
+                <input type="file" hidden accept=".pdf,application/pdf" onChange={(e) => setArchivoDni(e.target.files?.[0] || null)} />
+              </Button>
+            </Box>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>PDF Factura</Typography>
+              <Button variant="outlined" component="label" fullWidth sx={{ borderRadius: 2 }}>
+                {archivoFactura?.name ?? 'Seleccionar archivo'}
+                <input type="file" hidden accept=".pdf,application/pdf" onChange={(e) => setArchivoFactura(e.target.files?.[0] || null)} />
+              </Button>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setModalSubirArchivos(false)}>Cancelar</Button>
+          <LoadingButton
+            variant="contained"
+            onClick={handleSubirArchivos}
+            loading={subiendoArchivos}
+            disabled={!archivoDni && !archivoFactura}
+          >
+            Subir
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal confirmar reemplazo de documentos */}
+      <Dialog
+        open={modalConfirmarReemplazo}
+        onClose={() => setModalConfirmarReemplazo(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { ...modalPaperSx, borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ pb: 0, fontSize: '1rem' }}>Confirmar reemplazo</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {(() => {
+              const reemplazaDni = archivoDni && clienteDetalle?.documento_dni;
+              const reemplazaFactura = archivoFactura && clienteDetalle?.documento_factura;
+              const partes = [];
+              if (reemplazaDni) partes.push('PDF DNI');
+              if (reemplazaFactura) partes.push('PDF Factura');
+              return `Va a reemplazar el documento existente: ${partes.join(' y ')}. ¿Desea continuar?`;
+            })()}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
+          <Button onClick={() => setModalConfirmarReemplazo(false)}>Cancelar</Button>
+          <LoadingButton variant="contained" onClick={ejecutarSubirArchivos} loading={subiendoArchivos}>
+            Continuar
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal Ver/Descargar documento PDF */}
+      <Dialog open={!!modalDocumentoPdf} onClose={() => setModalDocumentoPdf(null)} maxWidth="xs" fullWidth PaperProps={{ sx: modalPaperSx }}>
+        <DialogTitle>{modalDocumentoPdf === 'dni' ? 'PDF DNI' : 'PDF Factura'}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Button variant="contained" onClick={() => handleVerDocumento(modalDocumentoPdf)} fullWidth sx={{ borderRadius: 2 }}>
+              Ver en nueva pestaña
+            </Button>
+            <Button variant="outlined" onClick={() => handleDescargarDocumento(modalDocumentoPdf)} fullWidth sx={{ borderRadius: 2 }}>
+              Descargar
+            </Button>
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

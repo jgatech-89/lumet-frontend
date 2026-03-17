@@ -301,7 +301,7 @@ export function useAgregarProducto(cliente, onExito) {
 
       if (vendedorId && String(vendedorId).trim()) {
         respuestasList = respuestasList.filter((item) => !esVendedor([item.nombre_campo]));
-        respuestasList.push({ nombre_campo: 'vendedor', respuesta_campo: String(vendedorId).trim() });
+        respuestasList.push({ nombre_campo: 'comercial', respuesta_campo: String(vendedorId).trim() });
       }
 
       const productoVal = (producto && producto !== '__todos__') ? producto.trim() : undefined;

@@ -143,7 +143,6 @@ export function ClienteEditModal({
   const [numeroIdentificacion, setNumeroIdentificacion] = useState('');
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
-  const [cups, setCups] = useState('');
   const [cuentaBancaria, setCuentaBancaria] = useState('');
   const [companiaAnterior, setCompaniaAnterior] = useState('');
   const [companiaActual, setCompaniaActual] = useState('');
@@ -164,7 +163,6 @@ export function ClienteEditModal({
     setNumeroIdentificacion(cliente.numero_identificacion || '');
     setTelefono(cliente.telefono || '');
     setDireccion(cliente.direccion || '');
-    setCups(cliente.cups || '');
     setCuentaBancaria(cliente.cuenta_bancaria || '');
     setCompaniaAnterior(cliente.compania_anterior || '');
     setCompaniaActual(cliente.compania_actual || '');
@@ -252,7 +250,6 @@ export function ClienteEditModal({
       telefono: telefono.trim() || '',
       correo_electronico_o_carta: correoElectronicoOCarta.trim() || '',
       direccion: direccion.trim() || '',
-      cups: cups.trim() || '',
       cuenta_bancaria: cuentaBancaria.trim() || '',
       compania_anterior: companiaAnterior.trim() || '',
       compania_actual: companiaActual.trim() || '',
@@ -335,13 +332,6 @@ export function ClienteEditModal({
             sx={inputSx}
           />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField
-              size="small"
-              label="CUPS"
-              value={cups}
-              onChange={(e) => setCups(e.target.value)}
-              sx={{ flex: 1, ...inputSx }}
-            />
             <TextField
               size="small"
               label="Cuenta bancaria"

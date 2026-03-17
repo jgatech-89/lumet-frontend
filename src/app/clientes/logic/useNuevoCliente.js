@@ -7,6 +7,7 @@ import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa'
 import { listarVendedores } from '../../vendedores/logic/apiVendedores';
 import { useChoices } from '../../../context/ChoicesContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
+import { useAuth } from '../../../context/AuthContext';
 import { getErrorMessage } from '../../../utils/funciones';
 
 const BASE_DATA_INICIAL = {
@@ -15,7 +16,6 @@ const BASE_DATA_INICIAL = {
   numero_identificacion: '',
   telefono: '',
   direccion: '',
-  cups: '',
   cuenta_bancaria: '',
   compania_anterior: '',
   compania_actual: '',
@@ -35,8 +35,8 @@ const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoTipoCliente = (c) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoEstadoVenta = (c) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c.nombre) === norm(n));
-/** Detecta si el campo es de vendedor. Las opciones vienen de la tabla vendedores. */
-const esCampoVendedor = (n) => /vendedor/i.test(n || '');
+/** Detecta si el campo es de vendedor/comercial (excl. cerrador). Las opciones vienen de la tabla vendedores. */
+const esCampoVendedor = (n) => /vendedor|comercial/i.test(n || '') && !/cerrador/i.test(n || '');
 
 /**
  * Hook con la lógica del formulario de nuevo cliente (4 pasos).
@@ -47,6 +47,8 @@ export function useNuevoCliente() {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
   const { getOptions } = useChoices();
+  const { user } = useAuth();
+  const esAdmin = user?.perfil === 'admin';
 
   const [paso, setPaso] = useState(1);
   const [tipoCliente, setTipoCliente] = useState('');
@@ -56,6 +58,10 @@ export function useNuevoCliente() {
   const [respuestas, setRespuestas] = useState({});
   const [producto, setProducto] = useState('');
   const [vendedorId, setVendedorId] = useState('');
+  const [cerradorId, setCerradorId] = useState('');
+  const [tieneCerrador, setTieneCerrador] = useState(false);
+  const [documentoDni, setDocumentoDni] = useState(null);
+  const [documentoFactura, setDocumentoFactura] = useState(null);
 
   const [empresas, setEmpresas] = useState([]);
   const [vendedores, setVendedores] = useState([]);
@@ -223,14 +229,22 @@ export function useNuevoCliente() {
     const digits = (t || '').replace(/\D/g, '');
     return digits.length >= 5;
   };
-  const validarCorreo = (e) => {
-    const s = (e || '').trim();
+  const validarCorreoOCarta = (e) => {
+    const s = (e || '').trim().toLowerCase();
     if (!s) return true;
+    if (s === 'carta' || s === 'papel') return true;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  };
+  const validarCuentaBancaria = (c) => {
+    const s = (c || '').trim();
+    if (!s) return true;
+    const nums = (s.match(/\d/g) || []).length;
+    const lets = (s.match(/[a-zA-Z]/g) || []).length;
+    return nums >= 22 && lets >= 2;
   };
 
   const puedeSiguientePaso = () => {
-    if (paso === 1) {
+    if (stepType === 'cliente') {
       if (!campoTipoCliente) return false;
       const valorTipo = respuestas[campoTipoCliente.nombre];
       if (!valorTipo || !String(valorTipo).trim()) return false;
@@ -239,14 +253,15 @@ export function useNuevoCliente() {
       if (prodEnCliente && opcionesProducto?.length > 0 && !producto) return false;
       return true;
     }
-    if (paso === 2) {
+    if (stepType === 'datos_base') {
       if (!baseData.nombre?.trim()) return false;
       if (!baseData.numero_identificacion?.trim()) return false;
+      if (baseData.numero_identificacion?.trim().length < 3) return false;
       if (!baseData.telefono?.trim()) return false;
       if (!validarTelefono(baseData.telefono)) return false;
       if (!baseData.correo_electronico_o_carta?.trim()) return false;
-      const prodEnDatosBase = campoTipoProducto && seccion(campoTipoProducto) === 'datos_base';
-      if (prodEnDatosBase && opcionesProducto?.length > 0 && !producto) return false;
+      if (!validarCorreoOCarta(baseData.correo_electronico_o_carta)) return false;
+      if (baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)) return false;
       const requeridosDatosBase = camposSeccionDatosBase.filter((c) => c.requerido);
       const okDatosBase = requeridosDatosBase.every((c) => {
         const v = respuestas[c.nombre];
@@ -255,7 +270,7 @@ export function useNuevoCliente() {
       if (!okDatosBase) return false;
       return true;
     }
-    if (paso === 3) {
+    if (stepType === 'campos_del_formulario') {
       const prodEnFormulario = campoTipoProducto && seccion(campoTipoProducto) === 'campos_formulario';
       if (prodEnFormulario && opcionesProducto?.length > 0 && !producto) return false;
       const requeridos = camposFormularioSinTipoCliente.filter((c) => c.requerido);
@@ -273,20 +288,26 @@ export function useNuevoCliente() {
       }
       return true;
     }
-    if (paso === 4) {
+    if (stepType === 'comercial') {
       const prodEnVendedor = campoTipoProducto && seccion(campoTipoProducto) === 'vendedor';
       if (prodEnVendedor && opcionesProducto?.length > 0 && !producto) return false;
       const requeridosVendedor = camposSeccionVendedor.filter((c) => c.requerido);
-      return requeridosVendedor.every((c) => {
+      const okVendedor = requeridosVendedor.every((c) => {
         const v = esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId) : respuestas[c.nombre];
         return v != null && String(v).trim() !== '';
       });
+      if (!okVendedor) return false;
+      if (tieneCerrador && esAdmin && !cerradorId?.trim()) return false;
+      return true;
+    }
+    if (stepType === 'documentos') {
+      return true;  /* PDFs opcionales: se puede guardar con o sin documentos */
     }
     return true;
   };
 
   const handleSiguiente = () => {
-    if (paso < 4 && puedeSiguientePaso()) setPaso((p) => p + 1);
+    if (paso < totalSteps && puedeSiguientePaso()) setPaso((p) => p + 1);
   };
 
   const handleAnterior = () => {
@@ -302,11 +323,32 @@ export function useNuevoCliente() {
     setBaseData({ ...BASE_DATA_INICIAL });
     setRespuestas({});
     setVendedorId('');
+    setCerradorId('');
+    setTieneCerrador(false);
+    setDocumentoDni(null);
+    setDocumentoFactura(null);
   };
+
+  /** Lógica por tipo de servicio (Paso 8 y 9) */
+  const nombreServicio = (servicio?.nombre || '').toLowerCase();
+  const nombreEmpresa = (empresa?.nombre || '').toLowerCase();
+  const esOng = nombreServicio.includes('ong') || nombreEmpresa.includes('ong');
+  const esEnergia = nombreServicio.includes('energía') || nombreServicio.includes('energia') || nombreEmpresa.includes('energía') || nombreEmpresa.includes('energia');
+  const esOngOTelefonia = esOng || nombreServicio.includes('telefonía') || nombreServicio.includes('telefonia') || nombreEmpresa.includes('telefonía') || nombreEmpresa.includes('telefonia');
+
+  const steps = (() => {
+    const s = ['Cliente', 'Datos base'];
+    if (!esOng) s.push('Campos del formulario');
+    s.push('Comercial');
+    if (esEnergia) s.push('Documentos');
+    return s;
+  })();
+  const stepType = steps[paso - 1]?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const totalSteps = steps.length;
 
   const handleGuardar = async () => {
     if (!empresa?.id || !servicio?.id) {
-      showSnackbar('Seleccione servicio y contratista', 'error');
+      showSnackbar('Seleccione servicio y compañía actual', 'error');
       return;
     }
     if (!baseData.nombre?.trim()) {
@@ -324,11 +366,16 @@ export function useNuevoCliente() {
       const esTipoCliente = ([k]) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(k) === norm(n));
       const esEstadoVenta = ([k]) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(k) === norm(n));
       const esProducto = ([k]) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(k) === norm(n));
-      const esVendedor = ([k]) => /vendedor/i.test(norm(k));
+      const esVendedor = ([k]) => /vendedor|comercial/i.test(norm(k)) && !/cerrador/i.test(norm(k));
+      const esCerrador = ([k]) => /cerrador/i.test(norm(k));
 
       const nombresValidos = new Set([
         'vendedor',
         'Vendedor',
+        'comercial',
+        'Comercial',
+        'cerrador',
+        'Cerrador',
         ...(camposFormulario || []).map((c) => c.nombre).filter(Boolean),
         ...(camposGlobales || []).map((c) => c.nombre).filter(Boolean),
       ]);
@@ -341,7 +388,11 @@ export function useNuevoCliente() {
 
       if (vendedorId && String(vendedorId).trim()) {
         respuestasList = respuestasList.filter((item) => !esVendedor([item.nombre_campo]));
-        respuestasList.push({ nombre_campo: 'vendedor', respuesta_campo: String(vendedorId).trim() });
+        respuestasList.push({ nombre_campo: 'comercial', respuesta_campo: String(vendedorId).trim() });
+      }
+      if (tieneCerrador && cerradorId && String(cerradorId).trim()) {
+        respuestasList = respuestasList.filter((item) => !esCerrador([item.nombre_campo]));
+        respuestasList.push({ nombre_campo: 'cerrador', respuesta_campo: String(cerradorId).trim() });
       }
 
       const productoVal = (producto && producto !== '__todos__') ? producto.trim() : undefined;
@@ -354,14 +405,18 @@ export function useNuevoCliente() {
         telefono: baseData.telefono?.trim() || '',
         correo_electronico_o_carta: baseData.correo_electronico_o_carta?.trim() || '',
         direccion: baseData.direccion?.trim() || '',
-        cups: baseData.cups?.trim() || '',
         cuenta_bancaria: baseData.cuenta_bancaria?.trim() || '',
         compania_anterior: baseData.compania_anterior?.trim() || '',
-        compania_actual: baseData.compania_actual?.trim() || '',
+        compania_actual: servicio?.nombre?.trim() || baseData.compania_actual?.trim() || '',
         respuestas: respuestasList,
       };
 
-      await apiCliente.crearCliente(payload);
+      const clienteCreado = await apiCliente.crearCliente(payload);
+      const clienteId = clienteCreado?.id ?? clienteCreado?.data?.id;
+
+      if (stepType === 'documentos' && clienteId && (documentoDni || documentoFactura)) {
+        await apiCliente.subirDocumentos(clienteId, documentoDni, documentoFactura);
+      }
 
       showSnackbar('Cliente creado correctamente');
       navigate('/clientes');
@@ -466,7 +521,8 @@ export function useNuevoCliente() {
     handleGuardar,
     puedeSiguientePaso,
     validarTelefono,
-    validarCorreo,
+    validarCorreoOCarta,
+    validarCuentaBancaria,
     vendedorId,
     setVendedorId,
     vendedores,
@@ -479,5 +535,17 @@ export function useNuevoCliente() {
     camposSeccionDatosBase,
     camposSeccionVendedor,
     campoTipoProducto,
+    steps,
+    totalSteps,
+    stepType,
+    esOngOTelefonia,
+    cerradorId,
+    setCerradorId,
+    tieneCerrador,
+    setTieneCerrador,
+    documentoDni,
+    setDocumentoDni,
+    documentoFactura,
+    setDocumentoFactura,
   };
 }

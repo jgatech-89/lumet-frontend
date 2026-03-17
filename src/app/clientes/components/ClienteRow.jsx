@@ -32,7 +32,6 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
       <TableCell sx={{ ...compactCellSx, fontWeight: 500 }}>{row.nombre}</TableCell>
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.tipo_identificacion || '-'}</TableCell>}
       {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.numero_identificacion || '-'}</TableCell>}
-      {!compact && <TableCell sx={{ ...compactCellSx, color: 'text.secondary' }}>{row.cups || '-'}</TableCell>}
       {!compact && (
         <TableCell
           sx={{
