@@ -562,14 +562,34 @@ export function CampoModals({
             fullWidth
             size="small"
             label="Repetir según campo"
-            placeholder="Ej: lineas adicionales (el campo se repetirá N veces según el valor numérico)"
+            placeholder="Ej: lineas adicionales, lineas digitales (el campo se repetirá N veces según el valor numérico)"
             value={typeof visible_si === 'object' && visible_si?.repetir_segun ? visible_si.repetir_segun : ''}
             onChange={(e) => {
               const v = e.target.value.trim();
-              setVisible_si(v ? { repetir_segun: v } : '');
+              const prev = typeof visible_si === 'object' && visible_si != null ? visible_si : {};
+              setVisible_si(v ? { ...prev, repetir_segun: v } : '');
             }}
             sx={inputSx}
-            helperText="Nombre del campo numérico que indica cuántas veces repetir (ej: lineas adicionales). El nombre de este campo debe contener (x) que se reemplazará por 1, 2, 3..."
+            helperText="Nombre del campo numérico que indica cuántas veces repetir (ej: lineas adicionales, lineas digitales). El nombre de este campo debe contener (x) que se reemplazará por 1, 2, 3..."
+          />
+        </Box>
+        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Opciones desde (opcional)"
+            placeholder="Ej: linea adicional (x) — usar las opciones de ese campo"
+            value={typeof visible_si === 'object' && visible_si?.opciones_desde ? visible_si.opciones_desde : ''}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              const prev = typeof visible_si === 'object' && visible_si != null ? visible_si : {};
+              if (prev.repetir_segun) {
+                setVisible_si({ ...prev, opciones_desde: v || undefined });
+              }
+            }}
+            disabled={!(typeof visible_si === 'object' && visible_si?.repetir_segun)}
+            sx={inputSx}
+            helperText="Solo cuando hay Repetir según campo. Indica el nombre del campo del que copiar opciones (ej: linea adicional (x)). Útil para capacidad linea digital (x) según lineas digitales."
           />
         </Box>
       </Box>

@@ -325,9 +325,21 @@ export function EditarProductoModal({
         }
       }
       const nombreBase = c.nombre || '';
+      const opcionesDesde = (c.visible_si?.opciones_desde || '').trim();
+      let opcionesUsar = c.opciones;
+      if (opcionesDesde) {
+        const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+        const baseRef = opcionesDesde.replace(/\(x\)|\(\$\)/i, '').trim();
+        const targetNorm = nNorm(baseRef);
+        const campoRef = camposFormulario.find((cam) => {
+          const baseCam = (cam.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+          return nNorm(baseCam) === targetNorm;
+        });
+        if (campoRef?.opciones?.length) opcionesUsar = campoRef.opciones;
+      }
       for (let i = 1; i <= n; i++) {
         const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
-        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i });
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i, opciones: opcionesUsar ?? c.opciones });
       }
     }
     return expandidos;
