@@ -77,7 +77,7 @@ const validarCups = (v) => {
   return digitos >= 16 && letras >= 4;
 };
 
-function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor }) {
+function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor, disabled }) {
   const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
   const id = `campo-${nombre}`;
   const label = labelBase(nombre);
@@ -87,7 +87,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
 
   if (tipo === 'select' || usarChoicesTipoId || usarOpcionesVendedor) {
     return (
-      <FormControl size="small" fullWidth sx={campoDinamicoSx} required={requerido}>
+      <FormControl size="small" fullWidth sx={campoDinamicoSx} required={requerido} disabled={disabled}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
         <Select
           labelId={`${id}-label`}
@@ -114,6 +114,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
             checked={!!isChecked}
             onChange={(e) => onChange(e.target.checked ? '1' : '0')}
             size="small"
+            disabled={disabled}
           />
         }
         label={labelConAsterisco(nombre, requerido)}
@@ -140,6 +141,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         onChange={(e) => onChange(e.target.value)}
         required={requerido}
         fullWidth
+        disabled={disabled}
         sx={campoDinamicoSx}
         error={esCups && cupsError}
         helperText={esCups ? cupsHelper : ''}
@@ -160,6 +162,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       onChange={(e) => onChange(e.target.value)}
       required={requerido}
       fullWidth
+      disabled={disabled}
       sx={campoDinamicoSx}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
       error={esCups && cupsError}
@@ -168,7 +171,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
   );
 }
 
-export function NuevoClienteForm() {
+export function NuevoClienteForm({ clienteExistente, onExito, onClose, embedded = false }) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -230,7 +233,9 @@ export function NuevoClienteForm() {
     setDocumentoDni,
     documentoFactura,
     setDocumentoFactura,
-  } = useNuevoCliente();
+    esModoAgregarProducto,
+  } = useNuevoCliente(clienteExistente, onExito);
+  const datosBaseSoloLectura = embedded && esModoAgregarProducto;
 
   const { user } = useAuth();
   const esAdmin = user?.perfil === 'admin';
@@ -243,36 +248,9 @@ export function NuevoClienteForm() {
     { value: 'CIF', label: 'CIF - CÓDIGO DE IDENTIFICACIÓN FISCAL' },
   ];
 
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        borderRadius: 3,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-        overflow: 'hidden',
-        bgcolor: 'background.paper',
-        width: '100%',
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        [COMPACT_MEDIA]: { borderRadius: 2 },
-      }}
-    >
-      <Box
-        sx={{
-          p: { xs: 1.5, sm: 3, md: 4 },
-          pb: { xs: 2, sm: 4, md: 5 },
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: isMobile ? 'auto' : 'hidden',
-          width: '100%',
-          minWidth: 0,
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+  const content = (
+    <>
+      {!embedded && (
         <Box sx={{ mb: { xs: 2, sm: 3 }, flexShrink: 0 }}>
           <Typography
             variant="h4"
@@ -294,24 +272,25 @@ export function NuevoClienteForm() {
             </Typography>
           )}
         </Box>
+      )}
 
-        {!isMobile && (
-          <Stepper
-            activeStep={paso - 1}
-            sx={{
-              mb: { xs: 2, sm: 3 },
-              '& .MuiStepLabel-label': { fontSize: '0.875rem' },
-            }}
-          >
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        )}
+      {!isMobile && (
+        <Stepper
+          activeStep={paso - 1}
+          sx={{
+            mb: { xs: 2, sm: 3 },
+            '& .MuiStepLabel-label': { fontSize: '0.875rem' },
+          }}
+        >
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      )}
 
-        <Paper
+      <Paper
           elevation={0}
           sx={{
             p: { xs: 2, sm: 3 },
@@ -319,7 +298,7 @@ export function NuevoClienteForm() {
             border: '1px solid rgba(0,0,0,0.06)',
             bgcolor: 'background.paper',
             flex: 1,
-            minHeight: isMobile ? 'auto' : 0,
+            minHeight: isMobile && !embedded ? 'auto' : 0,
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
@@ -470,6 +449,7 @@ export function NuevoClienteForm() {
                     onChange={(e) => setBaseData((p) => ({ ...p, nombre: e.target.value }))}
                     required
                     fullWidth
+                    disabled={datosBaseSoloLectura}
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -477,6 +457,7 @@ export function NuevoClienteForm() {
                     size="small"
                     required
                     fullWidth
+                    disabled={datosBaseSoloLectura}
                     sx={{
                       '& .MuiOutlinedInput-root': { borderRadius: 2 },
                     }}
@@ -518,6 +499,7 @@ export function NuevoClienteForm() {
                     }
                     fullWidth
                     required
+                    disabled={datosBaseSoloLectura}
                     error={!!baseData.numero_identificacion && baseData.numero_identificacion.trim().length < 3}
                     helperText={
                       !baseData.numero_identificacion?.trim()
@@ -536,6 +518,7 @@ export function NuevoClienteForm() {
                     onChange={(e) => setBaseData((p) => ({ ...p, telefono: e.target.value }))}
                     fullWidth
                     required
+                    disabled={datosBaseSoloLectura}
                     error={!!baseData.telefono && !validarTelefono(baseData.telefono)}
                     helperText={
                       !baseData.telefono?.trim()
@@ -554,6 +537,7 @@ export function NuevoClienteForm() {
                     onChange={(e) => setBaseData((p) => ({ ...p, correo_electronico_o_carta: e.target.value }))}
                     fullWidth
                     required
+                    disabled={datosBaseSoloLectura}
                     placeholder="ejemplo@correo.com o Carta"
                     error={!!baseData.correo_electronico_o_carta?.trim() && !validarCorreoOCarta(baseData.correo_electronico_o_carta)}
                     helperText={
@@ -572,6 +556,7 @@ export function NuevoClienteForm() {
                     value={baseData.direccion ?? ''}
                     onChange={(e) => setBaseData((p) => ({ ...p, direccion: e.target.value }))}
                     fullWidth
+                    disabled={datosBaseSoloLectura}
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -581,6 +566,7 @@ export function NuevoClienteForm() {
                     value={baseData.cuenta_bancaria ?? ''}
                     onChange={(e) => setBaseData((p) => ({ ...p, cuenta_bancaria: e.target.value }))}
                     fullWidth
+                    disabled={datosBaseSoloLectura}
                     error={!!baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)}
                     helperText={
                       baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)
@@ -597,6 +583,7 @@ export function NuevoClienteForm() {
                       value={baseData.compania_anterior ?? ''}
                       onChange={(e) => setBaseData((p) => ({ ...p, compania_anterior: e.target.value }))}
                       fullWidth
+                      disabled={datosBaseSoloLectura}
                     />
                   </Box>
                 )}
@@ -621,6 +608,7 @@ export function NuevoClienteForm() {
                           onChange={(v) => actualizarRespuesta(c.nombre, v)}
                           opcionesTipoIdentificacion={tiposIdentificacion}
                           opcionesVendedor={vendedores}
+                          disabled={datosBaseSoloLectura}
                         />
                       </Box>
                     </Box>
@@ -943,7 +931,7 @@ export function NuevoClienteForm() {
             <Stack direction="row" gap={2} flexWrap="wrap">
               <Button
                 variant="outlined"
-                onClick={paso === 1 ? () => navigate(-1) : handleAnterior}
+                onClick={paso === 1 ? (embedded && onClose ? () => { handleLimpiar(); onClose(); } : () => navigate(-1)) : handleAnterior}
                 sx={{
                   borderRadius: 2,
                   textTransform: 'none',
@@ -998,12 +986,64 @@ export function NuevoClienteForm() {
                     py: 1.25,
                   }}
                 >
-                  Guardar cliente
+                  {esModoAgregarProducto ? 'Agregar producto' : 'Guardar cliente'}
                 </LoadingButton>
               )}
             </Stack>
           </Stack>
         </Paper>
+      </>
+  );
+
+  if (embedded) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isMobile ? 'auto' : 'hidden',
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
+        {content}
+      </Box>
+    );
+  }
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: 3,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        width: '100%',
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        [COMPACT_MEDIA]: { borderRadius: 2 },
+      }}
+    >
+      <Box
+        sx={{
+          p: { xs: 1.5, sm: 3, md: 4 },
+          pb: { xs: 2, sm: 4, md: 5 },
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isMobile ? 'auto' : 'hidden',
+          width: '100%',
+          minWidth: 0,
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {content}
       </Box>
     </Paper>
   );

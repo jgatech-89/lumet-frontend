@@ -489,7 +489,13 @@ export function ClienteDetalleModal({
                                 size="small"
                                 aria-label="Ver detalle completo"
                                 title="Ver toda la información"
-                                onClick={() => setProductoVerDetalle(ce)}
+                                onClick={() => {
+                                  const productId = ce.id;
+                                  apiCliente.obtenerCliente(clienteDetalle.id).then((data) => {
+                                    const fullProduct = data?.cliente_empresas?.find((p) => p.id === productId) ?? ce;
+                                    setProductoVerDetalle(fullProduct);
+                                  }).catch(() => setProductoVerDetalle(ce));
+                                }}
                                 sx={{
                                   color: 'primary.main',
                                   '&:hover': { bgcolor: 'action.hover' },

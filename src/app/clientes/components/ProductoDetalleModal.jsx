@@ -48,7 +48,8 @@ export function ProductoDetalleModal({
 }) {
   if (!producto || !open) return null;
 
-  const respuestas = cliente?.respuestas || [];
+  // Usar siempre las respuestas de ESTE producto (producto.respuestas por id ClienteEmpresa). Si no vienen, no usar las del cliente para no mezclar productos.
+  const respuestas = Array.isArray(producto?.respuestas) ? producto.respuestas : [];
   const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
   const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
   const esTipoCliente = (r) => NOMBRES_TIPO_CLIENTE.some((n) => norm(r?.nombre_campo) === norm(n));
@@ -62,7 +63,7 @@ export function ProductoDetalleModal({
     }
   );
   const tipoClienteRespuesta = respuestas.find((r) => esTipoCliente(r));
-  const tipoClienteValor = tipoClienteRespuesta ? formatValorSiNo(tipoClienteRespuesta.respuesta_campo) : '-';
+  const tipoClienteValor = tipoClienteRespuesta ? formatValorSiNo(tipoClienteRespuesta.respuesta_campo) : (producto?.tipo_cliente ?? '-');
 
   const labelEstado = opcionesEstadoVenta?.length > 0
     ? opcionesEstadoVenta.find(

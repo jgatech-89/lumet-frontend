@@ -50,13 +50,17 @@ const esCampoVendedor = (n) => /vendedor|comercial/i.test(n || '') && !/cerrador
  * Hook con la lógica del formulario de nuevo cliente (4 pasos).
  * Paso 1 "Cliente": tipo de cliente (getOptions) primero; al seleccionar aparecen empresa y servicio.
  * Paso 3: campos dinámicos (excluyendo tipo_cliente si existe en campos).
+ *
+ * @param {Object} [clienteExistente] - Si se pasa, modo "agregar producto": se precargan datos base y al guardar se llama agregarProductoCliente.
+ * @param {Function} [onExito] - Callback tras guardar (crear cliente o agregar producto). En modo agregar producto se llama en lugar de navigate.
  */
-export function useNuevoCliente() {
+export function useNuevoCliente(clienteExistente, onExito) {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
   const { getOptions } = useChoices();
   const { user } = useAuth();
   const esAdmin = user?.perfil === 'admin';
+  const esModoAgregarProducto = !!clienteExistente?.id;
 
   const [paso, setPaso] = useState(1);
   const [tipoCliente, setTipoCliente] = useState('');
@@ -175,6 +179,22 @@ export function useNuevoCliente() {
       setServicio(null);
     }
   }, [empresa?.id, cargarServicios]);
+
+  /** En modo agregar producto, precargar datos base del cliente existente. */
+  useEffect(() => {
+    if (!esModoAgregarProducto || !clienteExistente) return;
+    setBaseData({
+      nombre: clienteExistente.nombre ?? '',
+      tipo_identificacion: clienteExistente.tipo_identificacion ?? '',
+      numero_identificacion: clienteExistente.numero_identificacion ?? '',
+      telefono: clienteExistente.telefono ?? '',
+      direccion: clienteExistente.direccion ?? '',
+      cuenta_bancaria: clienteExistente.cuenta_bancaria ?? '',
+      compania_anterior: clienteExistente.compania_anterior ?? '',
+      compania_actual: clienteExistente.compania_actual ?? '',
+      correo_electronico_o_carta: clienteExistente.correo_electronico_o_carta ?? '',
+    });
+  }, [esModoAgregarProducto, clienteExistente?.id, clienteExistente?.nombre, clienteExistente?.tipo_identificacion, clienteExistente?.numero_identificacion, clienteExistente?.telefono, clienteExistente?.direccion, clienteExistente?.cuenta_bancaria, clienteExistente?.compania_anterior, clienteExistente?.compania_actual, clienteExistente?.correo_electronico_o_carta]);
 
   const cargarOpcionesProducto = useCallback(async () => {
     try {
@@ -365,7 +385,7 @@ export function useNuevoCliente() {
       showSnackbar('Seleccione servicio y compañía actual', 'error');
       return;
     }
-    if (!baseData.nombre?.trim()) {
+    if (!esModoAgregarProducto && !baseData.nombre?.trim()) {
       showSnackbar('El nombre es obligatorio', 'error');
       return;
     }
@@ -416,6 +436,20 @@ export function useNuevoCliente() {
       }
 
       const productoVal = (producto && producto !== '__todos__') ? producto.trim() : undefined;
+
+      if (esModoAgregarProducto && clienteExistente?.id) {
+        const payloadAgregar = {
+          servicio_id: servicio.id,
+          producto: productoVal,
+          respuestas: respuestasList,
+        };
+        await apiCliente.agregarProductoCliente(clienteExistente.id, payloadAgregar);
+        showSnackbar('Producto agregado correctamente.', 'success');
+        handleLimpiar();
+        onExito?.();
+        return;
+      }
+
       const payload = {
         servicio_id: servicio.id,
         producto: productoVal,
@@ -637,5 +671,6 @@ export function useNuevoCliente() {
     setDocumentoDni,
     documentoFactura,
     setDocumentoFactura,
+    esModoAgregarProducto,
   };
 }
