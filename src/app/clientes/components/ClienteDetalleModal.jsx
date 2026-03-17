@@ -19,6 +19,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Pagination,
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
 import { EyeIcon } from '../../../utils/icons';
@@ -38,6 +39,7 @@ import { ClienteEditModal } from './ClienteEditModal';
 import { EditarProductoModal } from './EditarProductoModal';
 import { AgregarProductoModal } from './AgregarProductoModal';
 import { LoadingButton } from '../../../components/loading';
+import { COMPACT_MEDIA } from '../../../utils/theme';
 
 function DataRow({ label, value }) {
   return (
@@ -92,6 +94,8 @@ export function ClienteDetalleModal({
   const [archivoFactura, setArchivoFactura] = useState(null);
   const [subiendoArchivos, setSubiendoArchivos] = useState(false);
   const [modalConfirmarReemplazo, setModalConfirmarReemplazo] = useState(false);
+  const [paginaProductos, setPaginaProductos] = useState(1);
+  const pageSizeProductos = 5;
 
   // Consulta de detalle: solo cuando hace falta (si ya tenemos cliente_empresas = datos completos, reutilizar).
   useEffect(() => {
@@ -267,9 +271,23 @@ export function ClienteDetalleModal({
     }
   }, [clienteDetalle?.id, showSnackbar, onExito]);
 
-  if (!open) return null;
+  // Resetear página al cambiar productos (añadir/eliminar)
+  const totalProductos = (clienteDetalle?.cliente_empresas || []).length;
+  useEffect(() => {
+    setPaginaProductos(1);
+  }, [totalProductos]);
 
   const productos = clienteDetalle?.cliente_empresas || [];
+
+  // Paginación de productos (igual que otras tablas)
+  const totalPaginasProductos = Math.max(1, Math.ceil(totalProductos / pageSizeProductos));
+  const inicioProductos = totalProductos === 0 ? 0 : (paginaProductos - 1) * pageSizeProductos + 1;
+  const finProductos = Math.min(paginaProductos * pageSizeProductos, totalProductos);
+  const productosPagina = productos.slice(inicioProductos - 1, finProductos);
+
+  const handleChangePaginaProductos = (_, nuevaPagina) => {
+    setPaginaProductos(Math.max(1, Math.min(nuevaPagina, totalPaginasProductos)));
+  };
 
   const opcionesEstado = opcionesEstadoVenta?.length > 0 ? opcionesEstadoVenta : [
     { value: 'venta_iniciada', label: 'Venta iniciada' },
@@ -427,7 +445,8 @@ export function ClienteDetalleModal({
             {productos.length === 0 ? (
               <Typography variant="body2" color="text.secondary">Sin productos registrados.</Typography>
             ) : (
-              <TableContainer sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}>
+              <Box>
+              <TableContainer sx={{ border: 1, borderColor: 'divider', borderRadius: '12px 12px 0 0' }}>
                 <Table size="small" stickyHeader sx={{ tableLayout: 'fixed', minWidth: 720, width: '100%' }}>
                   <TableHead>
                     <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
@@ -439,7 +458,7 @@ export function ClienteDetalleModal({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {productos.map((ce) => {
+                    {productosPagina.map((ce) => {
                       const ev = (ce.estado_venta ?? '').trim() || 'venta_iniciada';
                       const labelEv = opcionesEstado.find((o) => (o.value || '').toLowerCase() === ev.toLowerCase())?.label ?? ev;
                       const chipStyle = getChipStyle(ev);
@@ -515,6 +534,47 @@ export function ClienteDetalleModal({
                   </TableBody>
                 </Table>
               </TableContainer>
+              {totalProductos > 0 && (
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  alignItems="center"
+                  justifyContent="space-between"
+                  sx={{
+                    flexShrink: 0,
+                    px: 2,
+                    py: 1.5,
+                    border: 1,
+                    borderTop: 0,
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                    flexWrap: 'wrap',
+                    gap: 1.5,
+                    borderRadius: '0 0 12px 12px',
+                    [COMPACT_MEDIA]: { py: 1, px: 1.5, gap: 1 },
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
+                    Mostrando {inicioProductos}–{finProductos} de {totalProductos} productos
+                  </Typography>
+                  <Pagination
+                    count={totalPaginasProductos}
+                    page={paginaProductos}
+                    onChange={handleChangePaginaProductos}
+                    color="primary"
+                    size="small"
+                    showFirstButton
+                    showLastButton
+                    siblingCount={1}
+                    boundaryCount={1}
+                    sx={{
+                      flexShrink: 0,
+                      '& .MuiPagination-ul': { flexWrap: 'wrap', justifyContent: 'center' },
+                      [COMPACT_MEDIA]: { '& .MuiPaginationItem-root': { minWidth: 28, height: 28, fontSize: '0.75rem' } },
+                    }}
+                  />
+                </Stack>
+              )}
+              </Box>
             )}
           </Box>
         </Stack>
