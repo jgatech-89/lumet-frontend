@@ -283,10 +283,29 @@ export function EditarProductoModal({
   const getCamposRepetidosExpandidos = () => {
     const repetidos = camposFormulario.filter(esCampoRepetirSegun);
     const expandidos = [];
+    const respuestasKeys = Object.keys(respuestas);
     for (const c of repetidos) {
       const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
-      const valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
-      const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      let valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
+      const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+      if (valorCantidad == null || valorCantidad === '') {
+        const targetNorm = nNorm(nombreCampoCantidad);
+        const campoCantidad = camposFormulario.find((cam) => nNorm(cam.nombre) === targetNorm);
+        if (campoCantidad) valorCantidad = respuestas[campoCantidad.nombre];
+      }
+      let n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+        const regex = nombreBase
+          ? new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\((\\d+)\\)$`, 'i')
+          : null;
+        if (regex) {
+          for (const k of respuestasKeys) {
+            const m = k.match(regex);
+            if (m) n = Math.max(n, parseInt(m[1], 10));
+          }
+        }
+      }
       const nombreBase = c.nombre || '';
       for (let i = 1; i <= n; i++) {
         const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
@@ -483,23 +502,26 @@ export function EditarProductoModal({
             Solo el administrador puede asignar el comercial.
           </Typography>
         )}
-        {esAdmin && (
-          <FormControl size="small" sx={{ minWidth: 200, mb: 2, ml: 2 }}>
-            <InputLabel>Cerrador</InputLabel>
-            <Select
-              value={respuestas['cerrador'] ?? respuestas['Cerrador'] ?? ''}
-              label="Cerrador"
-              onChange={(e) => {
-                actualizarRespuesta('cerrador', e.target.value);
-                actualizarRespuesta('Cerrador', e.target.value);
-              }}
-            >
-              <MenuItem value="">Seleccionar</MenuItem>
-              {vendedores.map((v) => (
-                <MenuItem key={v.id} value={String(v.id)}>{v.nombre_completo ?? v.nombre ?? v.id}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <FormControl size="small" sx={{ minWidth: 200, mb: 2 }} disabled={!esAdmin}>
+          <InputLabel>Cerrador</InputLabel>
+          <Select
+            value={respuestas['cerrador'] ?? respuestas['Cerrador'] ?? ''}
+            label="Cerrador"
+            onChange={(e) => {
+              actualizarRespuesta('cerrador', e.target.value);
+              actualizarRespuesta('Cerrador', e.target.value);
+            }}
+          >
+            <MenuItem value="">Seleccionar</MenuItem>
+            {vendedores.map((v) => (
+              <MenuItem key={v.id} value={String(v.id)}>{v.nombre_completo ?? v.nombre ?? v.id}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {!esAdmin && (respuestas['cerrador'] ?? respuestas['Cerrador']) && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            Cerrador asignado (solo admin puede editarlo).
+          </Typography>
         )}
 
         {/* 3. Información adicional - solo cuando hay campos cargados */}

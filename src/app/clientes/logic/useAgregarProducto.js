@@ -369,10 +369,29 @@ export function useAgregarProducto(cliente, onExito) {
   const getCamposRepetidosExpandidos = () => {
     const repetidos = todosLosCampos.filter((c) => seccion(c) === 'campos_formulario' && esCampoRepetirSegun(c));
     const expandidos = [];
+    const respuestasKeys = Object.keys(respuestas);
     for (const c of repetidos) {
       const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
-      const valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
-      const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      let valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
+      const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+      if (valorCantidad == null || valorCantidad === '') {
+        const targetNorm = nNorm(nombreCampoCantidad);
+        const campoCantidad = todosLosCampos.find((cam) => nNorm(cam.nombre) === targetNorm);
+        if (campoCantidad) valorCantidad = respuestas[campoCantidad.nombre];
+      }
+      let n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+        const regex = nombreBase
+          ? new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\((\\d+)\\)$`, 'i')
+          : null;
+        if (regex) {
+          for (const k of respuestasKeys) {
+            const m = k.match(regex);
+            if (m) n = Math.max(n, parseInt(m[1], 10));
+          }
+        }
+      }
       const nombreBase = c.nombre || '';
       for (let i = 1; i <= n; i++) {
         const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);

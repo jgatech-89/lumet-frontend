@@ -217,7 +217,7 @@ export function useNuevoCliente() {
       cargarCamposFormulario();
     } else {
       setCamposFormulario([]);
-      setRespuestas({});
+      // No limpiar respuestas al cambiar servicio: preservar datos del usuario al volver atrás
     }
   }, [servicio?.empresa_id, servicio?.id, producto, cargarCamposFormulario]);
 
@@ -502,10 +502,30 @@ export function useNuevoCliente() {
   const getCamposRepetidosExpandidos = () => {
     const repetidos = todosLosCampos.filter((c) => seccion(c) === 'campos_formulario' && esCampoRepetirSegun(c));
     const expandidos = [];
+    const respuestasKeys = Object.keys(respuestas);
     for (const c of repetidos) {
       const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
-      const valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
-      const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      let valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
+      // Si no hay valor, buscar en todosLosCampos el campo que coincida (p. ej. "Lineas adicionales")
+      if (valorCantidad == null || valorCantidad === '') {
+        const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+        const targetNorm = nNorm(nombreCampoCantidad);
+        const campoCantidad = todosLosCampos.find((cam) => nNorm(cam.nombre) === targetNorm);
+        if (campoCantidad) valorCantidad = respuestas[campoCantidad.nombre];
+      }
+      let n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+        const regex = nombreBase
+          ? new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\((\\d+)\\)$`, 'i')
+          : null;
+        if (regex) {
+          for (const k of respuestasKeys) {
+            const m = k.match(regex);
+            if (m) n = Math.max(n, parseInt(m[1], 10));
+          }
+        }
+      }
       const nombreBase = c.nombre || '';
       for (let i = 1; i <= n; i++) {
         const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
