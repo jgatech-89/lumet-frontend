@@ -54,6 +54,15 @@ function labelBase(nombre) {
   return (nombre || '').replace(/\s*\*+\s*$/g, '').trim();
 }
 
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCups = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
+
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, opciones = [] } = campo;
   const id = `editar-prod-${nombre}`;
@@ -97,6 +106,11 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
     );
   }
 
+  const esCups = esCampoCups(nombre);
+  const valorCups = value ?? '';
+  const cupsError = esCups && valorCups.trim() !== '' && !validarCups(valorCups);
+  const cupsHelper = esCups && cupsError ? 'Mínimo 16 dígitos y 4 letras' : '';
+
   if (tipo === 'textarea') {
     const ph = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
     return (
@@ -111,6 +125,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         onChange={(e) => onChange(e.target.value)}
         fullWidth
         sx={{ maxWidth: 400 }}
+        error={esCups && cupsError}
+        helperText={esCups ? cupsHelper : ''}
       />
     );
   }
@@ -129,6 +145,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       fullWidth
       sx={{ maxWidth: 280 }}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
+      error={esCups && cupsError}
+      helperText={esCups ? cupsHelper : ''}
     />
   );
 }
@@ -349,6 +367,10 @@ export function EditarProductoModal({
     : producto?.estado_venta;
 
   const handleSubmit = () => {
+    const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCups(v));
+    if (cupsInvalido) {
+      return; // El TextField ya muestra el error; no permitir guardar
+    }
     const respuestasList = [];
     [...camposParaEditar, ...camposRepetidosExpandidos].forEach((c) => {
       const v = respuestas[c.nombre];

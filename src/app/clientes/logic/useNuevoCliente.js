@@ -33,6 +33,14 @@ const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo produ
 
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoTipoCliente = (c) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(c.nombre) === norm(n));
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCupsValor = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
 const esCampoEstadoVenta = (c) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c.nombre) === norm(n));
 /** Detecta si el campo es de vendedor/comercial (excl. cerrador). Las opciones vienen de la tabla vendedores. */
@@ -268,6 +276,8 @@ export function useNuevoCliente() {
         return v != null && String(v).trim() !== '';
       });
       if (!okDatosBase) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
       return true;
     }
     if (stepType === 'campos_del_formulario') {
@@ -279,6 +289,8 @@ export function useNuevoCliente() {
         return v != null && String(v).trim() !== '';
       });
       if (!okRequeridos) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
       if (cambioTitularMarcado) {
         const requeridosTitular = camposTitularDependientes.filter((c) => c.requerido);
         return requeridosTitular.every((c) => {
@@ -297,6 +309,8 @@ export function useNuevoCliente() {
         return v != null && String(v).trim() !== '';
       });
       if (!okVendedor) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
       if (tieneCerrador && esAdmin && !cerradorId?.trim()) return false;
       return true;
     }
@@ -356,6 +370,11 @@ export function useNuevoCliente() {
       return;
     }
 
+    const cupsInvalido = Object.entries(respuestas || {}).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+    if (cupsInvalido) {
+      showSnackbar('El campo CUPS debe tener mínimo 16 dígitos y 4 letras', 'error');
+      return;
+    }
     setGuardando(true);
     try {
       const respuestasObj = respuestas && typeof respuestas === 'object' ? respuestas : {};

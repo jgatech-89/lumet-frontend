@@ -65,6 +65,18 @@ const esCampoVendedor = (n) => /vendedor|comercial/i.test(n || '') && !/cerrador
 /** Detecta si el campo es cerrador. */
 const esCampoCerrador = (n) => /cerrador/i.test(n || '');
 
+/** Detecta si el campo es CUPS (nombre contiene cups o cup). */
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+
+/** Valida CUPS: mínimo 16 dígitos y 4 letras. */
+const validarCups = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
+
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor }) {
   const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
   const id = `campo-${nombre}`;
@@ -109,6 +121,11 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
     );
   }
 
+  const esCups = esCampoCups(nombre);
+  const valorCups = value ?? '';
+  const cupsError = esCups && valorCups.trim() !== '' && !validarCups(valorCups);
+  const cupsHelper = esCups && cupsError ? 'Mínimo 16 dígitos y 4 letras' : '';
+
   if (tipo === 'textarea') {
     const ph = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
     return (
@@ -124,6 +141,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         required={requerido}
         fullWidth
         sx={campoDinamicoSx}
+        error={esCups && cupsError}
+        helperText={esCups ? cupsHelper : ''}
       />
     );
   }
@@ -143,6 +162,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       fullWidth
       sx={campoDinamicoSx}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
+      error={esCups && cupsError}
+      helperText={esCups ? cupsHelper : ''}
     />
   );
 }

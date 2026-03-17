@@ -19,6 +19,14 @@ const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo produ
 
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoTipoCliente = (c) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(c.nombre) === norm(n));
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCupsValor = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
 const esCampoEstadoVenta = (c) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c.nombre) === norm(n));
 
@@ -235,6 +243,8 @@ export function useAgregarProducto(cliente, onExito) {
           return v != null && String(v).trim() !== '';
         });
       }
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
       return true;
     }
     if (paso === 3) {
@@ -242,10 +252,14 @@ export function useAgregarProducto(cliente, onExito) {
       if (prodEnVendedor && opcionesProducto?.length > 0 && !producto) return false;
       const esCampoVendedor = (n) => /vendedor/i.test(n || '');
       const requeridosVendedor = camposSeccionVendedor.filter((c) => c.requerido);
-      return requeridosVendedor.every((c) => {
+      const okVendedor = requeridosVendedor.every((c) => {
         const v = esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId) : respuestas[c.nombre];
         return v != null && String(v).trim() !== '';
       });
+      if (!okVendedor) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
+      return true;
     }
     return true;
   };
@@ -272,6 +286,11 @@ export function useAgregarProducto(cliente, onExito) {
     if (!cliente?.id) return;
     if (!empresa?.id || !servicio?.id) {
       showSnackbar('Seleccione empresa y servicio', 'error');
+      return;
+    }
+    const cupsInvalido = Object.entries(respuestas || {}).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+    if (cupsInvalido) {
+      showSnackbar('El campo CUPS debe tener mínimo 16 dígitos y 4 letras', 'error');
       return;
     }
 

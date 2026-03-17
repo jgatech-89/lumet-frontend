@@ -49,6 +49,14 @@ function labelConAsterisco(nombre, requerido) {
 }
 
 const ES_TIPO_IDENTIFICACION = (n) => /tipo\s*(de)?\s*identificaci[oó]n/i.test(n || '');
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCups = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
 
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
@@ -94,6 +102,11 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
     );
   }
 
+  const esCups = esCampoCups(nombre);
+  const valorCups = value ?? '';
+  const cupsError = esCups && valorCups.trim() !== '' && !validarCups(valorCups);
+  const cupsHelper = esCups && cupsError ? 'Mínimo 16 dígitos y 4 letras' : '';
+
   if (tipo === 'textarea') {
     const ph = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
     return (
@@ -109,6 +122,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         required={requerido}
         fullWidth
         sx={{ maxWidth: { xs: '100%', sm: 400 } }}
+        error={esCups && cupsError}
+        helperText={esCups ? cupsHelper : ''}
       />
     );
   }
@@ -128,6 +143,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       fullWidth
       sx={{ maxWidth: { xs: '100%', sm: 280 } }}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
+      error={esCups && cupsError}
+      helperText={esCups ? cupsHelper : ''}
     />
   );
 }
@@ -268,6 +285,8 @@ export function ClienteEditModal({
 
   const handleSubmit = () => {
     if (!nombre?.trim()) return;
+    const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCups(v));
+    if (cupsInvalido) return;
     const respuestasList = soloDatosBase ? [] : (() => {
       const list = [];
       const todosCamposEditar = [...camposParaEditar, ...camposRepetidosExpandidos];
