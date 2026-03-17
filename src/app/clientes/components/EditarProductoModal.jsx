@@ -47,6 +47,8 @@ const esVisibleSiCambioTitular = (c) => {
   const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
   return vs.includes('cambio') && vs.includes('titular');
 };
+const esCampoRepetirSegun = (c) =>
+  c?.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
 function labelBase(nombre) {
   return (nombre || '').replace(/\s*\*+\s*$/g, '').trim();
@@ -268,12 +270,22 @@ export function EditarProductoModal({
   const camposParaEditar = camposFormulario.filter(
     (c) => !esTipoCliente(c) && !esVendedor(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c)
   );
+  const getValorPorNombreCampo = (nombre) => {
+    if (respuestas[nombre] !== undefined && respuestas[nombre] !== null) return respuestas[nombre];
+    const n = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+    const target = n(nombre);
+    for (const k of Object.keys(respuestas)) {
+      if (n(k) === target) return respuestas[k];
+    }
+    return undefined;
+  };
+
   const getCamposRepetidosExpandidos = () => {
     const repetidos = camposFormulario.filter(esCampoRepetirSegun);
     const expandidos = [];
     for (const c of repetidos) {
       const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
-      const valorCantidad = respuestas[nombreCampoCantidad];
+      const valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
       const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
       const nombreBase = c.nombre || '';
       for (let i = 1; i <= n; i++) {

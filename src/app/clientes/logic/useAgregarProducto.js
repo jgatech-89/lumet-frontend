@@ -356,12 +356,22 @@ export function useAgregarProducto(cliente, onExito) {
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
   const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
   const camposFormularioSinTipoCliente = camposSeccionFormulario;
+  const getValorPorNombreCampo = (nombre) => {
+    if (respuestas[nombre] !== undefined && respuestas[nombre] !== null) return respuestas[nombre];
+    const n = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+    const target = n(nombre);
+    for (const k of Object.keys(respuestas)) {
+      if (n(k) === target) return respuestas[k];
+    }
+    return undefined;
+  };
+
   const getCamposRepetidosExpandidos = () => {
     const repetidos = todosLosCampos.filter((c) => seccion(c) === 'campos_formulario' && esCampoRepetirSegun(c));
     const expandidos = [];
     for (const c of repetidos) {
       const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
-      const valorCantidad = respuestas[nombreCampoCantidad];
+      const valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
       const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
       const nombreBase = c.nombre || '';
       for (let i = 1; i <= n; i++) {

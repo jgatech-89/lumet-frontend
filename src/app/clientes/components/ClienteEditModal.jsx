@@ -227,13 +227,23 @@ export function ClienteEditModal({
   const camposParaEditar = camposEnviados.filter(
     (c) => !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c)
   );
+  const getValorPorNombreCampo = (nombre) => {
+    if (respuestas[nombre] !== undefined && respuestas[nombre] !== null) return respuestas[nombre];
+    const n = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+    const target = n(nombre);
+    for (const k of Object.keys(respuestas)) {
+      if (n(k) === target) return respuestas[k];
+    }
+    return undefined;
+  };
+
   const getCamposRepetidosExpandidos = () => {
     const todosCampos = [...camposFormulario, ...camposGlobales];
     const repetidos = todosCampos.filter(esCampoRepetirSegun);
     const expandidos = [];
     for (const c of repetidos) {
       const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
-      let n = Math.min(20, Math.max(0, parseInt(String(respuestas[nombreCampoCantidad] || 0), 10) || 0));
+      let n = Math.min(20, Math.max(0, parseInt(String(getValorPorNombreCampo(nombreCampoCantidad) || 0), 10) || 0));
       if (n === 0) {
         const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '');
         const regex = new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\((\\d+)\\)$`, 'i');
