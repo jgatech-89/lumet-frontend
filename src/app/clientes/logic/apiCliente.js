@@ -88,6 +88,18 @@ export const obtenerCliente = async (id) => {
 };
 
 /**
+ * Obtiene solo la información necesaria para el modal de detalle de un producto (ojito).
+ * Devuelve { cliente: { id, nombre, vendedor_nombre }, producto: { id, producto, empresa_nombre, ... } }.
+ * @param {number|string} clienteId
+ * @param {number|string} productoId - ID del ClienteEmpresa (producto)
+ * @returns {Promise<{ cliente: Object, producto: Object }>}
+ */
+export const obtenerDetalleProducto = async (clienteId, productoId) => {
+  const { data } = await get(`${BASE}${clienteId}/productos/${productoId}/detalle/`);
+  return data;
+};
+
+/**
  * Actualiza un cliente y sus respuestas del formulario.
  * @param {number|string} id
  * @param {Object} payload - nombre, tipo_identificacion, numero_identificacion, telefono, correo_electronico_o_carta, respuestas

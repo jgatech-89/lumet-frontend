@@ -491,10 +491,11 @@ export function ClienteDetalleModal({
                                 title="Ver toda la información"
                                 onClick={() => {
                                   const productId = ce.id;
-                                  apiCliente.obtenerCliente(clienteDetalle.id).then((data) => {
-                                    const fullProduct = data?.cliente_empresas?.find((p) => p.id === productId) ?? ce;
-                                    setProductoVerDetalle(fullProduct);
-                                  }).catch(() => setProductoVerDetalle(ce));
+                                  apiCliente.obtenerDetalleProducto(clienteDetalle.id, productId)
+                                    .then((data) => {
+                                      setProductoVerDetalle(data?.producto ?? ce);
+                                    })
+                                    .catch(() => setProductoVerDetalle(ce));
                                 }}
                                 sx={{
                                   color: 'primary.main',
