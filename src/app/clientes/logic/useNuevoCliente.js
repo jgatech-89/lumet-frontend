@@ -378,6 +378,7 @@ export function useNuevoCliente() {
         'Cerrador',
         ...(camposFormulario || []).map((c) => c.nombre).filter(Boolean),
         ...(camposGlobales || []).map((c) => c.nombre).filter(Boolean),
+        ...getCamposRepetidosExpandidos().map((c) => c.nombre).filter(Boolean),
       ]);
       const esNombreValido = (nombre) =>
         nombresValidos.has(nombre) || [...nombresValidos].some((n) => norm(n) === norm(nombre));
@@ -436,9 +437,14 @@ export function useNuevoCliente() {
 
   /** Campos que solo se muestran cuando "Cambio de titular" = Sí. Todo viene de visible_si en Configuración → Campos. */
   const esVisibleSiCambioTitular = (c) => {
+    if (c.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
     const vs = (c.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
     return vs.includes('cambio') && vs.includes('titular');
   };
+
+  /** Campos que se repiten N veces según el valor numérico de otro campo (ej: linea adicional (x) según lineas adicionales). */
+  const esCampoRepetirSegun = (c) =>
+    c.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
   const campoTitular = camposFormulario.find(esCambioTitular) ?? camposGlobales.find(esCambioTitular);
   const nombreCampoTitular = campoTitular?.nombre ?? 'Cambio de titular';
@@ -475,17 +481,35 @@ export function useNuevoCliente() {
   /** Sección 2 (datos_base): campos con seccion=datos_base, excl. producto */
   const camposSeccionDatosBase = todosLosCampos.filter((c) => seccion(c) === 'datos_base' && !esCampoProducto(c));
 
-  /** Sección 3 (campos_formulario): solo campos de esta sección, excl. tipo_cliente, producto, cambio titular, visible_si */
+  /** Sección 3 (campos_formulario): solo campos de esta sección, excl. tipo_cliente, producto, cambio titular, visible_si, repetir_segun */
   const camposSeccionFormulario = todosLosCampos
     .filter((c) => seccion(c) === 'campos_formulario')
-    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c))
+    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c))
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
+
+  /** Campos que se repiten según otro campo (ej: linea adicional (x) según lineas adicionales). Devuelve instancias expandidas. */
+  const getCamposRepetidosExpandidos = () => {
+    const repetidos = todosLosCampos.filter((c) => seccion(c) === 'campos_formulario' && esCampoRepetirSegun(c));
+    const expandidos = [];
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      const valorCantidad = respuestas[nombreCampoCantidad];
+      const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      const nombreBase = c.nombre || '';
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i });
+      }
+    }
+    return expandidos;
+  };
 
   /** Sección 4 (vendedor): solo campos con seccion=vendedor */
   const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
 
   /** Paso 3: solo campos seccion=campos_formulario (campoTitular y dependientes se renderan aparte) */
   const camposFormularioSinTipoCliente = camposSeccionFormulario;
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   return {
     paso,
@@ -507,6 +531,7 @@ export function useNuevoCliente() {
     actualizarRespuesta,
     camposFormulario,
     camposFormularioSinTipoCliente,
+    camposRepetidosExpandidos,
     campEstadoVenta,
     empresas,
     servicios,

@@ -28,9 +28,12 @@ import * as apiCampos from '../../campos/logic/apiCampos';
 const CAMBIO_TITULAR_NAMES = ['cambio de titular', 'Cambio de titular', 'cambio titular', 'Cambio titular'];
 const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
 const esVisibleSiCambioTitular = (c) => {
+  if (c?.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
   const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
   return vs.includes('cambio') && vs.includes('titular');
 };
+const esCampoRepetirSegun = (c) =>
+  c?.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
 const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo producto', 'tipo de producto'];
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
@@ -221,7 +224,33 @@ export function ClienteEditModal({
   const cambioTitularMarcado = campoTitular ? (respuestas[campoTitular.nombre] === '1' || respuestas[campoTitular.nombre] === 'si' || respuestas[campoTitular.nombre] === true) : false;
   const camposEnviados = [...camposFormulario, ...camposGlobales]
     .filter((c) => !esCampoProducto(c) && respuestasNombres.has(c.nombre));
-  const camposParaEditar = camposEnviados.filter((c) => !esCambioTitular(c) && !esVisibleSiCambioTitular(c));
+  const camposParaEditar = camposEnviados.filter(
+    (c) => !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c)
+  );
+  const getCamposRepetidosExpandidos = () => {
+    const todosCampos = [...camposFormulario, ...camposGlobales];
+    const repetidos = todosCampos.filter(esCampoRepetirSegun);
+    const expandidos = [];
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      let n = Math.min(20, Math.max(0, parseInt(String(respuestas[nombreCampoCantidad] || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '');
+        const regex = new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\((\\d+)\\)$`, 'i');
+        for (const nom of respuestasNombres) {
+          const m = nom.match(regex);
+          if (m) n = Math.max(n, parseInt(m[1], 10));
+        }
+      }
+      const nombreBase = c.nombre || '';
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i });
+      }
+    }
+    return expandidos;
+  };
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   const actualizarRespuesta = useCallback((nombreCampo, valor) => {
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
@@ -231,7 +260,7 @@ export function ClienteEditModal({
     if (!nombre?.trim()) return;
     const respuestasList = soloDatosBase ? [] : (() => {
       const list = [];
-      const todosCamposEditar = [...camposParaEditar];
+      const todosCamposEditar = [...camposParaEditar, ...camposRepetidosExpandidos];
       if (campoTitular) todosCamposEditar.push(campoTitular);
       if (cambioTitularMarcado) todosCamposEditar.push(...camposTitularDependientes);
       todosCamposEditar.forEach((c) => {
@@ -356,7 +385,7 @@ export function ClienteEditModal({
               sx={{ flex: 1, ...inputSx }}
             />
           </Stack>
-          {!soloDatosBase && (camposParaEditar.length > 0 || campoTitular || opcionesProducto?.length > 0) && (
+          {!soloDatosBase && (camposParaEditar.length > 0 || campoTitular || camposRepetidosExpandidos.length > 0 || opcionesProducto?.length > 0) && (
             <>
               <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Campos del formulario (enviados)</Typography>
               {opcionesProducto?.length > 0 && respuestasNombres.size > 0 && (
@@ -381,7 +410,7 @@ export function ClienteEditModal({
                 <SectionLoader message="Cargando campos del formulario..." minHeight={120} />
               ) : (
                 <Stack spacing={2}>
-                  {camposParaEditar.map((c) => (
+                  {[...camposParaEditar, ...camposRepetidosExpandidos].map((c) => (
                     <CampoDinamicoInput
                       key={c.nombre}
                       campo={c}

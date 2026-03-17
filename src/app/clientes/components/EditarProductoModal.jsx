@@ -43,6 +43,7 @@ const esVendedor = (c) => NOMBRES_VENDEDOR.some((n) => norm(c?.nombre) === norm(
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c?.nombre) === norm(n));
 const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
 const esVisibleSiCambioTitular = (c) => {
+  if (c?.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
   const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
   return vs.includes('cambio') && vs.includes('titular');
 };
@@ -265,8 +266,24 @@ export function EditarProductoModal({
     ? (respuestas[campoTitular.nombre] === '1' || respuestas[campoTitular.nombre] === 'si' || respuestas[campoTitular.nombre] === true)
     : false;
   const camposParaEditar = camposFormulario.filter(
-    (c) => !esTipoCliente(c) && !esVendedor(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c)
+    (c) => !esTipoCliente(c) && !esVendedor(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c)
   );
+  const getCamposRepetidosExpandidos = () => {
+    const repetidos = camposFormulario.filter(esCampoRepetirSegun);
+    const expandidos = [];
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      const valorCantidad = respuestas[nombreCampoCantidad];
+      const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      const nombreBase = c.nombre || '';
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i });
+      }
+    }
+    return expandidos;
+  };
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   /** Opciones de Tipo de cliente: desde campoTipoCliente.opciones o desde API (configuración), nunca quemadas */
   const desdeCampo = (campoTipoCliente?.opciones ?? []).map((o) => ({
@@ -302,7 +319,7 @@ export function EditarProductoModal({
 
   const handleSubmit = () => {
     const respuestasList = [];
-    [...camposParaEditar].forEach((c) => {
+    [...camposParaEditar, ...camposRepetidosExpandidos].forEach((c) => {
       const v = respuestas[c.nombre];
       if (v != null && String(v).trim() !== '') {
         respuestasList.push({ nombre_campo: c.nombre, respuesta_campo: String(v).trim() });
@@ -344,7 +361,7 @@ export function EditarProductoModal({
   if (!producto || !open) return null;
 
   const vendedorActual = respuestas['vendedor'] ?? respuestas['Vendedor'] ?? respuestas['comercial'] ?? respuestas['Comercial'] ?? '';
-  const hayInformacionAdicional = camposParaEditar.length > 0 || campoTitular;
+  const hayInformacionAdicional = camposParaEditar.length > 0 || campoTitular || camposRepetidosExpandidos.length > 0;
 
   return (
     <Dialog open={open} onClose={onClose} PaperProps={{ sx: { ...modalPaperSx, maxWidth: 600, maxHeight: '92vh' } }}>
@@ -483,7 +500,7 @@ export function EditarProductoModal({
               <SectionLoader message="Cargando campos del formulario..." minHeight={120} />
             ) : (
               <Stack spacing={2} sx={{ mb: 2 }}>
-                {camposParaEditar.map((c) => (
+                {[...camposParaEditar, ...camposRepetidosExpandidos].map((c) => (
                   <CampoDinamicoInput
                     key={c.nombre}
                     campo={c}

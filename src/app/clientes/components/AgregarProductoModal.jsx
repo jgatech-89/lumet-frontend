@@ -157,6 +157,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
     setProducto,
     opcionesProducto,
     camposFormularioSinTipoCliente,
+    camposRepetidosExpandidos,
     empresas,
     servicios,
     guardando,
@@ -357,6 +358,24 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                 <Grid container spacing={3} sx={{ width: '100%' }}>
                   {camposFormularioSinTipoCliente.map((c) => (
                     <Grid item xs={12} sm={6} key={c.id}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
+                        {c.tipo !== 'checkbox' && (
+                          <Typography variant="body2" color="text.secondary" component="label">
+                            {labelConAsterisco(c.nombre, c.requerido)}
+                          </Typography>
+                        )}
+                        <CampoDinamicoInput
+                          campo={c}
+                          value={respuestas[c.nombre]}
+                          onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                          opcionesTipoIdentificacion={tiposIdentificacion}
+                          opcionesVendedor={vendedores}
+                        />
+                      </Box>
+                    </Grid>
+                  ))}
+                  {camposRepetidosExpandidos.map((c) => (
+                    <Grid item xs={12} sm={6} key={`${c.id}-${c._indice}`}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', minWidth: 0 }}>
                         {c.tipo !== 'checkbox' && (
                           <Typography variant="body2" color="text.secondary" component="label">

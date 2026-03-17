@@ -169,6 +169,7 @@ export function NuevoClienteForm() {
     baseData,
     setBaseData,
     camposFormularioSinTipoCliente,
+    camposRepetidosExpandidos,
     campEstadoVenta = null,
     empresas,
     servicios,
@@ -660,6 +661,30 @@ export function NuevoClienteForm() {
                       >
                         {camposFormularioSinTipoCliente.map((c) => (
                           <Box sx={{ width: '100%' }} key={c.id}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                                width: '100%',
+                                minWidth: 0,
+                              }}
+                            >
+                              <Typography variant="body2" color="text.secondary" component="label">
+                                {labelConAsterisco(c.nombre, c.requerido)}
+                              </Typography>
+                              <CampoDinamicoInput
+                                campo={c}
+                                value={respuestas[c.nombre]}
+                                onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                                opcionesTipoIdentificacion={tiposIdentificacion}
+                                opcionesVendedor={vendedores}
+                              />
+                            </Box>
+                          </Box>
+                        ))}
+                        {camposRepetidosExpandidos.map((c) => (
+                          <Box sx={{ width: '100%' }} key={`${c.id}-${c._indice}`}>
                             <Box
                               sx={{
                                 display: 'flex',

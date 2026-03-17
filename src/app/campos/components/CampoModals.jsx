@@ -551,10 +551,25 @@ export function CampoModals({
             size="small"
             label="Visible si"
             placeholder="Ej: cambio titular (mostrar solo cuando Cambio de titular = Sí)"
-            value={visible_si}
+            value={typeof visible_si === 'object' && visible_si?.repetir_segun ? '' : (visible_si ?? '')}
             onChange={(e) => setVisible_si(e.target.value)}
             sx={inputSx}
             helperText="Escribe 'cambio titular' para campos que solo deben mostrarse cuando el usuario marca Sí en Cambio de titular."
+          />
+        </Box>
+        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Repetir según campo"
+            placeholder="Ej: lineas adicionales (el campo se repetirá N veces según el valor numérico)"
+            value={typeof visible_si === 'object' && visible_si?.repetir_segun ? visible_si.repetir_segun : ''}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              setVisible_si(v ? { repetir_segun: v } : '');
+            }}
+            sx={inputSx}
+            helperText="Nombre del campo numérico que indica cuántas veces repetir (ej: lineas adicionales). El nombre de este campo debe contener (x) que se reemplazará por 1, 2, 3..."
           />
         </Box>
       </Box>

@@ -318,7 +318,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        visible_si: visible_si.trim() || '',
+        visible_si: typeof visible_si === 'object' && visible_si != null
+          ? JSON.stringify(visible_si)
+          : (visible_si?.trim?.() || ''),
         requerido: !!requerido,
         activo: !!activo,
         estado: '1',
@@ -470,7 +472,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        visible_si: visible_si.trim() || '',
+        visible_si: typeof visible_si === 'object' && visible_si != null
+          ? JSON.stringify(visible_si)
+          : (visible_si?.trim?.() || ''),
         requerido: !!requerido,
         activo: !!activo,
         producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),

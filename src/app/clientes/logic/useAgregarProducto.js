@@ -328,9 +328,12 @@ export function useAgregarProducto(cliente, onExito) {
   const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c.nombre) === norm(n));
 
   const esVisibleSiCambioTitular = (c) => {
+    if (c.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
     const vs = (c.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
     return vs.includes('cambio') && vs.includes('titular');
   };
+  const esCampoRepetirSegun = (c) =>
+    c.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
   const campoTitular = camposFormulario.find(esCambioTitular) ?? camposGlobales.find(esCambioTitular);
   const nombreCampoTitular = campoTitular?.nombre ?? 'Cambio de titular';
@@ -349,10 +352,26 @@ export function useAgregarProducto(cliente, onExito) {
   const campoTipoProducto = todosLosCampos.find(esCampoProducto);
   const camposSeccionFormulario = todosLosCampos
     .filter((c) => seccion(c) === 'campos_formulario')
-    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCampoEstadoVenta(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c))
+    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCampoEstadoVenta(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c))
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
   const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
   const camposFormularioSinTipoCliente = camposSeccionFormulario;
+  const getCamposRepetidosExpandidos = () => {
+    const repetidos = todosLosCampos.filter((c) => seccion(c) === 'campos_formulario' && esCampoRepetirSegun(c));
+    const expandidos = [];
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      const valorCantidad = respuestas[nombreCampoCantidad];
+      const n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      const nombreBase = c.nombre || '';
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i });
+      }
+    }
+    return expandidos;
+  };
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   const camposTitularDependientesRaw = todosLosCampos
     .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && esVisibleSiCambioTitular(c));
@@ -382,6 +401,7 @@ export function useAgregarProducto(cliente, onExito) {
     actualizarRespuesta,
     camposFormulario,
     camposFormularioSinTipoCliente,
+    camposRepetidosExpandidos,
     campEstadoVenta,
     empresas,
     servicios,
