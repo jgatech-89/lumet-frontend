@@ -337,8 +337,11 @@ export function EditarProductoModal({
         });
         if (campoRef?.opciones?.length) opcionesUsar = campoRef.opciones;
       }
+      const tienePlaceholder = /\(x\)|\(\$\)/i.test(nombreBase);
       for (let i = 1; i <= n; i++) {
-        const nombreConNumero = nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`);
+        const nombreConNumero = tienePlaceholder
+          ? nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`)
+          : `${nombreBase.trim()} (${i})`;
         expandidos.push({ ...c, nombre: nombreConNumero, _indice: i, opciones: opcionesUsar ?? c.opciones });
       }
     }
