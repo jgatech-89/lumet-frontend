@@ -106,7 +106,7 @@ export function ProductoDetalleModal({
         >
           Vendedor
         </Typography>
-        <DataRow label="Vendedor" value={producto?.vendedor_nombre ?? cliente?.vendedor_nombre} />
+        <DataRow label="Vendedor" value={producto?.vendedor_nombre ?? cliente?.vendedor_nombre ?? '-'} />
 
         {respuestasSinVendedorNiTipoCliente.length > 0 && (
           <>

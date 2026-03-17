@@ -40,7 +40,7 @@ const routeConfig = [
     path: '/clientes',
     element: Dashboard,
     private: true,
-    roles: ['admin', 'user'],
+    roles: ['admin', 'user', 'usuario', 'cliente'],
     layout: 'main',
   },
   {

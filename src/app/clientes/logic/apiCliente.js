@@ -30,7 +30,7 @@ export const obtenerOpcionesEstadoVenta = async () => {
  * @param {{ search?: string, estado_venta?: string }} filters
  * @returns {Promise<{ results: Array, count: number }>}
  */
-export const listarClientes = async (page = 1, pageSize = 20, filters = {}) => {
+export const listarClientes = async (page = 1, pageSize = 5, filters = {}) => {
   const params = { page, page_size: pageSize };
   if (filters.search?.trim()) params.search = filters.search.trim();
   if (filters.estado_venta?.trim()) params.estado_venta = filters.estado_venta.trim();
@@ -103,11 +103,16 @@ export const actualizarCliente = async (id, payload) => {
  * @param {number|string} id - ID del cliente
  * @param {string} estado
  * @param {number|null} [clienteEmpresaId] - ID del ClienteEmpresa (producto). Si se envía, el estado se aplica a ese producto.
+ * @returns {Promise<{ mensaje: string, estado: string }>}
  */
 export const cambiarEstadoCliente = async (id, estado, clienteEmpresaId = null) => {
   const payload = { estado: estado || 'pendiente' };
   if (clienteEmpresaId != null) payload.cliente_empresa_id = clienteEmpresaId;
-  const { data } = await post(`${BASE}${id}/cambiar-estado/`, payload);
+  const result = await post(`${BASE}${id}/cambiar-estado/`, payload);
+  const data = result?.data ?? result;
+  if (!data || typeof data !== 'object') {
+    return { mensaje: 'Estado actualizado correctamente.', estado: estado || 'pendiente' };
+  }
   return data;
 };
 

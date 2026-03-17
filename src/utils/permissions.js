@@ -22,9 +22,10 @@ export const PERMISSIONS = {
   ACCESS_SETTINGS: 'access_settings',
   /** Poder eliminar clientes desde la tabla */
   DELETE_CLIENT: 'delete_client',
-  // Ejemplos para escalar:
-  // EDIT_CLIENT: 'edit_client',
-  // CREATE_CLIENT: 'create_client',
+  /** Exportar/Importar Excel y Exportar PDF en clientes (solo admin) */
+  EXPORT_IMPORT_PDF_CLIENTES: 'export_import_pdf_clientes',
+  /** Cambiar estado de venta de productos en la tabla de productos del cliente (solo admin) */
+  CHANGE_PRODUCT_STATE: 'change_product_state',
 };
 
 /**
@@ -33,7 +34,12 @@ export const PERMISSIONS = {
  * 'user' se trata como alias de 'usuario' por compatibilidad con rutas.
  */
 const ROLE_PERMISSIONS = {
-  [ROLES.ADMIN]: [PERMISSIONS.ACCESS_SETTINGS, PERMISSIONS.DELETE_CLIENT],
+  [ROLES.ADMIN]: [
+    PERMISSIONS.ACCESS_SETTINGS,
+    PERMISSIONS.DELETE_CLIENT,
+    PERMISSIONS.EXPORT_IMPORT_PDF_CLIENTES,
+    PERMISSIONS.CHANGE_PRODUCT_STATE,
+  ],
   [ROLES.USUARIO]: [],
   user: [], // alias de usuario
   [ROLES.CLIENTE]: [],

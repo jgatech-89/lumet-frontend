@@ -23,6 +23,7 @@ import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { SectionLoader } from '../../../components/loading';
 import * as apiCliente from '../logic/apiCliente';
 import { getErrorMessage } from '../../../utils/funciones';
+import { usePermissions } from '../../../hooks/usePermissions';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { useThemeMode } from '../../../context/ThemeContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
@@ -64,6 +65,7 @@ export function ClienteDetalleModal({
   const onCambioEstadoCb = onCambiarEstado ?? onCambioEstado;
   const { isDark } = useThemeMode();
   const { showSnackbar } = useSnackbar();
+  const { canChangeProductState } = usePermissions();
   const CHIP_ESTADOS = getChipEstadosVenta(isDark);
 
   const [clienteDetalle, setClienteDetalle] = useState(null);
@@ -136,7 +138,6 @@ export function ClienteDetalleModal({
     try {
       await apiCliente.cambiarEstadoCliente(clienteDetalle.id, nuevoEstado, ce.id);
       showSnackbar('Estado actualizado correctamente.', 'success');
-      onCambioEstadoCb?.();
       onExito?.();
       setEstadosPorProducto((p) => ({ ...p, [ce.id]: nuevoEstado }));
       setClienteDetalle((prev) => {
@@ -151,7 +152,7 @@ export function ClienteDetalleModal({
     } finally {
       setGuardandoPorProducto((p) => ({ ...p, [ce.id]: false }));
     }
-  }, [clienteDetalle?.id, estadosPorProducto, onCambioEstadoCb, onExito, showSnackbar]);
+  }, [clienteDetalle?.id, estadosPorProducto, onExito, showSnackbar]);
 
   const handleGuardarEditarCliente = useCallback(async (payload) => {
     if (!clienteDetalle?.id) return;
@@ -317,7 +318,7 @@ export function ClienteDetalleModal({
                   '&:hover': { boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)' },
                 }}
               >
-                Nuevo producto
+                Añadir producto
               </Button>
             </Stack>
             {productos.length === 0 ? (
@@ -389,18 +390,20 @@ export function ClienteDetalleModal({
                               >
                                 <EditIcon />
                               </IconButton>
-                              <IconButton
-                                size="small"
-                                aria-label="Cambiar estado"
-                                title="Cambiar estado"
-                                onClick={() => setProductoParaCambiarEstado(ce)}
-                                sx={{
-                                  color: 'primary.main',
-                                  '&:hover': { bgcolor: 'action.hover' },
-                                }}
-                              >
-                                <SettingsIcon />
-                              </IconButton>
+                              {canChangeProductState && (
+                                <IconButton
+                                  size="small"
+                                  aria-label="Cambiar estado"
+                                  title="Cambiar estado"
+                                  onClick={() => setProductoParaCambiarEstado(ce)}
+                                  sx={{
+                                    color: 'primary.main',
+                                    '&:hover': { bgcolor: 'action.hover' },
+                                  }}
+                                >
+                                  <SettingsIcon />
+                                </IconButton>
+                              )}
                             </Stack>
                           </TableCell>
                         </TableRow>

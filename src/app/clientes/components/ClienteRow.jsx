@@ -22,7 +22,7 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [menuAnchor, setMenuAnchor] = useState(null);
   const { isDark } = useThemeMode();
-  const { canDeleteClient } = usePermissions();
+  const { canDeleteClient, canExportImportPdfClientes } = usePermissions();
   const actionBtnBlue = getActionBtnBlue(isDark);
   const actionBtnRed = getActionBtnRed(isDark);
   const handleCloseMenu = () => setMenuAnchor(null);
@@ -86,9 +86,11 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               PaperProps={{ sx: { minWidth: 200 } }}
             >
-              <MenuItem onClick={() => { onDescargar?.(row); handleCloseMenu(); }}>
-                Descargar PDF
-              </MenuItem>
+              {canExportImportPdfClientes && (
+                <MenuItem onClick={() => { onDescargar?.(row); handleCloseMenu(); }}>
+                  Descargar PDF
+                </MenuItem>
+              )}
               <MenuItem onClick={() => { onVer?.(row); handleCloseMenu(); }}>
                 Ver detalle
               </MenuItem>
@@ -104,9 +106,11 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
             <IconButton size="small" aria-label="Ver detalle" title="Ver detalle" sx={actionBtnBlue} onClick={() => onVer?.(row)}>
               <EyeIcon />
             </IconButton>
+            {canExportImportPdfClientes && (
             <IconButton size="small" aria-label="Descargar" title="Descargar" sx={actionBtnBlue} onClick={() => onDescargar?.(row)}>
               <DownloadIcon />
             </IconButton>
+            )}
             {canDeleteClient && (
             <IconButton size="small" aria-label="Eliminar" title="Eliminar" sx={actionBtnRed} onClick={() => onEliminar?.(row)}>
                 <DeleteIcon />
