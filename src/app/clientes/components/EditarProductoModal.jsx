@@ -428,7 +428,7 @@ export function EditarProductoModal({
           </Stack>
         </Stack>
 
-        {/* 2. Comercial y Cerrador */}
+        {/* 2. Comercial y Cerrador - solo administrador puede editar */}
         <Typography variant="subtitle2" fontWeight={600} color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           Comercial
         </Typography>
@@ -441,6 +441,7 @@ export function EditarProductoModal({
               actualizarRespuesta('vendedor', e.target.value);
               actualizarRespuesta('Vendedor', e.target.value);
             }}
+            disabled={!esAdmin}
           >
             <MenuItem value="">Seleccionar</MenuItem>
             {vendedores.map((v) => (
@@ -448,6 +449,11 @@ export function EditarProductoModal({
             ))}
           </Select>
         </FormControl>
+        {!esAdmin && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            Solo el administrador puede asignar el comercial.
+          </Typography>
+        )}
         {esAdmin && (
           <FormControl size="small" sx={{ minWidth: 200, mb: 2, ml: 2 }}>
             <InputLabel>Cerrador</InputLabel>

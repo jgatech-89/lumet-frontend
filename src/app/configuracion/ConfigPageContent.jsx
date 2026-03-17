@@ -24,31 +24,31 @@ import { useVendedores, VendedorConfigSection } from '../vendedores';
 import { listarEmpresasActivasParaSelect } from '../empresa/logic/apiEmpresa';
 import { listarServiciosPorEmpresa } from '../servicios/logic/apiServicios';
 
-const TAB_KEYS = ['servicios', 'contratistas', 'campos', 'vendedor'];
+const TAB_KEYS = ['servicios', 'compania', 'campos', 'comercial'];
 
 const ADD_LABELS = {
   servicios: 'Añadir servicio',
-  contratistas: 'Añadir compañía actual',
+  compania: 'Añadir compañía',
   campos: 'Añadir campo',
-  vendedor: 'Añadir vendedor',
+  comercial: 'Añadir comercial',
 };
 
 const SEARCH_PLACEHOLDERS = {
   servicios: 'Buscar servicio...',
-  contratistas: 'Buscar compañía actual...',
+  compania: 'Buscar compañía...',
   campos: 'Buscar campo...',
-  vendedor: 'Buscar vendedor...',
+  comercial: 'Buscar comercial...',
 };
 
 /**
  * Orquestador de la pantalla de configuración: tabs, búsqueda y filtro independientes por tab,
  * renderizado de la sección activa. La lógica de cada dominio vive en sus módulos (app/empresa, etc.).
  */
-const INIT_BUSQUEDA = { servicios: '', contratistas: '', campos: '', vendedor: '' };
-const INIT_FILTRO = { servicios: 'todos', contratistas: 'todos', campos: 'todos', vendedor: 'todos' };
+const INIT_BUSQUEDA = { servicios: '', compania: '', campos: '', comercial: '' };
+const INIT_FILTRO = { servicios: 'todos', compania: 'todos', campos: 'todos', comercial: 'todos' };
 const INIT_FILTRO_EMPRESA_CAMPOS = '';
 const INIT_FILTRO_SERVICIO_CAMPOS = '';
-const INIT_PAGINA = { servicios: 1, contratistas: 1, campos: 1, vendedor: 1 };
+const INIT_PAGINA = { servicios: 1, compania: 1, campos: 1, comercial: 1 };
 
 export function ConfigPageContent() {
   const [tabActual, setTabActual] = useState(0);
@@ -79,18 +79,18 @@ export function ConfigPageContent() {
 
   const empresa = useEmpresas(paginaPorTab.servicios, setPagina, busquedaPorTab.servicios, filtroEstadoPorTab.servicios, TAB_KEYS[tabActual] === 'servicios');
   const vendedores = useVendedores(
-    paginaPorTab.vendedor,
+    paginaPorTab.comercial,
     setPagina,
-    busquedaPorTab.vendedor,
-    filtroEstadoPorTab.vendedor,
-    TAB_KEYS[tabActual] === 'vendedor'
+    busquedaPorTab.comercial,
+    filtroEstadoPorTab.comercial,
+    TAB_KEYS[tabActual] === 'comercial'
   );
   const contratistas = useContratistas(
-    paginaPorTab.contratistas,
+    paginaPorTab.compania,
     setPagina,
-    busquedaPorTab.contratistas,
-    filtroEstadoPorTab.contratistas,
-    TAB_KEYS[tabActual] === 'contratistas',
+    busquedaPorTab.compania,
+    filtroEstadoPorTab.compania,
+    TAB_KEYS[tabActual] === 'compania',
     empresa.empresasParaSelect,
     empresa.cargarEmpresasParaSelect
   );
@@ -140,9 +140,9 @@ export function ConfigPageContent() {
 
   const handleAddClick = () => {
     if (tabKey === 'servicios') empresa.handleAbrirNueva();
-    else if (tabKey === 'contratistas') contratistas.handleAbrirNueva();
+    else if (tabKey === 'compania') contratistas.handleAbrirNueva();
     else if (tabKey === 'campos') campos.handleAbrirNueva();
-    else if (tabKey === 'vendedor') vendedores.handleAbrirNueva();
+    else if (tabKey === 'comercial') vendedores.handleAbrirNueva();
   };
 
   return (
@@ -230,9 +230,9 @@ export function ConfigPageContent() {
             }}
           >
             <Tab label="Servicios" />
-            <Tab label="Contratistas" />
+            <Tab label="Compañía" />
             <Tab label="Campos" />
-            <Tab label="Vendedor" />
+            <Tab label="Comercial" />
           </Tabs>
         </Stack>
 
@@ -294,7 +294,7 @@ export function ConfigPageContent() {
                 <Select
                   labelId="filtro-servicio-campos-label"
                   value={filtroServicioCampos}
-                  label="Contratista"
+                  label="Compañía"
                   onChange={(e) => {
                     setFiltroServicioCampos(e.target.value);
                     setPaginaPorTab((p) => ({ ...p, campos: 1 }));
@@ -314,12 +314,12 @@ export function ConfigPageContent() {
         {tabKey === 'servicios' && (
           <EmpresaConfigSection empresa={empresa} pagina={paginaPorTab.servicios} setPagina={setPagina} />
         )}
-        {tabKey === 'contratistas' && (
+        {tabKey === 'compania' && (
           <ContratistasConfigSection
             contratistas={contratistas}
             empresasParaSelect={empresa.empresasParaSelect}
             cargarEmpresasParaSelect={empresa.cargarEmpresasParaSelect}
-            pagina={paginaPorTab.contratistas}
+            pagina={paginaPorTab.compania}
             setPagina={setPagina}
           />
         )}
@@ -330,8 +330,8 @@ export function ConfigPageContent() {
             setPagina={setPagina}
           />
         )}
-        {tabKey === 'vendedor' && (
-          <VendedorConfigSection vendedores={vendedores} pagina={paginaPorTab.vendedor} setPagina={setPagina} />
+        {tabKey === 'comercial' && (
+          <VendedorConfigSection vendedores={vendedores} pagina={paginaPorTab.comercial} setPagina={setPagina} />
         )}
       </Box>
     </Paper>

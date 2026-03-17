@@ -65,14 +65,14 @@ export function VendedorModals({
     <>
       <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Nuevo vendedor</Typography>
+          <Typography variant="h6" fontWeight={600}>Nuevo comercial</Typography>
           <IconButton size="small" onClick={handleCerrarNueva} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Completa la información para registrar un vendedor (persona que cierra la venta).
+            Completa la información para registrar un comercial.
           </Typography>
           <Stack spacing={2}>
             <TextField
@@ -124,21 +124,21 @@ export function VendedorModals({
             loadingText="Guardando..."
             sx={btnPrimarySx}
           >
-            Guardar vendedor
+            Guardar comercial
           </LoadingButton>
         </DialogActions>
       </Dialog>
 
       <Dialog open={modalEditar} onClose={handleCerrarEditar} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Editar vendedor</Typography>
+          <Typography variant="h6" fontWeight={600}>Editar comercial</Typography>
           <IconButton size="small" onClick={handleCerrarEditar} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Modifica los datos del vendedor.
+            Modifica los datos del comercial.
           </Typography>
           <Stack spacing={2}>
             <TextField
@@ -180,7 +180,7 @@ export function VendedorModals({
               <Select
                 labelId="editar-vendedor-estado-label"
                 value={estado}
-                label="Estado del vendedor"
+                label="Estado del comercial"
                 onChange={(e) => setEstado(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
@@ -210,8 +210,8 @@ export function VendedorModals({
         open={modalEliminar}
         onClose={handleCerrarEliminar}
         onConfirm={handleConfirmarEliminar}
-        title="Eliminar vendedor"
-        message="¿Está seguro que desea eliminar este vendedor?"
+        title="Eliminar comercial"
+        message="¿Está seguro que desea eliminar este comercial?"
         itemName={aEliminar?.nombre}
         loading={eliminando}
       />

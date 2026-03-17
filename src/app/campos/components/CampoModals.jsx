@@ -247,7 +247,7 @@ export function CampoModals({
                   disabled={!!servicioId}
                 />
               }
-              label="Aplicar a todos los contratistas"
+              label="Aplicar a todas las compañías"
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
               Actívalo para que el campo aplique a todas las compañías del servicio seleccionado.
@@ -261,7 +261,7 @@ export function CampoModals({
             <Select
               labelId={`${prefix}campo-servicio-label`}
               value={aplicarTodosServicios ? '__todos__' : (servicioId ?? '')}
-              label="Contratista"
+              label="Compañía"
               onChange={(e) => setServicioId(e.target.value === '__todos__' ? '' : e.target.value)}
               disabled={!empresaId || cargandoServicios || aplicarTodosServicios}
               displayEmpty

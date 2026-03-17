@@ -361,7 +361,7 @@ export function NuevoClienteForm() {
                       <Select
                         labelId="servicio-label"
                         value={servicio?.id ?? ''}
-                        label="Contratista"
+                        label="Compañía"
                         onChange={(e) => {
                           const s = servicios.find((x) => x.id === Number(e.target.value));
                           setServicio(s ?? null);

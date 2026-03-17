@@ -69,7 +69,7 @@ export function ContratistaModals({
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Completa la información para registrar un contratista.
+            Completa la información para registrar una compañía.
           </Typography>
           <Stack spacing={2}>
             <TextField
@@ -122,7 +122,7 @@ export function ContratistaModals({
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Modifica los datos del contratista.
+            Modifica los datos de la compañía.
           </Typography>
           <Stack spacing={2}>
             <TextField
@@ -154,7 +154,7 @@ export function ContratistaModals({
               <Select
                 labelId="editar-servicio-estado-label"
                 value={estadoServicio}
-                label="Estado del contratista"
+                label="Estado de la compañía"
                 onChange={(e) => setEstadoServicio(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>

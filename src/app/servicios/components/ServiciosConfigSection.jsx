@@ -62,7 +62,7 @@ export function ContratistasConfigSection({ contratistas, empresasParaSelect, ca
           </TableHead>
           <TableBody>
             {contratistas.loading ? (
-              <TableLoader columnCount={COLUMNS.length} message="Cargando contratistas..." />
+              <TableLoader columnCount={COLUMNS.length} message="Cargando compañías..." />
             ) : (
               filasPagina.map((row) => (
               <TableRow

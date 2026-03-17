@@ -275,7 +275,7 @@ export function AgregarProductoModal({ open, onClose, cliente, onExito }) {
                     <Select
                       labelId="servicio-label"
                       value={servicio?.id ?? ''}
-                      label="Contratistas"
+                      label="Compañía"
                       onChange={(e) => {
                         const s = servicios.find((x) => x.id === Number(e.target.value));
                         setServicio(s ?? null);
