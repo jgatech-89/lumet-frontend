@@ -29,7 +29,7 @@ export const mapCampoFromApi = (item, getTipoLabel) => ({
   id: item.id,
   campo: item.nombre ?? '',
   empresa: item.empresa_nombre ?? (item.empresa == null ? 'Todos los servicios' : ''),
-  servicio: item.servicio_nombre?.trim() || (item.servicio == null ? 'Todos los contratistas' : ''),
+  servicio: item.servicio_nombre?.trim() || (item.servicio == null ? 'Todas las compañías' : ''),
   producto: item.producto ?? '',
   tipo: item.tipo ?? '',
   tipoCampo: getTipoLabel ? getTipoLabel(item.tipo) : item.tipo,

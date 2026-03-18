@@ -28,9 +28,12 @@ import * as apiCampos from '../../campos/logic/apiCampos';
 const CAMBIO_TITULAR_NAMES = ['cambio de titular', 'Cambio de titular', 'cambio titular', 'Cambio titular'];
 const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
 const esVisibleSiCambioTitular = (c) => {
+  if (c?.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
   const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
   return vs.includes('cambio') && vs.includes('titular');
 };
+const esCampoRepetirSegun = (c) =>
+  c?.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
 const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo producto', 'tipo de producto'];
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
@@ -46,6 +49,14 @@ function labelConAsterisco(nombre, requerido) {
 }
 
 const ES_TIPO_IDENTIFICACION = (n) => /tipo\s*(de)?\s*identificaci[oó]n/i.test(n || '');
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCups = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
 
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
@@ -91,6 +102,11 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
     );
   }
 
+  const esCups = esCampoCups(nombre);
+  const valorCups = value ?? '';
+  const cupsError = esCups && valorCups.trim() !== '' && !validarCups(valorCups);
+  const cupsHelper = esCups && cupsError ? 'Mínimo 16 dígitos y 4 letras' : '';
+
   if (tipo === 'textarea') {
     const ph = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
     return (
@@ -106,6 +122,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         required={requerido}
         fullWidth
         sx={{ maxWidth: { xs: '100%', sm: 400 } }}
+        error={esCups && cupsError}
+        helperText={esCups ? cupsHelper : ''}
       />
     );
   }
@@ -125,6 +143,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       fullWidth
       sx={{ maxWidth: { xs: '100%', sm: 280 } }}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
+      error={esCups && cupsError}
+      helperText={esCups ? cupsHelper : ''}
     />
   );
 }
@@ -143,7 +163,6 @@ export function ClienteEditModal({
   const [numeroIdentificacion, setNumeroIdentificacion] = useState('');
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
-  const [cups, setCups] = useState('');
   const [cuentaBancaria, setCuentaBancaria] = useState('');
   const [companiaAnterior, setCompaniaAnterior] = useState('');
   const [companiaActual, setCompaniaActual] = useState('');
@@ -164,7 +183,6 @@ export function ClienteEditModal({
     setNumeroIdentificacion(cliente.numero_identificacion || '');
     setTelefono(cliente.telefono || '');
     setDireccion(cliente.direccion || '');
-    setCups(cliente.cups || '');
     setCuentaBancaria(cliente.cuenta_bancaria || '');
     setCompaniaAnterior(cliente.compania_anterior || '');
     setCompaniaActual(cliente.compania_actual || '');
@@ -223,7 +241,59 @@ export function ClienteEditModal({
   const cambioTitularMarcado = campoTitular ? (respuestas[campoTitular.nombre] === '1' || respuestas[campoTitular.nombre] === 'si' || respuestas[campoTitular.nombre] === true) : false;
   const camposEnviados = [...camposFormulario, ...camposGlobales]
     .filter((c) => !esCampoProducto(c) && respuestasNombres.has(c.nombre));
-  const camposParaEditar = camposEnviados.filter((c) => !esCambioTitular(c) && !esVisibleSiCambioTitular(c));
+  const camposParaEditar = camposEnviados.filter(
+    (c) => !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c)
+  );
+  const getValorPorNombreCampo = (nombre) => {
+    if (respuestas[nombre] !== undefined && respuestas[nombre] !== null) return respuestas[nombre];
+    const n = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+    const target = n(nombre);
+    for (const k of Object.keys(respuestas)) {
+      if (n(k) === target) return respuestas[k];
+    }
+    return undefined;
+  };
+
+  const getCamposRepetidosExpandidos = () => {
+    const todosCampos = [...camposFormulario, ...camposGlobales];
+    const repetidos = todosCampos.filter(esCampoRepetirSegun);
+    const expandidos = [];
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      let n = Math.min(20, Math.max(0, parseInt(String(getValorPorNombreCampo(nombreCampoCantidad) || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '');
+        const regex = new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\((\\d+)\\)$`, 'i');
+        for (const nom of respuestasNombres) {
+          const m = nom.match(regex);
+          if (m) n = Math.max(n, parseInt(m[1], 10));
+        }
+      }
+      const nombreBase = c.nombre || '';
+      const opcionesDesde = (c.visible_si?.opciones_desde || '').trim();
+      let opcionesUsar = c.opciones;
+      const todosCampos = [...camposFormulario, ...camposGlobales];
+      if (opcionesDesde) {
+        const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+        const baseRef = opcionesDesde.replace(/\(x\)|\(\$\)/i, '').trim();
+        const targetNorm = nNorm(baseRef);
+        const campoRef = todosCampos.find((cam) => {
+          const baseCam = (cam.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+          return nNorm(baseCam) === targetNorm;
+        });
+        if (campoRef?.opciones?.length) opcionesUsar = campoRef.opciones;
+      }
+      const tienePlaceholder = /\(x\)|\(\$\)/i.test(nombreBase);
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = tienePlaceholder
+          ? nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`)
+          : `${nombreBase.trim()} (${i})`;
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i, opciones: opcionesUsar ?? c.opciones });
+      }
+    }
+    return expandidos;
+  };
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   const actualizarRespuesta = useCallback((nombreCampo, valor) => {
     setRespuestas((p) => ({ ...p, [nombreCampo]: valor }));
@@ -231,9 +301,11 @@ export function ClienteEditModal({
 
   const handleSubmit = () => {
     if (!nombre?.trim()) return;
+    const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCups(v));
+    if (cupsInvalido) return;
     const respuestasList = soloDatosBase ? [] : (() => {
       const list = [];
-      const todosCamposEditar = [...camposParaEditar];
+      const todosCamposEditar = [...camposParaEditar, ...camposRepetidosExpandidos];
       if (campoTitular) todosCamposEditar.push(campoTitular);
       if (cambioTitularMarcado) todosCamposEditar.push(...camposTitularDependientes);
       todosCamposEditar.forEach((c) => {
@@ -252,7 +324,6 @@ export function ClienteEditModal({
       telefono: telefono.trim() || '',
       correo_electronico_o_carta: correoElectronicoOCarta.trim() || '',
       direccion: direccion.trim() || '',
-      cups: cups.trim() || '',
       cuenta_bancaria: cuentaBancaria.trim() || '',
       compania_anterior: companiaAnterior.trim() || '',
       compania_actual: companiaActual.trim() || '',
@@ -337,13 +408,6 @@ export function ClienteEditModal({
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               size="small"
-              label="CUPS"
-              value={cups}
-              onChange={(e) => setCups(e.target.value)}
-              sx={{ flex: 1, ...inputSx }}
-            />
-            <TextField
-              size="small"
               label="Cuenta bancaria"
               value={cuentaBancaria}
               onChange={(e) => setCuentaBancaria(e.target.value)}
@@ -366,7 +430,7 @@ export function ClienteEditModal({
               sx={{ flex: 1, ...inputSx }}
             />
           </Stack>
-          {!soloDatosBase && (camposParaEditar.length > 0 || campoTitular || opcionesProducto?.length > 0) && (
+          {!soloDatosBase && (camposParaEditar.length > 0 || campoTitular || camposRepetidosExpandidos.length > 0 || opcionesProducto?.length > 0) && (
             <>
               <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Campos del formulario (enviados)</Typography>
               {opcionesProducto?.length > 0 && respuestasNombres.size > 0 && (
@@ -391,7 +455,7 @@ export function ClienteEditModal({
                 <SectionLoader message="Cargando campos del formulario..." minHeight={120} />
               ) : (
                 <Stack spacing={2}>
-                  {camposParaEditar.map((c) => (
+                  {[...camposParaEditar, ...camposRepetidosExpandidos].map((c) => (
                     <CampoDinamicoInput
                       key={c.nombre}
                       campo={c}

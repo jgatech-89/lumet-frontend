@@ -43,7 +43,6 @@ export const listarClientes = async (page = 1, pageSize = 5, filters = {}) => {
       nombre: c.nombre,
       tipo_identificacion: c.tipo_identificacion,
       numero_identificacion: c.numero_identificacion,
-      cups: c.cups,
       direccion: c.direccion,
       telefono: c.telefono,
       correo_electronico_o_carta: c.correo_electronico_o_carta,
@@ -85,6 +84,18 @@ export const obtenerCamposFormulario = async (empresaId, servicioId, producto, s
  */
 export const obtenerCliente = async (id) => {
   const { data } = await get(`${BASE}${id}/`);
+  return data;
+};
+
+/**
+ * Obtiene solo la información necesaria para el modal de detalle de un producto (ojito).
+ * Devuelve { cliente: { id, nombre, vendedor_nombre }, producto: { id, producto, empresa_nombre, ... } }.
+ * @param {number|string} clienteId
+ * @param {number|string} productoId - ID del ClienteEmpresa (producto)
+ * @returns {Promise<{ cliente: Object, producto: Object }>}
+ */
+export const obtenerDetalleProducto = async (clienteId, productoId) => {
+  const { data } = await get(`${BASE}${clienteId}/productos/${productoId}/detalle/`);
   return data;
 };
 
@@ -225,4 +236,73 @@ export const agregarProductoCliente = async (clienteId, payload) => {
 export const actualizarProductoCliente = async (clienteId, payload) => {
   const { data } = await post(`${BASE}${clienteId}/actualizar-producto/`, payload);
   return data;
+};
+
+/**
+ * Sube documento_dni y/o documento_factura para un cliente.
+ * @param {number|string} clienteId
+ * @param {File|null} documentoDni - Archivo PDF DNI
+ * @param {File|null} documentoFactura - Archivo PDF factura
+ */
+export const subirDocumentos = async (clienteId, documentoDni, documentoFactura) => {
+  const formData = new FormData();
+  if (documentoDni) formData.append('documento_dni', documentoDni);
+  if (documentoFactura) formData.append('documento_factura', documentoFactura);
+  const token = getToken();
+  const response = await fetch(`${api}/api/clientes/${clienteId}/subir-documentos/`, {
+    method: 'POST',
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+    body: formData,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || 'Error al subir documentos');
+  return data;
+};
+
+/**
+ * Obtiene el blob del PDF DNI para visualizar (crear object URL).
+ */
+export const obtenerDocumentoDniBlob = async (clienteId) => {
+  const token = getToken();
+  const response = await fetch(`${api}/api/clientes/${clienteId}/documento-dni/`, {
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+  });
+  if (!response.ok) throw new Error('Error al obtener documento DNI');
+  return response.blob();
+};
+
+/**
+ * Obtiene el blob del PDF factura para visualizar.
+ */
+export const obtenerDocumentoFacturaBlob = async (clienteId) => {
+  const token = getToken();
+  const response = await fetch(`${api}/api/clientes/${clienteId}/documento-factura/`, {
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+  });
+  if (!response.ok) throw new Error('Error al obtener documento factura');
+  return response.blob();
+};
+
+/**
+ * Descarga el PDF del DNI del cliente.
+ */
+export const descargarDocumentoDni = async (clienteId) => {
+  const token = getToken();
+  const response = await fetch(`${api}/api/clientes/${clienteId}/descargar-documento-dni/`, {
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+  });
+  if (!response.ok) throw new Error('Error al descargar documento DNI');
+  return response.blob();
+};
+
+/**
+ * Descarga el PDF de la factura del cliente.
+ */
+export const descargarDocumentoFactura = async (clienteId) => {
+  const token = getToken();
+  const response = await fetch(`${api}/api/clientes/${clienteId}/descargar-documento-factura/`, {
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+  });
+  if (!response.ok) throw new Error('Error al descargar documento factura');
+  return response.blob();
 };

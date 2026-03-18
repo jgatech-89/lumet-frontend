@@ -62,20 +62,20 @@ export function ContratistaModals({
     <>
       <Dialog open={modalNueva} onClose={handleCerrarNueva} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Nuevo contratista</Typography>
+          <Typography variant="h6" fontWeight={600}>Nueva compañía actual</Typography>
           <IconButton size="small" onClick={handleCerrarNueva} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Completa la información para registrar un contratista.
+            Completa la información para registrar una compañía.
           </Typography>
           <Stack spacing={2}>
             <TextField
               fullWidth
               size="small"
-              label="Nombre del contratista"
+              label="Nombre de la compañía actual"
               placeholder="Introduce el nombre..."
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
@@ -108,27 +108,27 @@ export function ContratistaModals({
             loadingText="Guardando..."
             sx={btnPrimarySx}
           >
-            Guardar contratista
+            Guardar compañía
           </LoadingButton>
         </DialogActions>
       </Dialog>
 
       <Dialog open={modalEditar} onClose={handleCerrarEditar} PaperProps={{ sx: modalPaperSx }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-          <Typography variant="h6" fontWeight={600}>Editar contratista</Typography>
+          <Typography variant="h6" fontWeight={600}>Editar compañía actual</Typography>
           <IconButton size="small" onClick={handleCerrarEditar} aria-label="Cerrar">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Modifica los datos del contratista.
+            Modifica los datos de la compañía.
           </Typography>
           <Stack spacing={2}>
             <TextField
               fullWidth
               size="small"
-              label="Nombre del contratista"
+              label="Nombre de la compañía actual"
               placeholder="Introduce el nombre..."
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
@@ -150,11 +150,11 @@ export function ContratistaModals({
               </Select>
             </FormControl>
             <FormControl size="small" fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
-              <InputLabel id="editar-servicio-estado-label">Estado del contratista</InputLabel>
+              <InputLabel id="editar-servicio-estado-label">Estado de la compañía</InputLabel>
               <Select
                 labelId="editar-servicio-estado-label"
                 value={estadoServicio}
-                label="Estado del contratista"
+                label="Estado de la compañía"
                 onChange={(e) => setEstadoServicio(e.target.value)}
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
@@ -184,8 +184,8 @@ export function ContratistaModals({
         open={modalEliminar}
         onClose={handleCerrarEliminar}
         onConfirm={() => { handleConfirmarEliminar(); return Promise.resolve(); }}
-        title="Eliminar contratista"
-        message="¿Está seguro que desea eliminar este contratista?"
+        title="Eliminar compañía actual"
+        message="¿Está seguro que desea eliminar esta compañía actual?"
         itemName={aEliminar?.servicio ?? aEliminar?.nombre}
         loading={eliminando}
         confirmLabel="Eliminar"

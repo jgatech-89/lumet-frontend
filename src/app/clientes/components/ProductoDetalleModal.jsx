@@ -48,18 +48,22 @@ export function ProductoDetalleModal({
 }) {
   if (!producto || !open) return null;
 
-  const respuestas = cliente?.respuestas || [];
+  // Usar siempre las respuestas de ESTE producto (producto.respuestas por id ClienteEmpresa). Si no vienen, no usar las del cliente para no mezclar productos.
+  const respuestas = Array.isArray(producto?.respuestas) ? producto.respuestas : [];
   const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
   const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
   const esTipoCliente = (r) => NOMBRES_TIPO_CLIENTE.some((n) => norm(r?.nombre_campo) === norm(n));
   const respuestasOrdenadas = [...respuestas].sort((a, b) =>
     (a.nombre_campo || '').localeCompare(b.nombre_campo || '')
   );
-  const respuestasSinVendedorNiTipoCliente = respuestasOrdenadas.filter(
-    (r) => norm(r?.nombre_campo) !== 'vendedor' && !esTipoCliente(r)
+  const respuestasSinComercialCerradorNiTipoCliente = respuestasOrdenadas.filter(
+    (r) => {
+      const n = norm(r?.nombre_campo);
+      return n !== 'vendedor' && n !== 'comercial' && n !== 'cerrador' && !esTipoCliente(r);
+    }
   );
   const tipoClienteRespuesta = respuestas.find((r) => esTipoCliente(r));
-  const tipoClienteValor = tipoClienteRespuesta ? formatValorSiNo(tipoClienteRespuesta.respuesta_campo) : '-';
+  const tipoClienteValor = tipoClienteRespuesta ? formatValorSiNo(tipoClienteRespuesta.respuesta_campo) : (producto?.tipo_cliente ?? '-');
 
   const labelEstado = opcionesEstadoVenta?.length > 0
     ? opcionesEstadoVenta.find(
@@ -88,27 +92,32 @@ export function ProductoDetalleModal({
           color="primary"
           sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}
         >
-          Servicio y producto
+          Comercial
         </Typography>
         <Stack spacing={0.5} sx={{ mb: 2 }}>
           <DataRow label="Tipo de cliente" value={tipoClienteValor} />
           <DataRow label="Servicio" value={producto.empresa_nombre} />
-          <DataRow label="Contratistas" value={producto.servicio_nombre} />
+          <DataRow label="Compañía actual" value={producto.servicio_nombre} />
           <DataRow label="Producto" value={producto.producto} />
           <DataRow label="Estado de venta" value={labelEstado} />
+          <DataRow label="Comercial" value={producto?.vendedor_nombre ?? cliente?.vendedor_nombre ?? '-'} />
         </Stack>
 
-        <Typography
-          variant="subtitle2"
-          fontWeight={600}
-          color="primary"
-          sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}
-        >
-          Vendedor
-        </Typography>
-        <DataRow label="Vendedor" value={producto?.vendedor_nombre ?? cliente?.vendedor_nombre ?? '-'} />
+        {producto?.cerrador_nombre && (
+          <>
+            <Typography
+              variant="subtitle2"
+              fontWeight={600}
+              color="primary"
+              sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}
+            >
+              Cerrador
+            </Typography>
+            <DataRow label="Cerrador" value={producto.cerrador_nombre} />
+          </>
+        )}
 
-        {respuestasSinVendedorNiTipoCliente.length > 0 && (
+        {respuestasSinComercialCerradorNiTipoCliente.length > 0 && (
           <>
             <Typography
               variant="subtitle2"
@@ -118,7 +127,7 @@ export function ProductoDetalleModal({
             >
               Información adicional
             </Typography>
-            {respuestasSinVendedorNiTipoCliente.map((r) => (
+            {respuestasSinComercialCerradorNiTipoCliente.map((r) => (
               <DataRow key={r.nombre_campo} label={r.nombre_campo} value={r.respuesta_campo} formatSiNo />
             ))}
           </>

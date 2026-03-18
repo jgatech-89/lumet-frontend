@@ -103,7 +103,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       .catch((e) => {
         if (!cancelled) {
           showSnackbar(
-            getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar los contratistas'),
+            getErrorMessage(e, e?.status, e?.response, 'No se pudieron cargar las compañías'),
             'error'
           );
           setServiciosFiltrados([]);
@@ -125,7 +125,7 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
     const nextErrors = { ...INIT_ERRORS };
     if (!aplicarTodosEmpresas) {
       if (!empresaId) nextErrors.empresa = 'Seleccione un servicio';
-      if (!aplicarTodosServicios && !servicioId) nextErrors.servicio = 'Seleccione un contratista';
+      if (!aplicarTodosServicios && !servicioId) nextErrors.servicio = 'Seleccione una compañía actual';
     }
     if (!nombre?.trim()) nextErrors.nombre = 'El nombre del campo es obligatorio';
     if (!tipoCampo) nextErrors.tipo = 'Seleccione el tipo de campo';
@@ -318,7 +318,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        visible_si: visible_si.trim() || '',
+        visible_si: typeof visible_si === 'object' && visible_si != null
+          ? JSON.stringify(visible_si)
+          : (visible_si?.trim?.() || ''),
         requerido: !!requerido,
         activo: !!activo,
         estado: '1',
@@ -379,9 +381,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
       setNombre(campo.campo ?? '');
       const list = await listarEmpresasActivasParaSelect();
       setEmpresasParaSelect(list);
-      const esTodosEmpresas = campo.empresa === 'Todos los servicios' || campo.servicio === 'Todos los servicios y contratistas';
+      const esTodosEmpresas = campo.empresa === 'Todos los servicios' || campo.servicio === 'Todos los servicios y compañías';
       setAplicarTodosEmpresas(esTodosEmpresas);
-      const esTodosServicios = !esTodosEmpresas && (campo.servicio === 'Todos los contratistas');
+      const esTodosServicios = !esTodosEmpresas && (campo.servicio === 'Todas las compañías');
       setAplicarTodosServicios(esTodosServicios);
       const emp = list.find((e) => e.nombre === campo.empresa);
       const empId = emp?.id?.toString() ?? list[0]?.id?.toString() ?? '';
@@ -470,7 +472,9 @@ export function useCampos(active = true, pagina = 1, setPagina = () => {}, busqu
         seccion: seccion || 'campos_formulario',
         orden: ordenNum,
         placeholder: placeholder.trim() || '',
-        visible_si: visible_si.trim() || '',
+        visible_si: typeof visible_si === 'object' && visible_si != null
+          ? JSON.stringify(visible_si)
+          : (visible_si?.trim?.() || ''),
         requerido: !!requerido,
         activo: !!activo,
         producto: aplicarTodosProductos ? '' : (productoId?.trim() || ''),

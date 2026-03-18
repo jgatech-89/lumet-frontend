@@ -7,6 +7,7 @@ import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa'
 import { listarVendedores } from '../../vendedores/logic/apiVendedores';
 import { useChoices } from '../../../context/ChoicesContext';
 import { useSnackbar } from '../../../context/SnackbarContext';
+import { useAuth } from '../../../context/AuthContext';
 import { getErrorMessage } from '../../../utils/funciones';
 
 const BASE_DATA_INICIAL = {
@@ -15,7 +16,6 @@ const BASE_DATA_INICIAL = {
   numero_identificacion: '',
   telefono: '',
   direccion: '',
-  cups: '',
   cuenta_bancaria: '',
   compania_anterior: '',
   compania_actual: '',
@@ -33,20 +33,34 @@ const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo produ
 
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoTipoCliente = (c) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(c.nombre) === norm(n));
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCupsValor = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
 const esCampoEstadoVenta = (c) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c.nombre) === norm(n));
-/** Detecta si el campo es de vendedor. Las opciones vienen de la tabla vendedores. */
-const esCampoVendedor = (n) => /vendedor/i.test(n || '');
+/** Detecta si el campo es de vendedor/comercial (excl. cerrador). Las opciones vienen de la tabla vendedores. */
+const esCampoVendedor = (n) => /vendedor|comercial/i.test(n || '') && !/cerrador/i.test(n || '');
 
 /**
  * Hook con la lógica del formulario de nuevo cliente (4 pasos).
  * Paso 1 "Cliente": tipo de cliente (getOptions) primero; al seleccionar aparecen empresa y servicio.
  * Paso 3: campos dinámicos (excluyendo tipo_cliente si existe en campos).
+ *
+ * @param {Object} [clienteExistente] - Si se pasa, modo "agregar producto": se precargan datos base y al guardar se llama agregarProductoCliente.
+ * @param {Function} [onExito] - Callback tras guardar (crear cliente o agregar producto). En modo agregar producto se llama en lugar de navigate.
  */
-export function useNuevoCliente() {
+export function useNuevoCliente(clienteExistente, onExito) {
   const navigate = useNavigate();
   const { showSnackbar } = useSnackbar();
   const { getOptions } = useChoices();
+  const { user } = useAuth();
+  const esAdmin = user?.perfil === 'admin';
+  const esModoAgregarProducto = !!clienteExistente?.id;
 
   const [paso, setPaso] = useState(1);
   const [tipoCliente, setTipoCliente] = useState('');
@@ -56,6 +70,10 @@ export function useNuevoCliente() {
   const [respuestas, setRespuestas] = useState({});
   const [producto, setProducto] = useState('');
   const [vendedorId, setVendedorId] = useState('');
+  const [cerradorId, setCerradorId] = useState('');
+  const [tieneCerrador, setTieneCerrador] = useState(false);
+  const [documentoDni, setDocumentoDni] = useState(null);
+  const [documentoFactura, setDocumentoFactura] = useState(null);
 
   const [empresas, setEmpresas] = useState([]);
   const [vendedores, setVendedores] = useState([]);
@@ -162,6 +180,22 @@ export function useNuevoCliente() {
     }
   }, [empresa?.id, cargarServicios]);
 
+  /** En modo agregar producto, precargar datos base del cliente existente. */
+  useEffect(() => {
+    if (!esModoAgregarProducto || !clienteExistente) return;
+    setBaseData({
+      nombre: clienteExistente.nombre ?? '',
+      tipo_identificacion: clienteExistente.tipo_identificacion ?? '',
+      numero_identificacion: clienteExistente.numero_identificacion ?? '',
+      telefono: clienteExistente.telefono ?? '',
+      direccion: clienteExistente.direccion ?? '',
+      cuenta_bancaria: clienteExistente.cuenta_bancaria ?? '',
+      compania_anterior: clienteExistente.compania_anterior ?? '',
+      compania_actual: clienteExistente.compania_actual ?? '',
+      correo_electronico_o_carta: clienteExistente.correo_electronico_o_carta ?? '',
+    });
+  }, [esModoAgregarProducto, clienteExistente?.id, clienteExistente?.nombre, clienteExistente?.tipo_identificacion, clienteExistente?.numero_identificacion, clienteExistente?.telefono, clienteExistente?.direccion, clienteExistente?.cuenta_bancaria, clienteExistente?.compania_anterior, clienteExistente?.compania_actual, clienteExistente?.correo_electronico_o_carta]);
+
   const cargarOpcionesProducto = useCallback(async () => {
     try {
       const params = servicio?.empresa_id && servicio?.id
@@ -211,7 +245,7 @@ export function useNuevoCliente() {
       cargarCamposFormulario();
     } else {
       setCamposFormulario([]);
-      setRespuestas({});
+      // No limpiar respuestas al cambiar servicio: preservar datos del usuario al volver atrás
     }
   }, [servicio?.empresa_id, servicio?.id, producto, cargarCamposFormulario]);
 
@@ -223,14 +257,22 @@ export function useNuevoCliente() {
     const digits = (t || '').replace(/\D/g, '');
     return digits.length >= 5;
   };
-  const validarCorreo = (e) => {
-    const s = (e || '').trim();
+  const validarCorreoOCarta = (e) => {
+    const s = (e || '').trim().toLowerCase();
     if (!s) return true;
+    if (s === 'carta' || s === 'papel') return true;
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  };
+  const validarCuentaBancaria = (c) => {
+    const s = (c || '').trim();
+    if (!s) return true;
+    const nums = (s.match(/\d/g) || []).length;
+    const lets = (s.match(/[a-zA-Z]/g) || []).length;
+    return nums >= 22 && lets >= 2;
   };
 
   const puedeSiguientePaso = () => {
-    if (paso === 1) {
+    if (stepType === 'cliente') {
       if (!campoTipoCliente) return false;
       const valorTipo = respuestas[campoTipoCliente.nombre];
       if (!valorTipo || !String(valorTipo).trim()) return false;
@@ -239,23 +281,26 @@ export function useNuevoCliente() {
       if (prodEnCliente && opcionesProducto?.length > 0 && !producto) return false;
       return true;
     }
-    if (paso === 2) {
+    if (stepType === 'datos_base') {
       if (!baseData.nombre?.trim()) return false;
       if (!baseData.numero_identificacion?.trim()) return false;
+      if (baseData.numero_identificacion?.trim().length < 3) return false;
       if (!baseData.telefono?.trim()) return false;
       if (!validarTelefono(baseData.telefono)) return false;
       if (!baseData.correo_electronico_o_carta?.trim()) return false;
-      const prodEnDatosBase = campoTipoProducto && seccion(campoTipoProducto) === 'datos_base';
-      if (prodEnDatosBase && opcionesProducto?.length > 0 && !producto) return false;
+      if (!validarCorreoOCarta(baseData.correo_electronico_o_carta)) return false;
+      if (baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)) return false;
       const requeridosDatosBase = camposSeccionDatosBase.filter((c) => c.requerido);
       const okDatosBase = requeridosDatosBase.every((c) => {
         const v = respuestas[c.nombre];
         return v != null && String(v).trim() !== '';
       });
       if (!okDatosBase) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
       return true;
     }
-    if (paso === 3) {
+    if (stepType === 'campos_del_formulario') {
       const prodEnFormulario = campoTipoProducto && seccion(campoTipoProducto) === 'campos_formulario';
       if (prodEnFormulario && opcionesProducto?.length > 0 && !producto) return false;
       const requeridos = camposFormularioSinTipoCliente.filter((c) => c.requerido);
@@ -264,6 +309,8 @@ export function useNuevoCliente() {
         return v != null && String(v).trim() !== '';
       });
       if (!okRequeridos) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
       if (cambioTitularMarcado) {
         const requeridosTitular = camposTitularDependientes.filter((c) => c.requerido);
         return requeridosTitular.every((c) => {
@@ -273,20 +320,28 @@ export function useNuevoCliente() {
       }
       return true;
     }
-    if (paso === 4) {
+    if (stepType === 'comercial') {
       const prodEnVendedor = campoTipoProducto && seccion(campoTipoProducto) === 'vendedor';
       if (prodEnVendedor && opcionesProducto?.length > 0 && !producto) return false;
       const requeridosVendedor = camposSeccionVendedor.filter((c) => c.requerido);
-      return requeridosVendedor.every((c) => {
+      const okVendedor = requeridosVendedor.every((c) => {
         const v = esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId) : respuestas[c.nombre];
         return v != null && String(v).trim() !== '';
       });
+      if (!okVendedor) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
+      if (tieneCerrador && esAdmin && !cerradorId?.trim()) return false;
+      return true;
+    }
+    if (stepType === 'documentos') {
+      return true;  /* PDFs opcionales: se puede guardar con o sin documentos */
     }
     return true;
   };
 
   const handleSiguiente = () => {
-    if (paso < 4 && puedeSiguientePaso()) setPaso((p) => p + 1);
+    if (paso < totalSteps && puedeSiguientePaso()) setPaso((p) => p + 1);
   };
 
   const handleAnterior = () => {
@@ -302,18 +357,44 @@ export function useNuevoCliente() {
     setBaseData({ ...BASE_DATA_INICIAL });
     setRespuestas({});
     setVendedorId('');
+    setCerradorId('');
+    setTieneCerrador(false);
+    setDocumentoDni(null);
+    setDocumentoFactura(null);
   };
+
+  /** Lógica por tipo de servicio (Paso 8 y 9) */
+  const nombreServicio = (servicio?.nombre || '').toLowerCase();
+  const nombreEmpresa = (empresa?.nombre || '').toLowerCase();
+  const esOng = nombreServicio.includes('ong') || nombreEmpresa.includes('ong');
+  const esEnergia = nombreServicio.includes('energía') || nombreServicio.includes('energia') || nombreEmpresa.includes('energía') || nombreEmpresa.includes('energia');
+  const esOngOTelefonia = esOng || nombreServicio.includes('telefonía') || nombreServicio.includes('telefonia') || nombreEmpresa.includes('telefonía') || nombreEmpresa.includes('telefonia');
+
+  const steps = (() => {
+    const s = ['Cliente', 'Datos base'];
+    if (!esOng) s.push('Campos del formulario');
+    s.push('Comercial');
+    if (esEnergia) s.push('Documentos');
+    return s;
+  })();
+  const stepType = steps[paso - 1]?.toLowerCase().replace(/\s+/g, '_') ?? '';
+  const totalSteps = steps.length;
 
   const handleGuardar = async () => {
     if (!empresa?.id || !servicio?.id) {
-      showSnackbar('Seleccione servicio y contratista', 'error');
+      showSnackbar('Seleccione servicio y compañía actual', 'error');
       return;
     }
-    if (!baseData.nombre?.trim()) {
+    if (!esModoAgregarProducto && !baseData.nombre?.trim()) {
       showSnackbar('El nombre es obligatorio', 'error');
       return;
     }
 
+    const cupsInvalido = Object.entries(respuestas || {}).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+    if (cupsInvalido) {
+      showSnackbar('El campo CUPS debe tener mínimo 16 dígitos y 4 letras', 'error');
+      return;
+    }
     setGuardando(true);
     try {
       const respuestasObj = respuestas && typeof respuestas === 'object' ? respuestas : {};
@@ -324,13 +405,19 @@ export function useNuevoCliente() {
       const esTipoCliente = ([k]) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(k) === norm(n));
       const esEstadoVenta = ([k]) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(k) === norm(n));
       const esProducto = ([k]) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(k) === norm(n));
-      const esVendedor = ([k]) => /vendedor/i.test(norm(k));
+      const esVendedor = ([k]) => /vendedor|comercial/i.test(norm(k)) && !/cerrador/i.test(norm(k));
+      const esCerrador = ([k]) => /cerrador/i.test(norm(k));
 
       const nombresValidos = new Set([
         'vendedor',
         'Vendedor',
+        'comercial',
+        'Comercial',
+        'cerrador',
+        'Cerrador',
         ...(camposFormulario || []).map((c) => c.nombre).filter(Boolean),
         ...(camposGlobales || []).map((c) => c.nombre).filter(Boolean),
+        ...getCamposRepetidosExpandidos().map((c) => c.nombre).filter(Boolean),
       ]);
       const esNombreValido = (nombre) =>
         nombresValidos.has(nombre) || [...nombresValidos].some((n) => norm(n) === norm(nombre));
@@ -341,10 +428,28 @@ export function useNuevoCliente() {
 
       if (vendedorId && String(vendedorId).trim()) {
         respuestasList = respuestasList.filter((item) => !esVendedor([item.nombre_campo]));
-        respuestasList.push({ nombre_campo: 'vendedor', respuesta_campo: String(vendedorId).trim() });
+        respuestasList.push({ nombre_campo: 'comercial', respuesta_campo: String(vendedorId).trim() });
+      }
+      if (tieneCerrador && cerradorId && String(cerradorId).trim()) {
+        respuestasList = respuestasList.filter((item) => !esCerrador([item.nombre_campo]));
+        respuestasList.push({ nombre_campo: 'cerrador', respuesta_campo: String(cerradorId).trim() });
       }
 
       const productoVal = (producto && producto !== '__todos__') ? producto.trim() : undefined;
+
+      if (esModoAgregarProducto && clienteExistente?.id) {
+        const payloadAgregar = {
+          servicio_id: servicio.id,
+          producto: productoVal,
+          respuestas: respuestasList,
+        };
+        await apiCliente.agregarProductoCliente(clienteExistente.id, payloadAgregar);
+        showSnackbar('Producto agregado correctamente.', 'success');
+        handleLimpiar();
+        onExito?.();
+        return;
+      }
+
       const payload = {
         servicio_id: servicio.id,
         producto: productoVal,
@@ -354,14 +459,18 @@ export function useNuevoCliente() {
         telefono: baseData.telefono?.trim() || '',
         correo_electronico_o_carta: baseData.correo_electronico_o_carta?.trim() || '',
         direccion: baseData.direccion?.trim() || '',
-        cups: baseData.cups?.trim() || '',
         cuenta_bancaria: baseData.cuenta_bancaria?.trim() || '',
         compania_anterior: baseData.compania_anterior?.trim() || '',
-        compania_actual: baseData.compania_actual?.trim() || '',
+        compania_actual: servicio?.nombre?.trim() || baseData.compania_actual?.trim() || '',
         respuestas: respuestasList,
       };
 
-      await apiCliente.crearCliente(payload);
+      const clienteCreado = await apiCliente.crearCliente(payload);
+      const clienteId = clienteCreado?.id ?? clienteCreado?.data?.id;
+
+      if (stepType === 'documentos' && clienteId && (documentoDni || documentoFactura)) {
+        await apiCliente.subirDocumentos(clienteId, documentoDni, documentoFactura);
+      }
 
       showSnackbar('Cliente creado correctamente');
       navigate('/clientes');
@@ -381,9 +490,14 @@ export function useNuevoCliente() {
 
   /** Campos que solo se muestran cuando "Cambio de titular" = Sí. Todo viene de visible_si en Configuración → Campos. */
   const esVisibleSiCambioTitular = (c) => {
+    if (c.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
     const vs = (c.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
     return vs.includes('cambio') && vs.includes('titular');
   };
+
+  /** Campos que se repiten N veces según el valor numérico de otro campo (ej: linea adicional (x) según lineas adicionales). */
+  const esCampoRepetirSegun = (c) =>
+    c.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
   const campoTitular = camposFormulario.find(esCambioTitular) ?? camposGlobales.find(esCambioTitular);
   const nombreCampoTitular = campoTitular?.nombre ?? 'Cambio de titular';
@@ -420,17 +534,81 @@ export function useNuevoCliente() {
   /** Sección 2 (datos_base): campos con seccion=datos_base, excl. producto */
   const camposSeccionDatosBase = todosLosCampos.filter((c) => seccion(c) === 'datos_base' && !esCampoProducto(c));
 
-  /** Sección 3 (campos_formulario): solo campos de esta sección, excl. tipo_cliente, producto, cambio titular, visible_si */
+  /** Sección 3 (campos_formulario): solo campos de esta sección, excl. tipo_cliente, producto, cambio titular, visible_si, repetir_segun */
   const camposSeccionFormulario = todosLosCampos
     .filter((c) => seccion(c) === 'campos_formulario')
-    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c))
+    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c))
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
+
+  /** Obtiene valor de respuestas por nombre de campo (búsqueda insensible a mayúsculas/espacios). */
+  const getValorPorNombreCampo = (nombre) => {
+    if (respuestas[nombre] !== undefined && respuestas[nombre] !== null) return respuestas[nombre];
+    const n = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+    const target = n(nombre);
+    for (const k of Object.keys(respuestas)) {
+      if (n(k) === target) return respuestas[k];
+    }
+    return undefined;
+  };
+
+  /** Campos que se repiten según otro campo (ej: linea adicional (x) según lineas adicionales). Devuelve instancias expandidas. */
+  const getCamposRepetidosExpandidos = () => {
+    const repetidos = todosLosCampos.filter((c) => seccion(c) === 'campos_formulario' && esCampoRepetirSegun(c));
+    const expandidos = [];
+    const respuestasKeys = Object.keys(respuestas);
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      let valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
+      // Si no hay valor, buscar en todosLosCampos el campo que coincida (p. ej. "Lineas adicionales")
+      if (valorCantidad == null || valorCantidad === '') {
+        const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+        const targetNorm = nNorm(nombreCampoCantidad);
+        const campoCantidad = todosLosCampos.find((cam) => nNorm(cam.nombre) === targetNorm);
+        if (campoCantidad) valorCantidad = respuestas[campoCantidad.nombre];
+      }
+      let n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+        const regex = nombreBase
+          ? new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\((\\d+)\\)$`, 'i')
+          : null;
+        if (regex) {
+          for (const k of respuestasKeys) {
+            const m = k.match(regex);
+            if (m) n = Math.max(n, parseInt(m[1], 10));
+          }
+        }
+      }
+      const nombreBase = c.nombre || '';
+      const opcionesDesde = (c.visible_si?.opciones_desde || '').trim();
+      let opcionesUsar = c.opciones;
+      if (opcionesDesde) {
+        const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+        const baseRef = opcionesDesde.replace(/\(x\)|\(\$\)/i, '').trim();
+        const targetNorm = nNorm(baseRef);
+        const campoRef = todosLosCampos.find((cam) => {
+          const baseCam = (cam.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+          return nNorm(baseCam) === targetNorm;
+        });
+        if (campoRef?.opciones?.length) opcionesUsar = campoRef.opciones;
+      }
+      const tienePlaceholder = /\(x\)|\(\$\)/i.test(nombreBase);
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = tienePlaceholder
+          ? nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`)
+          : `${nombreBase.trim()} (${i})`;
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i, opciones: opcionesUsar ?? c.opciones });
+      }
+    }
+    return expandidos;
+  };
 
   /** Sección 4 (vendedor): solo campos con seccion=vendedor */
   const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
 
   /** Paso 3: solo campos seccion=campos_formulario (campoTitular y dependientes se renderan aparte) */
   const camposFormularioSinTipoCliente = camposSeccionFormulario;
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   return {
     paso,
@@ -452,6 +630,7 @@ export function useNuevoCliente() {
     actualizarRespuesta,
     camposFormulario,
     camposFormularioSinTipoCliente,
+    camposRepetidosExpandidos,
     campEstadoVenta,
     empresas,
     servicios,
@@ -466,7 +645,8 @@ export function useNuevoCliente() {
     handleGuardar,
     puedeSiguientePaso,
     validarTelefono,
-    validarCorreo,
+    validarCorreoOCarta,
+    validarCuentaBancaria,
     vendedorId,
     setVendedorId,
     vendedores,
@@ -479,5 +659,18 @@ export function useNuevoCliente() {
     camposSeccionDatosBase,
     camposSeccionVendedor,
     campoTipoProducto,
+    steps,
+    totalSteps,
+    stepType,
+    esOngOTelefonia,
+    cerradorId,
+    setCerradorId,
+    tieneCerrador,
+    setTieneCerrador,
+    documentoDni,
+    setDocumentoDni,
+    documentoFactura,
+    setDocumentoFactura,
+    esModoAgregarProducto,
   };
 }

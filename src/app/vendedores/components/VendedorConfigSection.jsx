@@ -61,7 +61,7 @@ export function VendedorConfigSection({ vendedores, pagina, setPagina }) {
           </TableHead>
           <TableBody>
             {vendedores.loading ? (
-              <TableLoader columnCount={COLUMNS.length} message="Cargando vendedores..." />
+              <TableLoader columnCount={COLUMNS.length} message="Cargando comerciales..." />
             ) : (
               vendedores.vendedores.map((row) => (
                 <TableRow
@@ -104,7 +104,7 @@ export function VendedorConfigSection({ vendedores, pagina, setPagina }) {
         }}
       >
         <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
-          Mostrando {inicio}–{fin} de {totalItems} vendedores
+          Mostrando {inicio}–{fin} de {totalItems} comerciales
         </Typography>
         <Pagination
           count={totalPages}

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 import { LoadingButton } from '../../../components/loading';
 import { useChoices } from '../../../context/ChoicesContext';
@@ -41,7 +42,7 @@ const campoDinamicoSx = {
   '& .MuiInputBase-root': { width: '100%' },
 };
 
-const STEPS = ['Cliente', 'Datos base', 'Campos del formulario', 'Vendedor'];
+/** STEPS se construye dinámicamente en useNuevoCliente según servicio (ONG, ENERGÍA) */
 
 /** Quita asteriscos dobles del nombre; devuelve base limpia. MUI añade * automáticamente cuando required. */
 function labelBase(nombre) {
@@ -59,10 +60,24 @@ const esCampoTipoIdentificacion = (n) => NOMBRES_TIPO_ID_CAMPO.some(
   (x) => (n || '').toLowerCase().replace(/\s+/g, '_').includes((x || '').toLowerCase().replace(/\s+/g, '_'))
 );
 
-/** Detecta si el campo es de vendedor (por nombre). Las opciones vienen de la tabla vendedores. */
-const esCampoVendedor = (n) => /vendedor/i.test(n || '');
+/** Detecta si el campo es de vendedor/comercial (por nombre). Las opciones vienen de la tabla vendedores. */
+const esCampoVendedor = (n) => /vendedor|comercial/i.test(n || '') && !/cerrador/i.test(n || '');
+/** Detecta si el campo es cerrador. */
+const esCampoCerrador = (n) => /cerrador/i.test(n || '');
 
-function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor }) {
+/** Detecta si el campo es CUPS (nombre contiene cups o cup). */
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+
+/** Valida CUPS: mínimo 16 dígitos y 4 letras. */
+const validarCups = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
+
+function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion, opcionesVendedor, disabled }) {
   const { nombre, tipo, placeholder, requerido, opciones = [] } = campo;
   const id = `campo-${nombre}`;
   const label = labelBase(nombre);
@@ -72,7 +87,7 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
 
   if (tipo === 'select' || usarChoicesTipoId || usarOpcionesVendedor) {
     return (
-      <FormControl size="small" fullWidth sx={campoDinamicoSx} required={requerido}>
+      <FormControl size="small" fullWidth sx={campoDinamicoSx} required={requerido} disabled={disabled}>
         <InputLabel id={`${id}-label`}>{label}</InputLabel>
         <Select
           labelId={`${id}-label`}
@@ -99,12 +114,18 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
             checked={!!isChecked}
             onChange={(e) => onChange(e.target.checked ? '1' : '0')}
             size="small"
+            disabled={disabled}
           />
         }
         label={labelConAsterisco(nombre, requerido)}
       />
     );
   }
+
+  const esCups = esCampoCups(nombre);
+  const valorCups = value ?? '';
+  const cupsError = esCups && valorCups.trim() !== '' && !validarCups(valorCups);
+  const cupsHelper = esCups && cupsError ? 'Mínimo 16 dígitos y 4 letras' : '';
 
   if (tipo === 'textarea') {
     const ph = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
@@ -120,7 +141,10 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         onChange={(e) => onChange(e.target.value)}
         required={requerido}
         fullWidth
+        disabled={disabled}
         sx={campoDinamicoSx}
+        error={esCups && cupsError}
+        helperText={esCups ? cupsHelper : ''}
       />
     );
   }
@@ -138,13 +162,16 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       onChange={(e) => onChange(e.target.value)}
       required={requerido}
       fullWidth
+      disabled={disabled}
       sx={campoDinamicoSx}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
+      error={esCups && cupsError}
+      helperText={esCups ? cupsHelper : ''}
     />
   );
 }
 
-export function NuevoClienteForm() {
+export function NuevoClienteForm({ clienteExistente, onExito, onClose, embedded = false }) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -166,6 +193,7 @@ export function NuevoClienteForm() {
     baseData,
     setBaseData,
     camposFormularioSinTipoCliente,
+    camposRepetidosExpandidos,
     campEstadoVenta = null,
     empresas,
     servicios,
@@ -175,6 +203,8 @@ export function NuevoClienteForm() {
     cargandoCampos,
     cargandoCamposGlobales,
     validarTelefono,
+    validarCorreoOCarta,
+    validarCuentaBancaria,
     handleSiguiente,
     handleAnterior,
     handleLimpiar,
@@ -191,49 +221,36 @@ export function NuevoClienteForm() {
     camposSeccionDatosBase,
     camposSeccionVendedor,
     campoTipoProducto,
-  } = useNuevoCliente();
+    steps,
+    totalSteps,
+    stepType,
+    esOngOTelefonia,
+    cerradorId,
+    setCerradorId,
+    tieneCerrador,
+    setTieneCerrador,
+    documentoDni,
+    setDocumentoDni,
+    documentoFactura,
+    setDocumentoFactura,
+    esModoAgregarProducto,
+  } = useNuevoCliente(clienteExistente, onExito);
+  const datosBaseSoloLectura = embedded && esModoAgregarProducto;
+
+  const { user } = useAuth();
+  const esAdmin = user?.perfil === 'admin';
 
   const { getOptions } = useChoices();
   const tiposIdentificacion = getOptions('tipo_identificacion') || [
-    { value: 'CC', label: 'Cédula de ciudadanía' },
-    { value: 'CE', label: 'Cédula de extranjería' },
-    { value: 'DNI', label: 'DNI' },
-    { value: 'NIT', label: 'NIT' },
-    { value: 'PAS', label: 'Pasaporte' },
-    { value: 'PPT', label: 'Permiso provisional de trabajo' },
-    { value: 'OTRO', label: 'Otro' },
+    { value: 'NIE', label: 'NIE - NÚMERO DE IDENTIFICACIÓN EXTRANJERO' },
+    { value: 'PAS', label: 'PAS - PASAPORTE' },
+    { value: 'DNI', label: 'DNI - DOCUMENTO NACIONAL DE IDENTIDAD' },
+    { value: 'CIF', label: 'CIF - CÓDIGO DE IDENTIFICACIÓN FISCAL' },
   ];
 
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        borderRadius: 3,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-        overflow: 'hidden',
-        bgcolor: 'background.paper',
-        width: '100%',
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        [COMPACT_MEDIA]: { borderRadius: 2 },
-      }}
-    >
-      <Box
-        sx={{
-          p: { xs: 1.5, sm: 3, md: 4 },
-          pb: { xs: 2, sm: 4, md: 5 },
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: isMobile ? 'auto' : 'hidden',
-          width: '100%',
-          minWidth: 0,
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+  const content = (
+    <>
+      {!embedded && (
         <Box sx={{ mb: { xs: 2, sm: 3 }, flexShrink: 0 }}>
           <Typography
             variant="h4"
@@ -247,32 +264,33 @@ export function NuevoClienteForm() {
           </Typography>
           {isMobile ? (
             <Typography variant="body1" color="primary.main" fontWeight={600} sx={{ fontSize: '0.9375rem' }}>
-              Paso {paso} de 4 — {STEPS[paso - 1]}
+              Paso {paso} de {totalSteps} — {steps[paso - 1]}
             </Typography>
           ) : (
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.8125rem', sm: '1rem' } }}>
-              Completa la información en 4 pasos
+              Completa la información en {totalSteps} pasos
             </Typography>
           )}
         </Box>
+      )}
 
-        {!isMobile && (
-          <Stepper
-            activeStep={paso - 1}
-            sx={{
-              mb: { xs: 2, sm: 3 },
-              '& .MuiStepLabel-label': { fontSize: '0.875rem' },
-            }}
-          >
-            {STEPS.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        )}
+      {!isMobile && (
+        <Stepper
+          activeStep={paso - 1}
+          sx={{
+            mb: { xs: 2, sm: 3 },
+            '& .MuiStepLabel-label': { fontSize: '0.875rem' },
+          }}
+        >
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      )}
 
-        <Paper
+      <Paper
           elevation={0}
           sx={{
             p: { xs: 2, sm: 3 },
@@ -280,7 +298,7 @@ export function NuevoClienteForm() {
             border: '1px solid rgba(0,0,0,0.06)',
             bgcolor: 'background.paper',
             flex: 1,
-            minHeight: isMobile ? 'auto' : 0,
+            minHeight: isMobile && !embedded ? 'auto' : 0,
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
@@ -289,7 +307,7 @@ export function NuevoClienteForm() {
           }}
         >
           <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          {paso === 1 && (
+          {stepType === 'cliente' && (
             <Stack spacing={3}>
               <Typography variant="subtitle1" fontWeight={600} color="text.primary">
                 Cliente
@@ -336,21 +354,21 @@ export function NuevoClienteForm() {
                   {respuestas[campoTipoCliente?.nombre] && empresa && (cargandoServicios ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <CircularProgress size={24} />
-                      <Typography variant="body2" color="text.secondary">Cargando contratistas...</Typography>
+                      <Typography variant="body2" color="text.secondary">Cargando compañías...</Typography>
                     </Box>
                   ) : (
                     <FormControl size="small" sx={selectFieldSx} required>
-                      <InputLabel id="servicio-label">Contratista</InputLabel>
+                      <InputLabel id="servicio-label">Compañía actual</InputLabel>
                       <Select
                         labelId="servicio-label"
                         value={servicio?.id ?? ''}
-                        label="Contratista"
+                        label="Compañía"
                         onChange={(e) => {
                           const s = servicios.find((x) => x.id === Number(e.target.value));
                           setServicio(s ?? null);
                         }}
                       >
-                        <MenuItem value="">Seleccionar contratista</MenuItem>
+                        <MenuItem value="">Seleccionar compañía</MenuItem>
                         {servicios.map((s) => (
                           <MenuItem key={s.id} value={s.id}>{s.nombre}</MenuItem>
                         ))}
@@ -431,6 +449,7 @@ export function NuevoClienteForm() {
                     onChange={(e) => setBaseData((p) => ({ ...p, nombre: e.target.value }))}
                     required
                     fullWidth
+                    disabled={datosBaseSoloLectura}
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -438,6 +457,7 @@ export function NuevoClienteForm() {
                     size="small"
                     required
                     fullWidth
+                    disabled={datosBaseSoloLectura}
                     sx={{
                       '& .MuiOutlinedInput-root': { borderRadius: 2 },
                     }}
@@ -479,6 +499,15 @@ export function NuevoClienteForm() {
                     }
                     fullWidth
                     required
+                    disabled={datosBaseSoloLectura}
+                    error={!!baseData.numero_identificacion && baseData.numero_identificacion.trim().length < 3}
+                    helperText={
+                      !baseData.numero_identificacion?.trim()
+                        ? 'Obligatorio'
+                        : baseData.numero_identificacion.trim().length < 3
+                          ? 'Mínimo 3 dígitos'
+                          : ''
+                    }
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -489,6 +518,7 @@ export function NuevoClienteForm() {
                     onChange={(e) => setBaseData((p) => ({ ...p, telefono: e.target.value }))}
                     fullWidth
                     required
+                    disabled={datosBaseSoloLectura}
                     error={!!baseData.telefono && !validarTelefono(baseData.telefono)}
                     helperText={
                       !baseData.telefono?.trim()
@@ -507,7 +537,16 @@ export function NuevoClienteForm() {
                     onChange={(e) => setBaseData((p) => ({ ...p, correo_electronico_o_carta: e.target.value }))}
                     fullWidth
                     required
+                    disabled={datosBaseSoloLectura}
                     placeholder="ejemplo@correo.com o Carta"
+                    error={!!baseData.correo_electronico_o_carta?.trim() && !validarCorreoOCarta(baseData.correo_electronico_o_carta)}
+                    helperText={
+                      !baseData.correo_electronico_o_carta?.trim()
+                        ? 'Obligatorio'
+                        : !validarCorreoOCarta(baseData.correo_electronico_o_carta)
+                          ? 'Introduzca un email válido o "carta"/"papel"'
+                          : ''
+                    }
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -517,15 +556,7 @@ export function NuevoClienteForm() {
                     value={baseData.direccion ?? ''}
                     onChange={(e) => setBaseData((p) => ({ ...p, direccion: e.target.value }))}
                     fullWidth
-                  />
-                </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
-                    label="CUPS"
-                    value={baseData.cups ?? ''}
-                    onChange={(e) => setBaseData((p) => ({ ...p, cups: e.target.value }))}
-                    fullWidth
+                    disabled={datosBaseSoloLectura}
                   />
                 </Box>
                 <Box sx={{ width: '100%' }}>
@@ -535,36 +566,27 @@ export function NuevoClienteForm() {
                     value={baseData.cuenta_bancaria ?? ''}
                     onChange={(e) => setBaseData((p) => ({ ...p, cuenta_bancaria: e.target.value }))}
                     fullWidth
+                    disabled={datosBaseSoloLectura}
+                    error={!!baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)}
+                    helperText={
+                      baseData.cuenta_bancaria?.trim() && !validarCuentaBancaria(baseData.cuenta_bancaria)
+                        ? '22 números y 2 letras'
+                        : ''
+                    }
                   />
                 </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
-                    label="Compañía anterior"
-                    value={baseData.compania_anterior ?? ''}
-                    onChange={(e) => setBaseData((p) => ({ ...p, compania_anterior: e.target.value }))}
-                    fullWidth
-                  />
-                </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
-                    label="Compañía actual"
-                    value={baseData.compania_actual ?? ''}
-                    onChange={(e) => setBaseData((p) => ({ ...p, compania_actual: e.target.value }))}
-                    fullWidth
-                  />
-                </Box>
-                <Box sx={{ width: '100%' }}>
-                  <TextField
-                    size="small"
-                    label="Producto"
-                    value={producto}
-                    onChange={(e) => setProducto(e.target.value)}
-                    fullWidth
-                    placeholder="Escriba el producto"
-                  />
-                </Box>
+                {!esOngOTelefonia && (
+                  <Box sx={{ width: '100%' }}>
+                    <TextField
+                      size="small"
+                      label="Compañía anterior"
+                      value={baseData.compania_anterior ?? ''}
+                      onChange={(e) => setBaseData((p) => ({ ...p, compania_anterior: e.target.value }))}
+                      fullWidth
+                      disabled={datosBaseSoloLectura}
+                    />
+                  </Box>
+                )}
                 {camposSeccionDatosBase?.length > 0 &&
                   camposSeccionDatosBase.map((c) => (
                     <Box sx={{ width: '100%' }} key={c.id}>
@@ -586,6 +608,7 @@ export function NuevoClienteForm() {
                           onChange={(v) => actualizarRespuesta(c.nombre, v)}
                           opcionesTipoIdentificacion={tiposIdentificacion}
                           opcionesVendedor={vendedores}
+                          disabled={datosBaseSoloLectura}
                         />
                       </Box>
                     </Box>
@@ -594,7 +617,7 @@ export function NuevoClienteForm() {
             </Box>
           )}
 
-          {paso === 3 && (
+          {stepType === 'campos_del_formulario' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <Box sx={{ overflowY: 'auto', flex: 1, minHeight: 0, pr: 0.5 }}>
                 <Stack spacing={3}>
@@ -647,6 +670,30 @@ export function NuevoClienteForm() {
                       >
                         {camposFormularioSinTipoCliente.map((c) => (
                           <Box sx={{ width: '100%' }} key={c.id}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.5,
+                                width: '100%',
+                                minWidth: 0,
+                              }}
+                            >
+                              <Typography variant="body2" color="text.secondary" component="label">
+                                {labelConAsterisco(c.nombre, c.requerido)}
+                              </Typography>
+                              <CampoDinamicoInput
+                                campo={c}
+                                value={respuestas[c.nombre]}
+                                onChange={(v) => actualizarRespuesta(c.nombre, v)}
+                                opcionesTipoIdentificacion={tiposIdentificacion}
+                                opcionesVendedor={vendedores}
+                              />
+                            </Box>
+                          </Box>
+                        ))}
+                        {camposRepetidosExpandidos.map((c) => (
+                          <Box sx={{ width: '100%' }} key={`${c.id}-${c._indice}`}>
                             <Box
                               sx={{
                                 display: 'flex',
@@ -732,10 +779,10 @@ export function NuevoClienteForm() {
             </Box>
           )}
 
-          {paso === 4 && (
+          {stepType === 'comercial' && (
             <Stack spacing={3}>
               <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-                Datos del Vendedor
+                Comercial
               </Typography>
               {campoTipoProducto && (campoTipoProducto.seccion || 'campos_formulario').toLowerCase() === 'vendedor' && opcionesProducto?.length > 0 && (
                 <FormControl size="small" sx={selectFieldSx} required>
@@ -797,6 +844,85 @@ export function NuevoClienteForm() {
                   ))}
                 </Box>
               )}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={tieneCerrador}
+                      onChange={(e) => {
+                        setTieneCerrador(e.target.checked);
+                        if (!e.target.checked) setCerradorId('');
+                      }}
+                      size="small"
+                    />
+                  }
+                  label="Cerrador"
+                />
+                {tieneCerrador && (
+                  <FormControl size="small" sx={{ ...selectFieldSx, maxWidth: 320 }} disabled={!esAdmin}>
+                    <InputLabel id="cerrador-select-label">Cerrador</InputLabel>
+                    <Select
+                      labelId="cerrador-select-label"
+                      value={cerradorId ?? ''}
+                      label="Cerrador"
+                      onChange={(e) => setCerradorId(e.target.value || '')}
+                    >
+                      <MenuItem value="">Seleccionar</MenuItem>
+                      {(vendedores || []).map((v) => (
+                        <MenuItem key={v.id} value={String(v.id)}>
+                          {v.nombre_completo ?? v.nombre ?? ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {!esAdmin && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                        Solo el administrador puede asignar el cerrador.
+                      </Typography>
+                    )}
+                  </FormControl>
+                )}
+              </Box>
+            </Stack>
+          )}
+
+          {stepType === 'documentos' && (
+            <Stack spacing={3}>
+              <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+                Documentos (PDF DNI y factura)
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Suba el PDF del DNI y/o el PDF de la factura del cliente.
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, maxWidth: 500 }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    PDF DNI
+                  </Typography>
+                  <Button variant="outlined" component="label" fullWidth sx={{ borderRadius: 2 }}>
+                    {documentoDni?.name ?? 'Seleccionar archivo'}
+                    <input
+                      type="file"
+                      hidden
+                      accept=".pdf,application/pdf"
+                      onChange={(e) => setDocumentoDni(e.target.files?.[0] || null)}
+                    />
+                  </Button>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    PDF Factura
+                  </Typography>
+                  <Button variant="outlined" component="label" fullWidth sx={{ borderRadius: 2 }}>
+                    {documentoFactura?.name ?? 'Seleccionar archivo'}
+                    <input
+                      type="file"
+                      hidden
+                      accept=".pdf,application/pdf"
+                      onChange={(e) => setDocumentoFactura(e.target.files?.[0] || null)}
+                    />
+                  </Button>
+                </Box>
+              </Box>
             </Stack>
           )}
           </Box>
@@ -805,7 +931,7 @@ export function NuevoClienteForm() {
             <Stack direction="row" gap={2} flexWrap="wrap">
               <Button
                 variant="outlined"
-                onClick={paso === 1 ? () => navigate(-1) : handleAnterior}
+                onClick={paso === 1 ? (embedded && onClose ? () => { handleLimpiar(); onClose(); } : () => navigate(-1)) : handleAnterior}
                 sx={{
                   borderRadius: 2,
                   textTransform: 'none',
@@ -817,7 +943,7 @@ export function NuevoClienteForm() {
               >
                 {paso === 1 ? 'Cancelar' : 'Anterior'}
               </Button>
-              {paso < 4 && (
+              {paso < totalSteps && (
                 <Button
                   variant="contained"
                   onClick={handleSiguiente}
@@ -846,7 +972,7 @@ export function NuevoClienteForm() {
               >
                 Limpiar
               </Button>
-              {paso === 4 && (
+              {paso === totalSteps && (
                 <LoadingButton
                   variant="contained"
                   onClick={handleGuardar}
@@ -860,12 +986,64 @@ export function NuevoClienteForm() {
                     py: 1.25,
                   }}
                 >
-                  Guardar cliente
+                  {esModoAgregarProducto ? 'Agregar producto' : 'Guardar cliente'}
                 </LoadingButton>
               )}
             </Stack>
           </Stack>
         </Paper>
+      </>
+  );
+
+  if (embedded) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isMobile ? 'auto' : 'hidden',
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
+        {content}
+      </Box>
+    );
+  }
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: 3,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        width: '100%',
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        [COMPACT_MEDIA]: { borderRadius: 2 },
+      }}
+    >
+      <Box
+        sx={{
+          p: { xs: 1.5, sm: 3, md: 4 },
+          pb: { xs: 2, sm: 4, md: 5 },
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isMobile ? 'auto' : 'hidden',
+          width: '100%',
+          minWidth: 0,
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {content}
       </Box>
     </Paper>
   );

@@ -27,6 +27,7 @@ import { listarVendedores } from '../../vendedores/logic/apiVendedores';
 import { listarEmpresasActivasParaSelect } from '../../empresa/logic/apiEmpresa';
 import { listarServiciosPorEmpresa } from '../../servicios/logic/apiServicios';
 import { useChoices } from '../../../context/ChoicesContext';
+import { useAuth } from '../../../context/AuthContext';
 
 const NOMBRES_TIPO_CLIENTE = ['tipo_cliente', 'Tipo de cliente', 'Tipo Cliente', 'tipo cliente'];
 const NOMBRES_VENDEDOR = ['vendedor', 'Vendedor'];
@@ -42,13 +43,25 @@ const esVendedor = (c) => NOMBRES_VENDEDOR.some((n) => norm(c?.nombre) === norm(
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c?.nombre) === norm(n));
 const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c?.nombre) === norm(n));
 const esVisibleSiCambioTitular = (c) => {
+  if (c?.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
   const vs = (c?.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
   return vs.includes('cambio') && vs.includes('titular');
 };
+const esCampoRepetirSegun = (c) =>
+  c?.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
 function labelBase(nombre) {
   return (nombre || '').replace(/\s*\*+\s*$/g, '').trim();
 }
+
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCups = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
 
 function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion }) {
   const { nombre, tipo, placeholder, opciones = [] } = campo;
@@ -93,6 +106,11 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
     );
   }
 
+  const esCups = esCampoCups(nombre);
+  const valorCups = value ?? '';
+  const cupsError = esCups && valorCups.trim() !== '' && !validarCups(valorCups);
+  const cupsHelper = esCups && cupsError ? 'Mínimo 16 dígitos y 4 letras' : '';
+
   if (tipo === 'textarea') {
     const ph = placeholder != null && placeholder !== '' ? String(placeholder).replace(/\s*\*+\s*$/g, '').trim() : placeholder;
     return (
@@ -107,6 +125,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
         onChange={(e) => onChange(e.target.value)}
         fullWidth
         sx={{ maxWidth: 400 }}
+        error={esCups && cupsError}
+        helperText={esCups ? cupsHelper : ''}
       />
     );
   }
@@ -125,6 +145,8 @@ function CampoDinamicoInput({ campo, value, onChange, opcionesTipoIdentificacion
       fullWidth
       sx={{ maxWidth: 280 }}
       inputProps={tipo === 'number' ? { min: 0, step: 1 } : undefined}
+      error={esCups && cupsError}
+      helperText={esCups ? cupsHelper : ''}
     />
   );
 }
@@ -139,6 +161,8 @@ export function EditarProductoModal({
   guardando,
 }) {
   const { getOptions } = useChoices();
+  const { user } = useAuth();
+  const esAdmin = user?.perfil === 'admin';
   const [respuestas, setRespuestas] = useState({});
   const [tipoCliente, setTipoCliente] = useState('');
   const [empresaId, setEmpresaId] = useState('');
@@ -173,7 +197,12 @@ export function EditarProductoModal({
     if (vendedorVal) {
       r.vendedor = vendedorVal;
       r.Vendedor = vendedorVal;
-      Object.keys(r).forEach((k) => { if (k !== 'vendedor' && k !== 'Vendedor' && norm(k).includes('vendedor')) r[k] = vendedorVal; });
+      Object.keys(r).forEach((k) => { if (k !== 'vendedor' && k !== 'Vendedor' && norm(k).includes('vendedor') && !norm(k).includes('cerrador')) r[k] = vendedorVal; });
+    }
+    const cerradorVal = producto?.cerrador != null && String(producto.cerrador).trim() !== '' ? String(producto.cerrador).trim() : (r['cerrador'] ?? r['Cerrador'] ?? '');
+    if (cerradorVal) {
+      r.cerrador = cerradorVal;
+      r.Cerrador = cerradorVal;
     }
     setRespuestas(r);
     setTipoCliente(tipoClienteVal);
@@ -257,8 +286,68 @@ export function EditarProductoModal({
     ? (respuestas[campoTitular.nombre] === '1' || respuestas[campoTitular.nombre] === 'si' || respuestas[campoTitular.nombre] === true)
     : false;
   const camposParaEditar = camposFormulario.filter(
-    (c) => !esTipoCliente(c) && !esVendedor(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c)
+    (c) => !esTipoCliente(c) && !esVendedor(c) && !esCampoProducto(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c)
   );
+  const getValorPorNombreCampo = (nombre) => {
+    if (respuestas[nombre] !== undefined && respuestas[nombre] !== null) return respuestas[nombre];
+    const n = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+    const target = n(nombre);
+    for (const k of Object.keys(respuestas)) {
+      if (n(k) === target) return respuestas[k];
+    }
+    return undefined;
+  };
+
+  const getCamposRepetidosExpandidos = () => {
+    const repetidos = camposFormulario.filter(esCampoRepetirSegun);
+    const expandidos = [];
+    const respuestasKeys = Object.keys(respuestas);
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      let valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
+      const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+      if (valorCantidad == null || valorCantidad === '') {
+        const targetNorm = nNorm(nombreCampoCantidad);
+        const campoCantidad = camposFormulario.find((cam) => nNorm(cam.nombre) === targetNorm);
+        if (campoCantidad) valorCantidad = respuestas[campoCantidad.nombre];
+      }
+      let n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+        const regex = nombreBase
+          ? new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\((\\d+)\\)$`, 'i')
+          : null;
+        if (regex) {
+          for (const k of respuestasKeys) {
+            const m = k.match(regex);
+            if (m) n = Math.max(n, parseInt(m[1], 10));
+          }
+        }
+      }
+      const nombreBase = c.nombre || '';
+      const opcionesDesde = (c.visible_si?.opciones_desde || '').trim();
+      let opcionesUsar = c.opciones;
+      if (opcionesDesde) {
+        const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+        const baseRef = opcionesDesde.replace(/\(x\)|\(\$\)/i, '').trim();
+        const targetNorm = nNorm(baseRef);
+        const campoRef = camposFormulario.find((cam) => {
+          const baseCam = (cam.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+          return nNorm(baseCam) === targetNorm;
+        });
+        if (campoRef?.opciones?.length) opcionesUsar = campoRef.opciones;
+      }
+      const tienePlaceholder = /\(x\)|\(\$\)/i.test(nombreBase);
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = tienePlaceholder
+          ? nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`)
+          : `${nombreBase.trim()} (${i})`;
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i, opciones: opcionesUsar ?? c.opciones });
+      }
+    }
+    return expandidos;
+  };
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   /** Opciones de Tipo de cliente: desde campoTipoCliente.opciones o desde API (configuración), nunca quemadas */
   const desdeCampo = (campoTipoCliente?.opciones ?? []).map((o) => ({
@@ -293,8 +382,12 @@ export function EditarProductoModal({
     : producto?.estado_venta;
 
   const handleSubmit = () => {
+    const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCups(v));
+    if (cupsInvalido) {
+      return; // El TextField ya muestra el error; no permitir guardar
+    }
     const respuestasList = [];
-    [...camposParaEditar].forEach((c) => {
+    [...camposParaEditar, ...camposRepetidosExpandidos].forEach((c) => {
       const v = respuestas[c.nombre];
       if (v != null && String(v).trim() !== '') {
         respuestasList.push({ nombre_campo: c.nombre, respuesta_campo: String(v).trim() });
@@ -314,9 +407,15 @@ export function EditarProductoModal({
         });
       }
     }
-    const vendedorVal = respuestas['vendedor'] ?? respuestas['Vendedor'];
+    const vendedorVal = respuestas['vendedor'] ?? respuestas['Vendedor'] ?? respuestas['comercial'] ?? respuestas['Comercial'];
     if (vendedorVal != null && String(vendedorVal).trim() !== '') {
-      respuestasList.push({ nombre_campo: 'vendedor', respuesta_campo: String(vendedorVal).trim() });
+      respuestasList.push({ nombre_campo: 'comercial', respuesta_campo: String(vendedorVal).trim() });
+    }
+    if (esAdmin) {
+      const cerradorVal = respuestas['cerrador'] ?? respuestas['Cerrador'];
+      if (cerradorVal != null && String(cerradorVal).trim() !== '') {
+        respuestasList.push({ nombre_campo: 'cerrador', respuesta_campo: String(cerradorVal).trim() });
+      }
     }
     onGuardar?.({
       cliente_empresa_id: producto?.id,
@@ -329,8 +428,8 @@ export function EditarProductoModal({
 
   if (!producto || !open) return null;
 
-  const vendedorActual = respuestas['vendedor'] ?? respuestas['Vendedor'] ?? '';
-  const hayInformacionAdicional = camposParaEditar.length > 0 || campoTitular;
+  const vendedorActual = respuestas['vendedor'] ?? respuestas['Vendedor'] ?? respuestas['comercial'] ?? respuestas['Comercial'] ?? '';
+  const hayInformacionAdicional = camposParaEditar.length > 0 || campoTitular || camposRepetidosExpandidos.length > 0;
 
   return (
     <Dialog open={open} onClose={onClose} PaperProps={{ sx: { ...modalPaperSx, maxWidth: 600, maxHeight: '92vh' } }}>
@@ -382,10 +481,10 @@ export function EditarProductoModal({
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Contratistas</InputLabel>
+            <InputLabel>Compañía actual</InputLabel>
             <Select
               value={servicioId}
-              label="Contratistas"
+              label="Compañía actual"
               onChange={(e) => setServicioId(e.target.value)}
               disabled={!empresaId}
             >
@@ -414,18 +513,40 @@ export function EditarProductoModal({
           </Stack>
         </Stack>
 
-        {/* 2. Vendedor */}
+        {/* 2. Comercial y Cerrador - solo administrador puede editar */}
         <Typography variant="subtitle2" fontWeight={600} color="primary" sx={{ mb: 1.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Vendedor
+          Comercial
         </Typography>
         <FormControl size="small" sx={{ minWidth: 200, mb: 2 }}>
-          <InputLabel>Vendedor</InputLabel>
+          <InputLabel>Comercial</InputLabel>
           <Select
             value={vendedorActual}
-            label="Vendedor"
+            label="Comercial"
             onChange={(e) => {
               actualizarRespuesta('vendedor', e.target.value);
               actualizarRespuesta('Vendedor', e.target.value);
+            }}
+            disabled={!esAdmin}
+          >
+            <MenuItem value="">Seleccionar</MenuItem>
+            {vendedores.map((v) => (
+              <MenuItem key={v.id} value={String(v.id)}>{v.nombre_completo ?? v.nombre ?? v.id}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {!esAdmin && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            Solo el administrador puede asignar el comercial.
+          </Typography>
+        )}
+        <FormControl size="small" sx={{ minWidth: 200, mb: 2 }} disabled={!esAdmin}>
+          <InputLabel>Cerrador</InputLabel>
+          <Select
+            value={respuestas['cerrador'] ?? respuestas['Cerrador'] ?? ''}
+            label="Cerrador"
+            onChange={(e) => {
+              actualizarRespuesta('cerrador', e.target.value);
+              actualizarRespuesta('Cerrador', e.target.value);
             }}
           >
             <MenuItem value="">Seleccionar</MenuItem>
@@ -434,6 +555,11 @@ export function EditarProductoModal({
             ))}
           </Select>
         </FormControl>
+        {!esAdmin && (respuestas['cerrador'] ?? respuestas['Cerrador']) && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            Cerrador asignado (solo admin puede editarlo).
+          </Typography>
+        )}
 
         {/* 3. Información adicional - solo cuando hay campos cargados */}
         {hayInformacionAdicional && (
@@ -445,7 +571,7 @@ export function EditarProductoModal({
               <SectionLoader message="Cargando campos del formulario..." minHeight={120} />
             ) : (
               <Stack spacing={2} sx={{ mb: 2 }}>
-                {camposParaEditar.map((c) => (
+                {[...camposParaEditar, ...camposRepetidosExpandidos].map((c) => (
                   <CampoDinamicoInput
                     key={c.nombre}
                     campo={c}

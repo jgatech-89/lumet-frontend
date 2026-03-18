@@ -17,7 +17,7 @@ import { ContratistaModals } from './ServicioModals';
 import { CONFIG_FILAS_POR_PAGINA } from '../logic/constants';
 import { COMPACT_MEDIA } from '../../../utils/theme';
 
-const COLUMNS = ['Contratista', 'Tipo de servicio', 'Estado', 'Opciones'];
+const COLUMNS = ['Compañía actual', 'Tipo de servicio', 'Estado', 'Opciones'];
 
 export function ContratistasConfigSection({ contratistas, empresasParaSelect, cargarEmpresasParaSelect, pagina, setPagina }) {
   const { isDark } = useThemeMode();
@@ -62,7 +62,7 @@ export function ContratistasConfigSection({ contratistas, empresasParaSelect, ca
           </TableHead>
           <TableBody>
             {contratistas.loading ? (
-              <TableLoader columnCount={COLUMNS.length} message="Cargando contratistas..." />
+              <TableLoader columnCount={COLUMNS.length} message="Cargando compañías..." />
             ) : (
               filasPagina.map((row) => (
               <TableRow
@@ -105,7 +105,7 @@ export function ContratistasConfigSection({ contratistas, empresasParaSelect, ca
         }}
       >
         <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
-          Mostrando {inicio}–{fin} de {totalItems} contratistas
+          Mostrando {inicio}–{fin} de {totalItems} compañías
         </Typography>
         <Pagination
           count={totalPages}

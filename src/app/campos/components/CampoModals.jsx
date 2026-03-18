@@ -168,10 +168,10 @@ export function CampoModals({
                   disabled={!!empresaId || !!servicioId}
                 />
               }
-              label="Aplicar a todos los servicios y contratistas"
+              label="Aplicar a todos los servicios y compañías"
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Si lo activas, este campo aparecerá en todos los formularios, sin importar el servicio ni el contratista.
+              Si lo activas, este campo aparecerá en todos los formularios, sin importar el servicio ni la compañía.
             </Typography>
           </Box>
         )}
@@ -247,26 +247,26 @@ export function CampoModals({
                   disabled={!!servicioId}
                 />
               }
-              label="Aplicar a todos los contratistas"
+              label="Aplicar a todas las compañías"
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Actívalo para que el campo aplique a todos los contratistas del servicio seleccionado.
+              Actívalo para que el campo aplique a todas las compañías del servicio seleccionado.
             </Typography>
           </Box>
         )}
         {!aplicarTodosEmpresas && (
         <Box sx={{ minWidth: 0, position: 'relative' }}>
           <FormControl size="small" fullWidth required={!aplicarTodosServicios} error={!!errors?.servicio} sx={formControlSx}>
-            <InputLabel id={`${prefix}campo-servicio-label`} shrink>Contratista</InputLabel>
+            <InputLabel id={`${prefix}campo-servicio-label`} shrink>Compañía actual</InputLabel>
             <Select
               labelId={`${prefix}campo-servicio-label`}
               value={aplicarTodosServicios ? '__todos__' : (servicioId ?? '')}
-              label="Contratista"
+              label="Compañía"
               onChange={(e) => setServicioId(e.target.value === '__todos__' ? '' : e.target.value)}
               disabled={!empresaId || cargandoServicios || aplicarTodosServicios}
               displayEmpty
               renderValue={(v) => {
-                if (v === '__todos__') return 'Todos los contratistas';
+                if (v === '__todos__') return 'Todas las compañías';
                 if (!v) return cargandoServicios ? 'Cargando...' : 'Seleccionar';
                 const opt = (serviciosFiltrados ?? []).find((s) => String(s.id) === String(v));
                 return opt?.nombre ?? opt?.servicio ?? v;
@@ -283,7 +283,7 @@ export function CampoModals({
           </FormControl>
           {!aplicarTodosServicios && servicioId && (
             <Box
-              aria-label="Limpiar contratista"
+              aria-label="Limpiar compañía"
               onClick={() => setServicioId?.('')}
               sx={{
                 position: 'absolute',
@@ -551,10 +551,45 @@ export function CampoModals({
             size="small"
             label="Visible si"
             placeholder="Ej: cambio titular (mostrar solo cuando Cambio de titular = Sí)"
-            value={visible_si}
+            value={typeof visible_si === 'object' && visible_si?.repetir_segun ? '' : (visible_si ?? '')}
             onChange={(e) => setVisible_si(e.target.value)}
             sx={inputSx}
             helperText="Escribe 'cambio titular' para campos que solo deben mostrarse cuando el usuario marca Sí en Cambio de titular."
+          />
+        </Box>
+        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Repetir según campo"
+            placeholder="Ej: lineas adicionales, lineas digitales (el campo se repetirá N veces según el valor numérico)"
+            value={typeof visible_si === 'object' && visible_si?.repetir_segun ? visible_si.repetir_segun : ''}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              const prev = typeof visible_si === 'object' && visible_si != null ? visible_si : {};
+              setVisible_si(v ? { ...prev, repetir_segun: v } : '');
+            }}
+            sx={inputSx}
+            helperText="Nombre del campo numérico que indica cuántas veces repetir (ej: lineas adicionales, lineas digitales). El nombre de este campo debe contener (x) que se reemplazará por 1, 2, 3..."
+          />
+        </Box>
+        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Opciones desde (opcional)"
+            placeholder="Ej: linea adicional (x) — usar las opciones de ese campo"
+            value={typeof visible_si === 'object' && visible_si?.opciones_desde ? visible_si.opciones_desde : ''}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              const prev = typeof visible_si === 'object' && visible_si != null ? visible_si : {};
+              if (prev.repetir_segun) {
+                setVisible_si({ ...prev, opciones_desde: v || undefined });
+              }
+            }}
+            disabled={!(typeof visible_si === 'object' && visible_si?.repetir_segun)}
+            sx={inputSx}
+            helperText="Solo cuando hay Repetir según campo. Indica el nombre del campo del que copiar opciones (ej: linea adicional (x)). Útil para capacidad linea digital (x) según lineas digitales."
           />
         </Box>
       </Box>

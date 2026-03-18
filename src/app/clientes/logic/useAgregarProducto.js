@@ -19,6 +19,14 @@ const NOMBRES_PRODUCTO_CAMPO = ['producto', 'Producto', 'Productos', 'Tipo produ
 
 const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
 const esCampoTipoCliente = (c) => NOMBRES_TIPO_CLIENTE_CAMPO.some((n) => norm(c.nombre) === norm(n));
+const esCampoCups = (n) => /cups|cup/i.test(n || '');
+const validarCupsValor = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return true;
+  const digitos = (s.match(/\d/g) || []).length;
+  const letras = (s.match(/[a-zA-Z]/g) || []).length;
+  return digitos >= 16 && letras >= 4;
+};
 const esCampoEstadoVenta = (c) => NOMBRES_ESTADO_VENTA_CAMPO.some((n) => norm(c.nombre) === norm(n));
 const esCampoProducto = (c) => NOMBRES_PRODUCTO_CAMPO.some((n) => norm(c.nombre) === norm(n));
 
@@ -235,6 +243,8 @@ export function useAgregarProducto(cliente, onExito) {
           return v != null && String(v).trim() !== '';
         });
       }
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
       return true;
     }
     if (paso === 3) {
@@ -242,10 +252,14 @@ export function useAgregarProducto(cliente, onExito) {
       if (prodEnVendedor && opcionesProducto?.length > 0 && !producto) return false;
       const esCampoVendedor = (n) => /vendedor/i.test(n || '');
       const requeridosVendedor = camposSeccionVendedor.filter((c) => c.requerido);
-      return requeridosVendedor.every((c) => {
+      const okVendedor = requeridosVendedor.every((c) => {
         const v = esCampoVendedor(c.nombre) ? (respuestas[c.nombre] ?? vendedorId) : respuestas[c.nombre];
         return v != null && String(v).trim() !== '';
       });
+      if (!okVendedor) return false;
+      const cupsInvalido = Object.entries(respuestas).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+      if (cupsInvalido) return false;
+      return true;
     }
     return true;
   };
@@ -272,6 +286,11 @@ export function useAgregarProducto(cliente, onExito) {
     if (!cliente?.id) return;
     if (!empresa?.id || !servicio?.id) {
       showSnackbar('Seleccione empresa y servicio', 'error');
+      return;
+    }
+    const cupsInvalido = Object.entries(respuestas || {}).some(([k, v]) => esCampoCups(k) && v != null && String(v).trim() !== '' && !validarCupsValor(v));
+    if (cupsInvalido) {
+      showSnackbar('El campo CUPS debe tener mínimo 16 dígitos y 4 letras', 'error');
       return;
     }
 
@@ -301,7 +320,7 @@ export function useAgregarProducto(cliente, onExito) {
 
       if (vendedorId && String(vendedorId).trim()) {
         respuestasList = respuestasList.filter((item) => !esVendedor([item.nombre_campo]));
-        respuestasList.push({ nombre_campo: 'vendedor', respuesta_campo: String(vendedorId).trim() });
+        respuestasList.push({ nombre_campo: 'comercial', respuesta_campo: String(vendedorId).trim() });
       }
 
       const productoVal = (producto && producto !== '__todos__') ? producto.trim() : undefined;
@@ -328,9 +347,12 @@ export function useAgregarProducto(cliente, onExito) {
   const esCambioTitular = (c) => CAMBIO_TITULAR_NAMES.some((n) => norm(c.nombre) === norm(n));
 
   const esVisibleSiCambioTitular = (c) => {
+    if (c.visible_si && typeof c.visible_si === 'object' && c.visible_si.repetir_segun) return false;
     const vs = (c.visible_si || '').toLowerCase().replace(/_/g, ' ').trim();
     return vs.includes('cambio') && vs.includes('titular');
   };
+  const esCampoRepetirSegun = (c) =>
+    c.visible_si && typeof c.visible_si === 'object' && (c.visible_si.repetir_segun || '').trim();
 
   const campoTitular = camposFormulario.find(esCambioTitular) ?? camposGlobales.find(esCambioTitular);
   const nombreCampoTitular = campoTitular?.nombre ?? 'Cambio de titular';
@@ -349,10 +371,70 @@ export function useAgregarProducto(cliente, onExito) {
   const campoTipoProducto = todosLosCampos.find(esCampoProducto);
   const camposSeccionFormulario = todosLosCampos
     .filter((c) => seccion(c) === 'campos_formulario')
-    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCampoEstadoVenta(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c))
+    .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCampoEstadoVenta(c) && !esCambioTitular(c) && !esVisibleSiCambioTitular(c) && !esCampoRepetirSegun(c))
     .sort((a, b) => (esCambioTitular(a) ? 1 : 0) - (esCambioTitular(b) ? 1 : 0));
   const camposSeccionVendedor = todosLosCampos.filter((c) => seccion(c) === 'vendedor');
   const camposFormularioSinTipoCliente = camposSeccionFormulario;
+  const getValorPorNombreCampo = (nombre) => {
+    if (respuestas[nombre] !== undefined && respuestas[nombre] !== null) return respuestas[nombre];
+    const n = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+    const target = n(nombre);
+    for (const k of Object.keys(respuestas)) {
+      if (n(k) === target) return respuestas[k];
+    }
+    return undefined;
+  };
+
+  const getCamposRepetidosExpandidos = () => {
+    const repetidos = todosLosCampos.filter((c) => seccion(c) === 'campos_formulario' && esCampoRepetirSegun(c));
+    const expandidos = [];
+    const respuestasKeys = Object.keys(respuestas);
+    for (const c of repetidos) {
+      const nombreCampoCantidad = (c.visible_si?.repetir_segun || '').trim();
+      let valorCantidad = getValorPorNombreCampo(nombreCampoCantidad);
+      const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+      if (valorCantidad == null || valorCantidad === '') {
+        const targetNorm = nNorm(nombreCampoCantidad);
+        const campoCantidad = todosLosCampos.find((cam) => nNorm(cam.nombre) === targetNorm);
+        if (campoCantidad) valorCantidad = respuestas[campoCantidad.nombre];
+      }
+      let n = Math.min(20, Math.max(0, parseInt(String(valorCantidad || 0), 10) || 0));
+      if (n === 0) {
+        const nombreBase = (c.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+        const regex = nombreBase
+          ? new RegExp(`^${nombreBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\((\\d+)\\)$`, 'i')
+          : null;
+        if (regex) {
+          for (const k of respuestasKeys) {
+            const m = k.match(regex);
+            if (m) n = Math.max(n, parseInt(m[1], 10));
+          }
+        }
+      }
+      const nombreBase = c.nombre || '';
+      const opcionesDesde = (c.visible_si?.opciones_desde || '').trim();
+      let opcionesUsar = c.opciones;
+      if (opcionesDesde) {
+        const nNorm = (s) => (s || '').toLowerCase().replace(/\s+/g, '_');
+        const baseRef = opcionesDesde.replace(/\(x\)|\(\$\)/i, '').trim();
+        const targetNorm = nNorm(baseRef);
+        const campoRef = todosLosCampos.find((cam) => {
+          const baseCam = (cam.nombre || '').replace(/\(x\)|\(\$\)/i, '').trim();
+          return nNorm(baseCam) === targetNorm;
+        });
+        if (campoRef?.opciones?.length) opcionesUsar = campoRef.opciones;
+      }
+      const tienePlaceholder = /\(x\)|\(\$\)/i.test(nombreBase);
+      for (let i = 1; i <= n; i++) {
+        const nombreConNumero = tienePlaceholder
+          ? nombreBase.replace(/\(x\)|\(\$\)/i, `(${i})`)
+          : `${nombreBase.trim()} (${i})`;
+        expandidos.push({ ...c, nombre: nombreConNumero, _indice: i, opciones: opcionesUsar ?? c.opciones });
+      }
+    }
+    return expandidos;
+  };
+  const camposRepetidosExpandidos = getCamposRepetidosExpandidos();
 
   const camposTitularDependientesRaw = todosLosCampos
     .filter((c) => !esCampoTipoCliente(c) && !esCampoProducto(c) && !esCambioTitular(c) && esVisibleSiCambioTitular(c));
@@ -382,6 +464,7 @@ export function useAgregarProducto(cliente, onExito) {
     actualizarRespuesta,
     camposFormulario,
     camposFormularioSinTipoCliente,
+    camposRepetidosExpandidos,
     campEstadoVenta,
     empresas,
     servicios,

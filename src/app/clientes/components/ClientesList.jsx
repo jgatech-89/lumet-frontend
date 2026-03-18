@@ -374,18 +374,6 @@ export function ClientesList() {
                         py: 1.5,
                       }}
                     >
-                      CUPS
-                    </TableCell>
-                  )}
-                  {!isCompactView && (
-                    <TableCell
-                      sx={{
-                        fontWeight: 600,
-                        color: 'text.secondary',
-                        fontSize: '0.8125rem',
-                        py: 1.5,
-                      }}
-                    >
                       Dirección
                     </TableCell>
                   )}
