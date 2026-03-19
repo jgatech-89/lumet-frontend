@@ -4,10 +4,11 @@ import {
   Box,
   Typography,
   TextField,
-  Button,
   InputAdornment,
   IconButton,
-  Link,} from '@mui/material';
+  Link,
+} from '@mui/material';
+import { LoadingButton } from '../loading';
 
 const VisibilityIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
@@ -21,7 +22,7 @@ const VisibilityOffIcon = () => (
   </svg>
 );
 
-const LoginForm = ({ onSubmit, isLoading = false }) => {
+const LoginForm = ({ onSubmit, isLoading = false, onForgotPassword }) => {
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -170,25 +171,33 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
       </Box>
 
       <Link
-        href="#"
+        component="button"
+        type="button"
         variant="body2"
+        onClick={() => onForgotPassword?.()}
         sx={{
           display: 'block',
           mt: 2.5,
           mb: 2,
           color: 'text.secondary',
           textDecoration: 'none',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          p: 0,
+          font: 'inherit',
           '&:hover': { textDecoration: 'underline', color: '#4dabf5' },
         }}
       >
         ¿Olvidaste tu contraseña?
       </Link>
 
-      <Button
+      <LoadingButton
         type="submit"
         fullWidth
         variant="contained"
-        disabled={isLoading}
+        loading={isLoading}
+        loadingText="Entrando..."
         sx={{
           mt: 2.5,
           height: 60,
@@ -205,8 +214,8 @@ const LoginForm = ({ onSubmit, isLoading = false }) => {
           },
         }}
       >
-        {isLoading ? 'Entrando...' : 'Iniciar sesión'}
-      </Button>
+        Iniciar sesión
+      </LoadingButton>
     </Box>
   );
 };

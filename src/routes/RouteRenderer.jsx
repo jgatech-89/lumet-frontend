@@ -1,8 +1,8 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import { Box, CircularProgress, Skeleton } from '@mui/material';
-import MainLayout from '../layouts/MainLayout';
-import AuthLayout from '../layouts/AuthLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import AuthLayout from '../components/layout/AuthLayout';
 import ProtectedRoute from './ProtectedRoute';
 import RoleRoute from './RoleRoute';
 import PublicRoute from './PublicRoute';
@@ -54,9 +54,9 @@ const RouteRenderer = ({ config }) => {
   const location = useLocation();
   const { initialized, isAuthenticated } = useAuth();
   const Page = config.element;
-  const Layout = config.layout === 'auth' ? AuthLayout : MainLayout;
+  const Layout = config.layout === 'auth' ? AuthLayout : DashboardLayout;
 
-  // Rutas privadas: no mostrar MainLayout hasta saber si hay sesión (evita parpadeo)
+  // Rutas privadas: no mostrar DashboardLayout hasta saber si hay sesión (evita parpadeo)
   if (config.private) {
     if (!initialized) return <FullPageAuthLoader />;
     if (!isAuthenticated) {
@@ -64,12 +64,21 @@ const RouteRenderer = ({ config }) => {
     }
   }
 
+  const isDashboardLayout = config.layout === 'main';
   let content = (
     <Box
       key={location.pathname}
       sx={{
         width: '100%',
-        minHeight: '100vh',
+        ...(isDashboardLayout
+          ? {
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }
+          : { minHeight: '100vh' }),
         animation: 'pageIn 0.35s ease-out forwards',
         '@keyframes pageIn': {
           from: { opacity: 0, transform: 'translateY(8px)' },
@@ -77,9 +86,17 @@ const RouteRenderer = ({ config }) => {
         },
       }}
     >
-      <Suspense fallback={<PageFallback />}>
-        <Page />
-      </Suspense>
+      {isDashboardLayout ? (
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Suspense fallback={<PageFallback />}>
+            <Page />
+          </Suspense>
+        </Box>
+      ) : (
+        <Suspense fallback={<PageFallback />}>
+          <Page />
+        </Suspense>
+      )}
     </Box>
   );
 

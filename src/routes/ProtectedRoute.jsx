@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PageLoader } from '../components/loading';
 
 /**
  * Protege rutas que requieren autenticación.
@@ -11,7 +12,7 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
 
   if (!initialized) {
-    return null;
+    return <PageLoader message="Verificando sesión..." />;
   }
 
   if (!isAuthenticated) {
