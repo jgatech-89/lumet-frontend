@@ -41,7 +41,7 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: lumet-frontend/node_modules
+          path: node_modules
           key: ${{ runner.os }}-node-20-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-20-
@@ -107,18 +107,63 @@ jobs:
             exit 1
           fi
 
-      # 9) Sincronizar la salida hacia S3 usando aws s3 sync con --delete.
-      - name: Sync to S3
+      # 9) Generar identificador único de versión basado en timestamp (UTC).
+      - name: Generate build version
+        id: version
+        run: |
+          set -euo pipefail
+
+          VERSION="$(date -u +'%Y-%m-%d-%H%M')"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Versión generada: ${VERSION}"
+
+      # 10) Subir el build a una carpeta versionada en S3.
+      - name: Upload build to S3 releases
         working-directory: .
         run: |
           set -euo pipefail
 
           OUTPUT_DIR="${{ steps.output.outputs.dir }}"
-          echo "Sincronizando desde: ${OUTPUT_DIR}/ hacia: s3://${S3_BUCKET_NAME}/"
+          VERSION="${{ steps.version.outputs.version }}"
 
-          aws s3 sync "${OUTPUT_DIR}/" "s3://${S3_BUCKET_NAME}/" --delete
+          RELEASE_PATH="s3://${S3_BUCKET_NAME}/releases/${VERSION}/"
+          echo "Subiendo build a: ${RELEASE_PATH}"
 
-      # 10) Invalidar cache de CloudFront para reflejar el nuevo contenido.
+          # Guardar historial: la ruta /releases/{version}/ queda disponible para rollback.
+          aws s3 sync "${OUTPUT_DIR}/" "${RELEASE_PATH}" --delete
+
+      # 11) Copiar el build versionado a la raíz del bucket (manteniendo --delete).
+      - name: Sync release to S3 root
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ steps.version.outputs.version }}"
+
+          SOURCE_PATH="s3://${S3_BUCKET_NAME}/releases/${VERSION}/"
+          echo "Sincronizando release a la raíz desde: ${SOURCE_PATH}"
+
+          # Importante: preservar el historial en /releases/* durante el sync a la raíz.
+          aws s3 sync "${SOURCE_PATH}" "s3://${S3_BUCKET_NAME}/" \
+            --delete \
+            --exclude "releases/*"
+
+          echo "Sync a la raíz completado."
+
+      # 12) Mostrar comandos para rollback manual inmediato (sin rebuild).
+      - name: Print manual rollback command
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Rollback manual (ejemplo):"
+          echo "1) Elegir una versión previa (REVISION):"
+          echo "   REVISION='TU_VERSION' # ej: ${VERSION} o una versión anterior"
+          echo "2) Copiar esa revisión a la raíz:"
+          echo "   aws s3 sync \"s3://${S3_BUCKET_NAME}/releases/\${REVISION}/\" \"s3://${S3_BUCKET_NAME}/\" --delete --exclude \"releases/*\""
+          echo "3) Invalidate CloudFront:"
+          echo "   aws cloudfront create-invalidation --distribution-id \"${CLOUDFRONT_DISTRIBUTION_ID}\" --paths \"/*\""
+
+      # 13) Invalidar cache de CloudFront para reflejar el nuevo contenido.
       - name: Invalidate CloudFront cache
         run: |
           set -euo pipefail
