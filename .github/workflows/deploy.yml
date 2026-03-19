@@ -143,7 +143,7 @@ jobs:
 
           echo "Copiando ${SOURCE} → ${DEST}"
 
-          aws s3 sync "${SOURCE}" "${DEST}" --delete
+          aws s3 sync "${SOURCE}" "${DEST}"
       # 12) Mostrar comandos para rollback manual inmediato (sin rebuild).
       - name: Print manual rollback command
         run: |
