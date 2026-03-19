@@ -1,0 +1,129 @@
+name: Deploy Frontend to S3 + CloudFront
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+
+    # Variables configurables (bucket/distribution) y credenciales (no hardcodeadas).
+    env:
+      # Credenciales para AWS (defínelas como Secrets en GitHub).
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # Región (recomendado como GitHub Variable "vars.AWS_REGION").
+      AWS_REGION: ${{ vars.AWS_REGION }}
+
+      # Objetivo de despliegue (recomendado como GitHub Variables).
+      S3_BUCKET_NAME: ${{ vars.S3_BUCKET_NAME }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+
+    steps:
+      # 1) Checkout del código.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2) Usar Node 18+ (en este caso, 20).
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # Cachea la descarga de dependencias para mejorar performance.
+          cache: "npm"
+          cache-dependency-path: lumet-frontend/package-lock.json
+
+      # 3) (Opcional) Cachear node_modules para acelerar el workflow.
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: lumet-frontend/node_modules
+          key: ${{ runner.os }}-node-20-${{ hashFiles('lumet-frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-
+            ${{ runner.os }}-node-
+
+      # 4) Validar que la configuración mínima exista antes de desplegar.
+      - name: Validate required environment variables
+        run: |
+          set -euo pipefail
+
+          if [ -z "${S3_BUCKET_NAME}" ]; then
+            echo "Error: S3_BUCKET_NAME está vacío. Define vars.S3_BUCKET_NAME en GitHub."
+            exit 1
+          fi
+
+          if [ -z "${CLOUDFRONT_DISTRIBUTION_ID}" ]; then
+            echo "Error: CLOUDFRONT_DISTRIBUTION_ID está vacío. Define vars.CLOUDFRONT_DISTRIBUTION_ID en GitHub."
+            exit 1
+          fi
+
+          if [ -z "${AWS_REGION}" ]; then
+            echo "Error: AWS_REGION está vacío. Define vars.AWS_REGION en GitHub."
+            exit 1
+          fi
+
+          if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "Error: Faltan AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY. Define estos como Secrets en GitHub."
+            exit 1
+          fi
+
+      # 5) Configurar credenciales AWS (action oficial).
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 6) Instalar dependencias (npm ci para reproducibilidad).
+      - name: Install dependencies
+        working-directory: lumet-frontend
+        run: npm ci
+
+      # 7) Construir el frontend (si falla, el workflow se detiene).
+      - name: Build
+        working-directory: lumet-frontend
+        run: npm run build
+
+      # 8) Detectar automáticamente la carpeta de salida: dist/ (Vite) o build/ (React).
+      - name: Detect build output directory
+        id: output
+        working-directory: lumet-frontend
+        run: |
+          set -euo pipefail
+
+          if [ -d "dist" ]; then
+            echo "dir=dist" >> "${GITHUB_OUTPUT}"
+          elif [ -d "build" ]; then
+            echo "dir=build" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Error: No se encontró la carpeta de salida 'dist/' ni 'build/' tras el build."
+            ls -la
+            exit 1
+          fi
+
+      # 9) Sincronizar la salida hacia S3 usando aws s3 sync con --delete.
+      - name: Sync to S3
+        working-directory: lumet-frontend
+        run: |
+          set -euo pipefail
+
+          OUTPUT_DIR="${{ steps.output.outputs.dir }}"
+          echo "Sincronizando desde: ${OUTPUT_DIR}/ hacia: s3://${S3_BUCKET_NAME}/"
+
+          aws s3 sync "${OUTPUT_DIR}/" "s3://${S3_BUCKET_NAME}/" --delete
+
+      # 10) Invalidar cache de CloudFront para reflejar el nuevo contenido.
+      - name: Invalidate CloudFront cache
+        run: |
+          set -euo pipefail
+
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"
+
