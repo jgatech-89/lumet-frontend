@@ -137,12 +137,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          RELEASE_DIR="releases/${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          SOURCE="s3://${S3_BUCKET_NAME}/releases/${VERSION}/"
+          DEST="s3://${S3_BUCKET_NAME}/"
 
-          echo "Copiando ${RELEASE_DIR} a root..."
+          echo "Copiando ${SOURCE} → ${DEST}"
 
-          aws s3 sync "s3://${S3_BUCKET_NAME}/${RELEASE_DIR}/" "s3://${S3_BUCKET_NAME}/" --delete --exclude "releases/*"
-
+          aws s3 sync "${SOURCE}" "${DEST}" --delete
       # 12) Mostrar comandos para rollback manual inmediato (sin rebuild).
       - name: Print manual rollback command
         run: |
