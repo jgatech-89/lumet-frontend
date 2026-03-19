@@ -35,14 +35,14 @@ jobs:
           node-version: 20
           # Cachea la descarga de dependencias para mejorar performance.
           cache: "npm"
-          cache-dependency-path: lumet-frontend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       # 3) (Opcional) Cachear node_modules para acelerar el workflow.
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
           path: lumet-frontend/node_modules
-          key: ${{ runner.os }}-node-20-${{ hashFiles('lumet-frontend/package-lock.json') }}
+          key: ${{ runner.os }}-node-20-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-20-
             ${{ runner.os }}-node-
@@ -82,18 +82,18 @@ jobs:
 
       # 6) Instalar dependencias (npm ci para reproducibilidad).
       - name: Install dependencies
-        working-directory: lumet-frontend
+        working-directory: .
         run: npm ci
 
       # 7) Construir el frontend (si falla, el workflow se detiene).
       - name: Build
-        working-directory: lumet-frontend
+        working-directory: .
         run: npm run build
 
       # 8) Detectar automáticamente la carpeta de salida: dist/ (Vite) o build/ (React).
       - name: Detect build output directory
         id: output
-        working-directory: lumet-frontend
+        working-directory: .
         run: |
           set -euo pipefail
 
@@ -109,7 +109,7 @@ jobs:
 
       # 9) Sincronizar la salida hacia S3 usando aws s3 sync con --delete.
       - name: Sync to S3
-        working-directory: lumet-frontend
+        working-directory: .
         run: |
           set -euo pipefail
 
