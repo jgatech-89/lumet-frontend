@@ -133,15 +133,17 @@ jobs:
           aws s3 sync "${OUTPUT_DIR}/" "${RELEASE_PATH}" --delete
 
       # 11) Subir también el build a la raíz del bucket (producción).
-      - name: Sync build to S3 root
-        working-directory: .
+      - name: Upload build to root
         run: |
           set -euo pipefail
 
           OUTPUT_DIR="${{ steps.output.outputs.dir }}"
 
-          echo "Subiendo build al root: s3://${S3_BUCKET_NAME}/"
-          aws s3 sync "${OUTPUT_DIR}/" "s3://${S3_BUCKET_NAME}/" --delete --delete-exclude "releases/*"
+          echo "Subiendo build al root..."
+
+          aws s3 sync "${OUTPUT_DIR}/" "s3://${S3_BUCKET_NAME}/" \
+            --delete \
+            --exclude "releases/"
 
       # 12) Invalidar cache de CloudFront para reflejar el nuevo contenido.
       - name: Invalidate CloudFront cache
