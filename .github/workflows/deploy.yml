@@ -132,19 +132,27 @@ jobs:
           # Guardar historial: la ruta /releases/{version}/ queda disponible para rollback.
           aws s3 sync "${OUTPUT_DIR}/" "${RELEASE_PATH}" --delete
 
-      # 11) Copiar el build versionado a la raíz del bucket.
-      - name: Copy release to root
+      # 11) Subir también el build a la raíz del bucket (producción).
+      - name: Sync build to S3 root
+        working-directory: .
         run: |
           set -euo pipefail
 
-          VERSION="${{ steps.version.outputs.version }}"
-          SOURCE="s3://${S3_BUCKET_NAME}/releases/${VERSION}/"
-          DEST="s3://${S3_BUCKET_NAME}/"
+          OUTPUT_DIR="${{ steps.output.outputs.dir }}"
 
-          echo "Copiando ${SOURCE} → ${DEST}"
+          echo "Subiendo build al root: s3://${S3_BUCKET_NAME}/"
+          aws s3 sync "${OUTPUT_DIR}/" "s3://${S3_BUCKET_NAME}/" --delete --delete-exclude "releases/*"
 
-          aws s3 sync "${SOURCE}" "${DEST}"
-      # 12) Mostrar comandos para rollback manual inmediato (sin rebuild).
+      # 12) Invalidar cache de CloudFront para reflejar el nuevo contenido.
+      - name: Invalidate CloudFront cache
+        run: |
+          set -euo pipefail
+
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"
+
+      # 13) Mostrar comandos para rollback manual inmediato (sin rebuild).
       - name: Print manual rollback command
         run: |
           set -euo pipefail
@@ -154,16 +162,7 @@ jobs:
           echo "1) Elegir una versión previa (REVISION):"
           echo "   REVISION='TU_VERSION' # ej: ${VERSION} o una versión anterior"
           echo "2) Copiar esa revisión a la raíz:"
-          echo "   aws s3 sync \"s3://${S3_BUCKET_NAME}/releases/\${REVISION}/\" \"s3://${S3_BUCKET_NAME}/\" --delete --exclude \"releases/*\""
+          echo "   aws s3 sync releases/{REVISION}/ a bucket-root (incluye --delete y preserva releases/*)"
           echo "3) Invalidate CloudFront:"
           echo "   aws cloudfront create-invalidation --distribution-id \"${CLOUDFRONT_DISTRIBUTION_ID}\" --paths \"/*\""
-
-      # 13) Invalidar cache de CloudFront para reflejar el nuevo contenido.
-      - name: Invalidate CloudFront cache
-        run: |
-          set -euo pipefail
-
-          aws cloudfront create-invalidation \
-            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
-            --paths "/*"
 
