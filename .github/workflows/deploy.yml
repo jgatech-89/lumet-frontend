@@ -132,22 +132,16 @@ jobs:
           # Guardar historial: la ruta /releases/{version}/ queda disponible para rollback.
           aws s3 sync "${OUTPUT_DIR}/" "${RELEASE_PATH}" --delete
 
-      # 11) Copiar el build versionado a la raíz del bucket (manteniendo --delete).
-      - name: Sync release to S3 root
+      # 11) Copiar el build versionado a la raíz del bucket.
+      - name: Copy release to root
         run: |
           set -euo pipefail
 
-          VERSION="${{ steps.version.outputs.version }}"
+          RELEASE_DIR="releases/${{ steps.version.outputs.version }}"
 
-          SOURCE_PATH="s3://${S3_BUCKET_NAME}/releases/${VERSION}/"
-          echo "Sincronizando release a la raíz desde: ${SOURCE_PATH}"
+          echo "Copiando ${RELEASE_DIR} a root..."
 
-          # Importante: preservar el historial en /releases/* durante el sync a la raíz.
-          aws s3 sync "${SOURCE_PATH}" "s3://${S3_BUCKET_NAME}/" \
-            --delete \
-            --exclude "releases/*"
-
-          echo "Sync a la raíz completado."
+          aws s3 sync "s3://${S3_BUCKET_NAME}/${RELEASE_DIR}/" "s3://${S3_BUCKET_NAME}/" --delete --exclude "releases/*"
 
       # 12) Mostrar comandos para rollback manual inmediato (sin rebuild).
       - name: Print manual rollback command

@@ -65,7 +65,24 @@ const DashboardLayout = ({ children }) => {
             [COMPACT_MEDIA]: { p: 3 },
           }}
         >
-          {children}
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            {children}
+          </Box>
+          <Box
+            component="footer"
+            sx={{
+              flexShrink: 0,
+              mt: 'auto',
+              textAlign: 'center',
+              color: 'text.secondary',
+              fontSize: '0.72rem',
+              lineHeight: 1.2,
+              pb: 0.25,
+              userSelect: 'none',
+            }}
+          >
+            Powered by JGA Tech 2026
+          </Box>
         </Box>
       </Box>
     </Box>
