@@ -30,7 +30,7 @@ export const obtenerOpcionesEstadoVenta = async () => {
  * @param {{ search?: string, estado_venta?: string }} filters
  * @returns {Promise<{ results: Array, count: number }>}
  */
-export const listarClientes = async (page = 1, pageSize = 5, filters = {}) => {
+export const listarClientes = async (page = 1, pageSize = 8, filters = {}) => {
   const params = { page, page_size: pageSize };
   if (filters.search?.trim()) params.search = filters.search.trim();
   if (filters.estado_venta?.trim()) params.estado_venta = filters.estado_venta.trim();
@@ -167,9 +167,9 @@ export const descargarPlantillaClientes = async () => {
 };
 
 /**
- * Importa clientes desde un archivo Excel.
+ * Importa clientes desde un archivo Excel (validación global + persistencia atómica).
  * @param {File} archivo - Archivo Excel
- * @returns {Promise<{ creados: number, errores: string[] }>}
+ * @returns {Promise<{ ok: boolean, status: number, success?: boolean, creados?: number, mensaje?: string, errors?: Array<{fila?: number|null, columna?: string, mensaje: string, texto?: string}>, errores?: string[] }>}
  */
 export const importarExcelClientes = async (archivo) => {
   const formData = new FormData();
@@ -181,10 +181,11 @@ export const importarExcelClientes = async (archivo) => {
     body: formData,
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.error || 'Error al importar');
-  }
-  return data;
+  return {
+    ok: response.ok,
+    status: response.status,
+    ...data,
+  };
 };
 
 /**
