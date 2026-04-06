@@ -13,11 +13,13 @@ import {
   MenuItem,
   Stack,
 } from '@mui/material';
+import { useMemo } from 'react';
 import { LoadingButton } from '../../../components/loading';
 import { CloseIcon } from '../../../utils/icons';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
 import { useChoices } from '../../../context/ChoicesContext';
+import { mergeTiposIdentificacionVendedor } from '../logic/tiposIdentificacion';
 
 const btnCancelSx = {
   borderRadius: 2,
@@ -32,6 +34,18 @@ const btnPrimarySx = {
   fontWeight: 600,
   boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)',
 };
+
+function etiquetaTipoIdentificacion({ value, label }) {
+  const v = String(value ?? '').trim();
+  const lbl = String(label ?? '').trim();
+  if (!lbl) return v;
+  const L = lbl.toUpperCase();
+  const V = v.toUpperCase();
+  if (V && (L === V || L.startsWith(`${V} - `))) {
+    return lbl;
+  }
+  return `${v} - ${lbl}`;
+}
 
 export function VendedorModals({
   modalNueva,
@@ -58,7 +72,10 @@ export function VendedorModals({
   handleConfirmarEliminar,
 }) {
   const { getOptions } = useChoices();
-  const tiposIdentificacion = getOptions('tipo_identificacion');
+  const tiposIdentificacion = useMemo(
+    () => mergeTiposIdentificacionVendedor(getOptions('tipo_identificacion')),
+    [getOptions]
+  );
   const estadosVendedor = getOptions('estado_vendedor');
 
   return (
@@ -95,7 +112,7 @@ export function VendedorModals({
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
                 {tiposIdentificacion.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>{t.value} - {t.label}</MenuItem>
+                  <MenuItem key={t.value} value={t.value}>{etiquetaTipoIdentificacion(t)}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -161,7 +178,7 @@ export function VendedorModals({
               >
                 <MenuItem value="">Seleccionar una opción</MenuItem>
                 {tiposIdentificacion.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>{t.value} - {t.label}</MenuItem>
+                  <MenuItem key={t.value} value={t.value}>{etiquetaTipoIdentificacion(t)}</MenuItem>
                 ))}
               </Select>
             </FormControl>
