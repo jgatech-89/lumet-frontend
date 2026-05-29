@@ -38,6 +38,16 @@ import {
   useMediaQuery,
 } from '@mui/material';
 
+const headerCellSx = (isDark) => ({
+  fontWeight: 600,
+  color: 'text.secondary',
+  fontSize: '0.8125rem',
+  py: 1.25,
+  whiteSpace: 'nowrap',
+  bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+  [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 },
+});
+
 const DownloadExcelIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" />
@@ -84,7 +94,6 @@ export function ClientesList() {
   const [exportando, setExportando] = useState(false);
   const [modalImportar, setModalImportar] = useState(false);
 
-  // Solo abrir modal con la fila; el detalle se carga dentro del modal (una sola consulta).
   const handleAbrirVer = useCallback((row) => {
     setClienteVerDetalle(row);
     setModalVerDetalle(true);
@@ -175,6 +184,7 @@ export function ClientesList() {
         overflow: 'hidden',
         bgcolor: 'background.paper',
         width: '100%',
+        height: '100%',
         flex: 1,
         minHeight: 0,
         display: 'flex',
@@ -182,16 +192,14 @@ export function ClientesList() {
         [COMPACT_MEDIA]: { borderRadius: 2 },
       }}
     >
+      {/* Cabecera + filtros: altura fija según contenido */}
       <Box
         sx={{
-          p: { xs: 2, sm: 4 },
-          pb: { xs: 3, sm: 5 },
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          [COMPACT_MEDIA]: { p: 1.5, pb: 2, overflowY: 'auto', overflowX: 'hidden' },
+          flexShrink: 0,
+          px: { xs: 2, sm: 3 },
+          pt: { xs: 2, sm: 2.5 },
+          pb: { xs: 1.5, sm: 2 },
+          [COMPACT_MEDIA]: { px: 1.5, pt: 1.5, pb: 1 },
         }}
       >
         <Stack
@@ -199,7 +207,7 @@ export function ClientesList() {
           alignItems={{ sm: 'center' }}
           justifyContent="space-between"
           gap={2}
-          sx={{ mb: 3, flexShrink: 0, [COMPACT_MEDIA]: { mb: 1.5, gap: 1 } }}
+          sx={{ mb: 2, [COMPACT_MEDIA]: { mb: 1.5, gap: 1 } }}
         >
           <Box>
             <Typography
@@ -208,11 +216,11 @@ export function ClientesList() {
               fontWeight={700}
               color="text.primary"
               gutterBottom
-              sx={{ letterSpacing: '-0.02em', [COMPACT_MEDIA]: { fontSize: '1.25rem' } }}
+              sx={{ letterSpacing: '-0.02em', mb: 0.5, [COMPACT_MEDIA]: { fontSize: '1.35rem' } }}
             >
               Clientes
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}>
+            <Typography variant="body1" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.875rem' } }}>
               Administra tu base de clientes
             </Typography>
           </Box>
@@ -226,10 +234,11 @@ export function ClientesList() {
               textTransform: 'none',
               fontWeight: 600,
               px: 2.5,
-              py: 1.25,
+              py: 1,
+              flexShrink: 0,
               boxShadow: '0 1px 3px rgba(33, 150, 243, 0.3)',
               '&:hover': { boxShadow: '0 4px 12px rgba(33, 150, 243, 0.35)' },
-              [COMPACT_MEDIA]: { px: 1.5, py: 0.75, fontSize: '0.8125rem' },
+              [COMPACT_MEDIA]: { px: 1.5, py: 0.75, fontSize: '0.875rem' },
             }}
           >
             Nuevo cliente
@@ -238,11 +247,10 @@ export function ClientesList() {
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
-          gap={2}
+          gap={1.5}
           alignItems={{ sm: 'center' }}
           flexWrap="wrap"
           useFlexGap
-          sx={{ mb: 4, flexShrink: 0, [COMPACT_MEDIA]: { mb: 2.5, gap: 1 } }}
         >
           <TextField
             placeholder="Buscar por nombre o nº identificación..."
@@ -318,194 +326,119 @@ export function ClientesList() {
             </>
           )}
         </Stack>
+      </Box>
 
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <TableContainer
-            sx={{
-              flexShrink: 0,
-              borderRadius: 2,
-              border: 1,
-              borderColor: 'divider',
-              overflowX: 'auto',
-              [COMPACT_MEDIA]: { borderRadius: 1 },
-            }}
-          >
-            <Table size="small" sx={{ minWidth: 900 }}>
-              <TableHead>
-                <TableRow sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: 'text.secondary',
-                      fontSize: '0.8125rem',
-                      py: 1.5,
-                      [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 },
-                    }}
-                  >
-                    Nombre
-                  </TableCell>
-                  {!isCompactView && (
-                    <TableCell
-                      sx={{
-                        fontWeight: 600,
-                        color: 'text.secondary',
-                        fontSize: '0.8125rem',
-                        py: 1.5,
-                      }}
-                    >
-                      Tipo identificación
-                    </TableCell>
-                  )}
-                  {!isCompactView && (
-                    <TableCell
-                      sx={{
-                        fontWeight: 600,
-                        color: 'text.secondary',
-                        fontSize: '0.8125rem',
-                        py: 1.5,
-                      }}
-                    >
-                      Nº identificación
-                    </TableCell>
-                  )}
-                  {!isCompactView && (
-                    <TableCell
-                      sx={{
-                        fontWeight: 600,
-                        color: 'text.secondary',
-                        fontSize: '0.8125rem',
-                        py: 1.5,
-                      }}
-                    >
-                      Dirección
-                    </TableCell>
-                  )}
-                  {!isCompactView && (
-                    <TableCell
-                      sx={{
-                        fontWeight: 600,
-                        color: 'text.secondary',
-                        fontSize: '0.8125rem',
-                        py: 1.5,
-                      }}
-                    >
-                      Teléfono
-                    </TableCell>
-                  )}
-                  {!isCompactView && (
-                    <TableCell
-                      sx={{
-                        fontWeight: 600,
-                        color: 'text.secondary',
-                        fontSize: '0.8125rem',
-                        py: 1.5,
-                      }}
-                    >
-                      Correo
-                    </TableCell>
-                  )}
-                  {!isCompactView && COLUMNAS_TIPO_PRODUCTO.map(({ key, label }) => (
-                    <TableCell
-                      key={key}
-                      align="center"
-                      sx={{
-                        fontWeight: 600,
-                        color: 'text.secondary',
-                        fontSize: '0.8125rem',
-                        py: 1.5,
-                      }}
-                    >
-                      {label}
-                    </TableCell>
-                  ))}
-                  <TableCell
-                    sx={{
-                      fontWeight: 600,
-                      color: 'text.secondary',
-                      fontSize: '0.8125rem',
-                      py: 1.5,
-                      [COMPACT_MEDIA]: { fontSize: '0.75rem', py: 1 },
-                    }}
-                    align="center"
-                  >
-                    Opciones
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <TableLoader columnCount={isCompactView ? 2 : 8 + COLUMNAS_TIPO_PRODUCTO.length} message="Cargando clientes..." />
-                ) : (
-                  clientes.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      sx={{
-                        '&:last-child td': { borderBottom: 0 },
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
-                    >
-                      <ClienteRow
-                        row={row}
-                        chipEstados={CHIP_ESTADOS}
-                        opcionesEstadoVenta={opcionesEstadoVenta}
-                        onDescargar={handleDescargarPdf}
-                        onEliminar={handleAbrirEliminar}
-                        onVer={handleAbrirVer}
-                        compact={isCompactView}
-                      />
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Box sx={{ flex: 1, minHeight: 0 }} />
-
-          <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          alignItems="center"
-          justifyContent="space-between"
+      {/* Zona tabla + paginación: altura acotada, scroll solo en la tabla */}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          px: { xs: 2, sm: 3 },
+          pb: { xs: 1.5, sm: 2 },
+          [COMPACT_MEDIA]: { px: 1.5, pb: 1 },
+        }}
+      >
+        <TableContainer
           sx={{
-            flexShrink: 0,
-            px: 2,
-            py: 1.5,
-            borderTop: '1px solid',
+            flex: 1,
+            minHeight: 0,
+            borderRadius: 2,
+            border: 1,
             borderColor: 'divider',
-            bgcolor: 'background.paper',
-            flexWrap: 'wrap',
-            gap: 1.5,
-            borderRadius: '0 0 12px 12px',
-            [COMPACT_MEDIA]: { py: 1, px: 1.5, gap: 1 },
+            overflow: 'auto',
+            [COMPACT_MEDIA]: { borderRadius: 1 },
           }}
         >
-          <Box sx={{ flexShrink: 0 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
-              Mostrando {inicio}–{fin} de {total} clientes
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
-              Mostrando {productosPagina} de {productosTotal} productos
-            </Typography>
-          </Box>
-          <Pagination
-            count={totalPaginas}
-            page={pagina}
-            onChange={handleChangePagina}
-            color="primary"
-            size="small"
-            showFirstButton
-            showLastButton
-            siblingCount={1}
-            boundaryCount={1}
-            sx={{
-              flexShrink: 0,
-              '& .MuiPagination-ul': { flexWrap: 'wrap', justifyContent: 'center' },
-              [COMPACT_MEDIA]: { '& .MuiPaginationItem-root': { minWidth: 28, height: 28, fontSize: '0.75rem' } },
-            }}
-          />
-        </Stack>
+        <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={headerCellSx(isDark)}>Nombre</TableCell>
+              {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Tipo identificación</TableCell>}
+              {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Nº identificación</TableCell>}
+              {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Dirección</TableCell>}
+              {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Teléfono</TableCell>}
+              {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Correo</TableCell>}
+              {!isCompactView && COLUMNAS_TIPO_PRODUCTO.map(({ key, label }) => (
+                <TableCell key={key} align="center" sx={headerCellSx(isDark)}>
+                  {label}
+                </TableCell>
+              ))}
+              <TableCell sx={headerCellSx(isDark)} align="center">
+                Opciones
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableLoader columnCount={isCompactView ? 2 : 8 + COLUMNAS_TIPO_PRODUCTO.length} message="Cargando clientes..." />
+            ) : (
+              clientes.map((row) => (
+                <TableRow
+                  key={row.id}
+                  hover
+                  sx={{
+                    '&:last-child td': { borderBottom: 0 },
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <ClienteRow
+                    row={row}
+                    chipEstados={CHIP_ESTADOS}
+                    opcionesEstadoVenta={opcionesEstadoVenta}
+                    onDescargar={handleDescargarPdf}
+                    onEliminar={handleAbrirEliminar}
+                    onVer={handleAbrirVer}
+                    compact={isCompactView}
+                  />
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        </TableContainer>
+
+        <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{
+          flexShrink: 0,
+          pt: 1.5,
+          borderTop: 1,
+          borderColor: 'divider',
+          flexWrap: 'wrap',
+          gap: 1.5,
+          [COMPACT_MEDIA]: { pt: 1, gap: 1 },
+        }}
+      >
+        <Box sx={{ flexShrink: 0 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}>
+            Mostrando {inicio}–{fin} de {total} clientes
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}>
+            Mostrando {productosPagina} de {productosTotal} productos
+          </Typography>
         </Box>
+        <Pagination
+          count={totalPaginas}
+          page={pagina}
+          onChange={handleChangePagina}
+          color="primary"
+          size="small"
+          showFirstButton
+          showLastButton
+          siblingCount={1}
+          boundaryCount={1}
+          sx={{
+            flexShrink: 0,
+            '& .MuiPagination-ul': { flexWrap: 'wrap', justifyContent: 'center' },
+            [COMPACT_MEDIA]: { '& .MuiPaginationItem-root': { minWidth: 28, height: 28, fontSize: '0.75rem' } },
+          }}
+        />
+      </Stack>
       </Box>
 
       <ImportarClientesModal

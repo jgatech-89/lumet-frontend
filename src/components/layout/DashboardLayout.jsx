@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Box, Drawer, useMediaQuery, useTheme } from '@mui/material';
 import { COMPACT_MEDIA } from '../../utils/theme';
+import { APP_BAR_HEIGHT } from '../../utils/layout';
 import AppNavbar from './AppNavbar';
 import Sidebar from './Sidebar';
 
-const APP_BAR_HEIGHT = 64;
 const SIDEBAR_WIDTH = 240;
 
 const DashboardLayout = ({ children }) => {
@@ -18,19 +18,29 @@ const DashboardLayout = ({ children }) => {
   const sidebarContent = <Sidebar onNavigate={isDesktop ? undefined : handleCloseSidebar} />;
 
   return (
-    <Box sx={{ height: '100vh', overflow: 'hidden', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
+    <Box
+      sx={{
+        position: 'relative',
+        height: '100vh',
+        height: '100dvh',
+        overflow: 'hidden',
+        bgcolor: 'background.default',
+      }}
+    >
       <AppNavbar onMenuClick={isDesktop ? undefined : handleToggleSidebar} />
       <Box
         sx={{
+          position: 'absolute',
+          top: APP_BAR_HEIGHT,
+          left: 0,
+          right: 0,
+          bottom: 0,
           display: 'flex',
-          flex: 1,
-          minHeight: 0,
           overflow: 'hidden',
-          pt: `${APP_BAR_HEIGHT}px`,
         }}
       >
         {isDesktop ? (
-          <Box sx={{ width: SIDEBAR_WIDTH, flexShrink: 0 }}>{sidebarContent}</Box>
+          <Box sx={{ width: SIDEBAR_WIDTH, flexShrink: 0, minHeight: 0, overflow: 'hidden' }}>{sidebarContent}</Box>
         ) : (
           <Drawer
             variant="temporary"
@@ -57,26 +67,36 @@ const DashboardLayout = ({ children }) => {
             flex: 1,
             minWidth: 0,
             minHeight: 0,
-            p: { xs: 2, sm: 4, md: 5 },
+            height: '100%',
+            p: { xs: 2, sm: 2.5, md: 3 },
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             bgcolor: 'background.default',
-            [COMPACT_MEDIA]: { p: 3 },
+            boxSizing: 'border-box',
+            [COMPACT_MEDIA]: { p: 2 },
           }}
         >
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
             {children}
           </Box>
           <Box
             component="footer"
             sx={{
               flexShrink: 0,
-              mt: 'auto',
               textAlign: 'center',
               color: 'text.secondary',
               fontSize: '0.72rem',
               lineHeight: 1.2,
+              pt: 0.5,
               pb: 0.25,
               userSelect: 'none',
             }}
