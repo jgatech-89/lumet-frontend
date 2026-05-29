@@ -1,5 +1,12 @@
 export const FILAS_POR_PAGINA = 8;
 
+/** Columnas de conteo por tipo de producto (ClienteEmpresa.producto). */
+export const COLUMNAS_TIPO_PRODUCTO = [
+  { key: 'productosLuz', label: 'Luz' },
+  { key: 'productosGas', label: 'Gas' },
+  { key: 'productosLuzYGas', label: 'Luz y Gas' },
+];
+
 export const CLIENTES_INICIAL = [
   { id: 1, nombre: 'Ana López', telefono: '+1 123 456 789', correo: 'ana@empresa.com', vendedor: 'Eduardo Magno', estado: 'Venta completada' },
   { id: 2, nombre: 'Carlos Martinez', telefono: '+1 957 321 654', correo: 'carlos@empresa.com', vendedor: 'María López', estado: 'Venta cancelada' },

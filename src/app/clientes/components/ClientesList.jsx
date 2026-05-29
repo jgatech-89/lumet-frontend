@@ -4,6 +4,7 @@ import { COMPACT_MEDIA } from '../../../utils/theme';
 import { useThemeMode } from '../../../context/ThemeContext';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { useClientes } from '../logic/useClientes';
+import { COLUMNAS_TIPO_PRODUCTO } from '../logic/constants';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { ClienteRow } from './ClienteRow';
 import { ClienteDetalleModal } from './ClienteDetalleModal';
@@ -59,6 +60,8 @@ export function ClientesList() {
   const {
     clientes,
     total,
+    productosPagina,
+    productosTotal,
     loading,
     pagina,
     inicio,
@@ -401,6 +404,20 @@ export function ClientesList() {
                       Correo
                     </TableCell>
                   )}
+                  {!isCompactView && COLUMNAS_TIPO_PRODUCTO.map(({ key, label }) => (
+                    <TableCell
+                      key={key}
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.secondary',
+                        fontSize: '0.8125rem',
+                        py: 1.5,
+                      }}
+                    >
+                      {label}
+                    </TableCell>
+                  ))}
                   <TableCell
                     sx={{
                       fontWeight: 600,
@@ -417,7 +434,7 @@ export function ClientesList() {
               </TableHead>
               <TableBody>
                 {loading ? (
-                  <TableLoader columnCount={isCompactView ? 2 : 8} message="Cargando clientes..." />
+                  <TableLoader columnCount={isCompactView ? 2 : 8 + COLUMNAS_TIPO_PRODUCTO.length} message="Cargando clientes..." />
                 ) : (
                   clientes.map((row) => (
                     <TableRow
@@ -463,9 +480,14 @@ export function ClientesList() {
             [COMPACT_MEDIA]: { py: 1, px: 1.5, gap: 1 },
           }}
         >
-          <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0, [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
-            Mostrando {inicio}–{fin} de {total} clientes
-          </Typography>
+          <Box sx={{ flexShrink: 0 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
+              Mostrando {inicio}–{fin} de {total} clientes
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.75rem' } }}>
+              Mostrando {productosPagina} de {productosTotal} productos
+            </Typography>
+          </Box>
           <Pagination
             count={totalPaginas}
             page={pagina}

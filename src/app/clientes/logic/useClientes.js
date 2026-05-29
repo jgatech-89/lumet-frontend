@@ -14,6 +14,8 @@ export function useClientes() {
   const [pagina, setPagina] = useState(1);
   const [clientes, setClientes] = useState([]);
   const [total, setTotal] = useState(0);
+  const [productosPagina, setProductosPagina] = useState(0);
+  const [productosTotal, setProductosTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [opcionesEstadoVenta, setOpcionesEstadoVenta] = useState([]);
 
@@ -36,13 +38,18 @@ export function useClientes() {
     try {
       const filters = { search: busqueda.trim() || undefined };
       if (estadoVentaParam) filters.estado_venta = estadoVentaParam;
-      const { results, count } = await api.listarClientes(pagina, FILAS_POR_PAGINA, filters);
+      const { results, count, productosPagina: pp, productosTotal: pt } =
+        await api.listarClientes(pagina, FILAS_POR_PAGINA, filters);
       setClientes(results);
       setTotal(count);
+      setProductosPagina(pp);
+      setProductosTotal(pt);
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar clientes'), 'error');
       setClientes([]);
       setTotal(0);
+      setProductosPagina(0);
+      setProductosTotal(0);
     } finally {
       setLoading(false);
     }
@@ -62,6 +69,8 @@ export function useClientes() {
   return {
     clientes,
     total,
+    productosPagina,
+    productosTotal,
     pagina,
     setPagina,
     inicio,
