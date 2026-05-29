@@ -1,10 +1,31 @@
 export const FILAS_POR_PAGINA = 8;
 
-/** Columnas de conteo por tipo de producto (ClienteEmpresa.producto). */
-export const COLUMNAS_TIPO_PRODUCTO = [
-  { key: 'productosLuz', label: 'Luz' },
-  { key: 'productosGas', label: 'Gas' },
-  { key: 'productosLuzYGas', label: 'Luz y Gas' },
+/** Columnas de conteo por tipo de servicio (ClienteEmpresa.empresa → Energía/ONG/Telefonía). Energía se muestra como CUPS. */
+export const COLUMNAS_TIPO_SERVICIO = [
+  {
+    key: 'productosCups',
+    label: 'CUPS',
+    paginaApi: 'productosPaginaCups',
+    totalApi: 'productosTotalCups',
+    accent: '#d97706',
+    accentDark: '#fbbf24',
+  },
+  {
+    key: 'productosOng',
+    label: 'ONG',
+    paginaApi: 'productosPaginaOng',
+    totalApi: 'productosTotalOng',
+    accent: '#059669',
+    accentDark: '#34d399',
+  },
+  {
+    key: 'productosTelefonia',
+    label: 'Telefonía',
+    paginaApi: 'productosPaginaTelefonia',
+    totalApi: 'productosTotalTelefonia',
+    accent: '#4f46e5',
+    accentDark: '#818cf8',
+  },
 ];
 
 export const CLIENTES_INICIAL = [

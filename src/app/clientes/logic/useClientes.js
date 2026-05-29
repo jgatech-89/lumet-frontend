@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSnackbar } from '../../../context/SnackbarContext';
 import { getErrorMessage } from '../../../utils/funciones';
 import * as api from './apiCliente';
-import { FILAS_POR_PAGINA } from './constants';
+import { FILAS_POR_PAGINA, COLUMNAS_TIPO_SERVICIO } from './constants';
 
 /**
  * Hook con la lógica del listado de clientes: filtros, paginación y datos desde API.
@@ -14,8 +14,10 @@ export function useClientes() {
   const [pagina, setPagina] = useState(1);
   const [clientes, setClientes] = useState([]);
   const [total, setTotal] = useState(0);
-  const [productosPagina, setProductosPagina] = useState(0);
-  const [productosTotal, setProductosTotal] = useState(0);
+  const emptyConteoServicio = () =>
+    Object.fromEntries(COLUMNAS_TIPO_SERVICIO.map(({ key }) => [key, 0]));
+  const [productosPaginaPorServicio, setProductosPaginaPorServicio] = useState(emptyConteoServicio);
+  const [productosTotalPorServicio, setProductosTotalPorServicio] = useState(emptyConteoServicio);
   const [loading, setLoading] = useState(false);
   const [opcionesEstadoVenta, setOpcionesEstadoVenta] = useState([]);
 
@@ -38,18 +40,25 @@ export function useClientes() {
     try {
       const filters = { search: busqueda.trim() || undefined };
       if (estadoVentaParam) filters.estado_venta = estadoVentaParam;
-      const { results, count, productosPagina: pp, productosTotal: pt } =
-        await api.listarClientes(pagina, FILAS_POR_PAGINA, filters);
-      setClientes(results);
-      setTotal(count);
-      setProductosPagina(pp);
-      setProductosTotal(pt);
+      const data = await api.listarClientes(pagina, FILAS_POR_PAGINA, filters);
+      setClientes(data.results);
+      setTotal(data.count);
+      setProductosPaginaPorServicio(
+        Object.fromEntries(
+          COLUMNAS_TIPO_SERVICIO.map(({ key, paginaApi }) => [key, data[paginaApi] ?? 0])
+        )
+      );
+      setProductosTotalPorServicio(
+        Object.fromEntries(
+          COLUMNAS_TIPO_SERVICIO.map(({ key, totalApi }) => [key, data[totalApi] ?? 0])
+        )
+      );
     } catch (e) {
       showSnackbar(getErrorMessage(e, e?.status, e?.response, 'Error al cargar clientes'), 'error');
       setClientes([]);
       setTotal(0);
-      setProductosPagina(0);
-      setProductosTotal(0);
+      setProductosPaginaPorServicio(emptyConteoServicio());
+      setProductosTotalPorServicio(emptyConteoServicio());
     } finally {
       setLoading(false);
     }
@@ -69,8 +78,8 @@ export function useClientes() {
   return {
     clientes,
     total,
-    productosPagina,
-    productosTotal,
+    productosPaginaPorServicio,
+    productosTotalPorServicio,
     pagina,
     setPagina,
     inicio,

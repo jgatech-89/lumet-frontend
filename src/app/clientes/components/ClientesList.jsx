@@ -4,7 +4,7 @@ import { COMPACT_MEDIA } from '../../../utils/theme';
 import { useThemeMode } from '../../../context/ThemeContext';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { useClientes } from '../logic/useClientes';
-import { COLUMNAS_TIPO_PRODUCTO } from '../logic/constants';
+import { COLUMNAS_TIPO_SERVICIO } from '../logic/constants';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { ClienteRow } from './ClienteRow';
 import { ClienteDetalleModal } from './ClienteDetalleModal';
@@ -70,8 +70,8 @@ export function ClientesList() {
   const {
     clientes,
     total,
-    productosPagina,
-    productosTotal,
+    productosPaginaPorServicio,
+    productosTotalPorServicio,
     loading,
     pagina,
     inicio,
@@ -361,7 +361,7 @@ export function ClientesList() {
               {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Dirección</TableCell>}
               {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Teléfono</TableCell>}
               {!isCompactView && <TableCell sx={headerCellSx(isDark)}>Correo</TableCell>}
-              {!isCompactView && COLUMNAS_TIPO_PRODUCTO.map(({ key, label }) => (
+              {!isCompactView && COLUMNAS_TIPO_SERVICIO.map(({ key, label }) => (
                 <TableCell key={key} align="center" sx={headerCellSx(isDark)}>
                   {label}
                 </TableCell>
@@ -373,7 +373,7 @@ export function ClientesList() {
           </TableHead>
           <TableBody>
             {loading ? (
-              <TableLoader columnCount={isCompactView ? 2 : 8 + COLUMNAS_TIPO_PRODUCTO.length} message="Cargando clientes..." />
+              <TableLoader columnCount={isCompactView ? 2 : 8 + COLUMNAS_TIPO_SERVICIO.length} message="Cargando clientes..." />
             ) : (
               clientes.map((row) => (
                 <TableRow
@@ -406,6 +406,7 @@ export function ClientesList() {
         justifyContent="space-between"
         sx={{
           flexShrink: 0,
+          width: '100%',
           pt: 1.5,
           borderTop: 1,
           borderColor: 'divider',
@@ -414,14 +415,81 @@ export function ClientesList() {
           [COMPACT_MEDIA]: { pt: 1, gap: 1 },
         }}
       >
-        <Box sx={{ flexShrink: 0 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}>
-            Mostrando {inicio}–{fin} de {total} clientes
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ [COMPACT_MEDIA]: { fontSize: '0.8125rem' } }}>
-            Mostrando {productosPagina} de {productosTotal} productos
-          </Typography>
-        </Box>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            flexShrink: 0,
+            fontVariantNumeric: 'tabular-nums',
+            [COMPACT_MEDIA]: { fontSize: '0.8125rem', textAlign: 'center', width: '100%' },
+          }}
+        >
+          Mostrando {inicio}–{fin} de {total} clientes
+        </Typography>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="center"
+          flexWrap="wrap"
+          gap={0.75}
+          useFlexGap
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            px: { sm: 1 },
+            [COMPACT_MEDIA]: { width: '100%', justifyContent: 'center' },
+          }}
+        >
+            {COLUMNAS_TIPO_SERVICIO.map(({ key, label, accent, accentDark }) => {
+              const tone = isDark ? accentDark : accent;
+              return (
+                <Box
+                  key={key}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: 10,
+                    fontSize: '0.75rem',
+                    lineHeight: 1.4,
+                    color: 'text.secondary',
+                    bgcolor: `${tone}14`,
+                    border: '1px solid',
+                    borderColor: `${tone}40`,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: tone,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography component="span" variant="caption" sx={{ color: tone }}>
+                    {label}
+                  </Typography>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ fontVariantNumeric: 'tabular-nums' }}
+                  >
+                    <Box component="span" sx={{ color: tone }}>
+                      {productosPaginaPorServicio[key] ?? 0}
+                    </Box>
+                    <Box component="span" sx={{ color: 'text.disabled', mx: 0.35 }}>
+                      de
+                    </Box>
+                    {productosTotalPorServicio[key] ?? 0}
+                  </Typography>
+                </Box>
+              );
+            })}
+        </Stack>
         <Pagination
           count={totalPaginas}
           page={pagina}
@@ -434,8 +502,13 @@ export function ClientesList() {
           boundaryCount={1}
           sx={{
             flexShrink: 0,
+            ml: { sm: 'auto' },
             '& .MuiPagination-ul': { flexWrap: 'wrap', justifyContent: 'center' },
-            [COMPACT_MEDIA]: { '& .MuiPaginationItem-root': { minWidth: 28, height: 28, fontSize: '0.75rem' } },
+            [COMPACT_MEDIA]: {
+              ml: 0,
+              width: '100%',
+              '& .MuiPaginationItem-root': { minWidth: 28, height: 28, fontSize: '0.75rem' },
+            },
           }}
         />
       </Stack>

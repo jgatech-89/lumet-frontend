@@ -9,7 +9,7 @@ import { usePermissions } from '../../../hooks/usePermissions';
 import { getChipEstadosVenta } from '../../../utils/chipColors';
 import { getActionBtnBlue, getActionBtnRed } from '../../../components/shared/actionButtonStyles';
 import { compactCellSx, compactChipSx } from '../../../components/shared/actionButtonStyles';
-import { COLUMNAS_TIPO_PRODUCTO } from '../logic/constants';
+import { COLUMNAS_TIPO_SERVICIO } from '../logic/constants';
 import { DeleteIcon, EyeIcon } from '../../../utils/icons';
 
 const DownloadIcon = () => (
@@ -64,7 +64,7 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
           {row.correo_electronico_o_carta || '-'}
         </TableCell>
       )}
-      {!compact && COLUMNAS_TIPO_PRODUCTO.map(({ key }) => (
+      {!compact && COLUMNAS_TIPO_SERVICIO.map(({ key }) => (
         <TableCell key={key} align="center" sx={{ ...compactCellSx, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
           {row[key] ?? 0}
         </TableCell>

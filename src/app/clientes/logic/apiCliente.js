@@ -28,7 +28,7 @@ export const obtenerOpcionesEstadoVenta = async () => {
  * @param {number} page - Página (1-based)
  * @param {number} pageSize - Tamaño de página
  * @param {{ search?: string, estado_venta?: string }} filters
- * @returns {Promise<{ results: Array, count: number, productosPagina: number, productosTotal: number }>}
+ * @returns {Promise<{ results: Array, count: number, productosPaginaCups: number, productosPaginaOng: number, productosPaginaTelefonia: number }>}
  */
 export const listarClientes = async (page = 1, pageSize = 8, filters = {}) => {
   const params = { page, page_size: pageSize };
@@ -38,8 +38,12 @@ export const listarClientes = async (page = 1, pageSize = 8, filters = {}) => {
   const results = Array.isArray(data) ? data : data?.results ?? [];
   const count = data?.count ?? results.length;
   return {
-    productosPagina: data?.productos_pagina ?? 0,
-    productosTotal: data?.productos_total ?? 0,
+    productosPaginaCups: data?.productos_pagina_cups ?? 0,
+    productosPaginaOng: data?.productos_pagina_ong ?? 0,
+    productosPaginaTelefonia: data?.productos_pagina_telefonia ?? 0,
+    productosTotalCups: data?.productos_total_cups ?? 0,
+    productosTotalOng: data?.productos_total_ong ?? 0,
+    productosTotalTelefonia: data?.productos_total_telefonia ?? 0,
     results: results.map((c) => ({
       id: c.id,
       nombre: c.nombre,
@@ -50,9 +54,9 @@ export const listarClientes = async (page = 1, pageSize = 8, filters = {}) => {
       correo_electronico_o_carta: c.correo_electronico_o_carta,
       estado_venta: c.estado_venta ?? 'pendiente',
       vendedor: c.vendedor_nombre ?? '-',
-      productosLuz: c.productos_luz ?? 0,
-      productosGas: c.productos_gas ?? 0,
-      productosLuzYGas: c.productos_luz_y_gas ?? 0,
+      productosCups: c.productos_cups ?? 0,
+      productosOng: c.productos_ong ?? 0,
+      productosTelefonia: c.productos_telefonia ?? 0,
       estado: c.estado === '1' ? 'Activo' : 'Inactivo',
     })),
     count,
