@@ -14,8 +14,38 @@ const palette = {
   sidebarActiveBg: '#e8f4fd',
 };
 
-/** Pantallas 14" o menos (~1400px ancho, ~800px alto) */
-const COMPACT_MEDIA = '@media (max-width: 1400px), (max-height: 800px)';
+/** Pantallas 14" o menos (~1400px ancho). Solo ancho: max-height varía por OS/DPI en Windows. */
+const COMPACT_MEDIA = '@media (max-width: 1400px)';
+
+/** Fuente embebida vía @fontsource/inter — misma tipografía en Mac y Windows */
+export const FONT_FAMILY = '"Inter", sans-serif';
+
+export const typographyBase = {
+  fontFamily: FONT_FAMILY,
+  h4: { fontWeight: 700, lineHeight: 1.25 },
+  h6: { fontWeight: 600, lineHeight: 1.3 },
+  body1: { lineHeight: 1.5 },
+  body2: { lineHeight: 1.43 },
+  button: { lineHeight: 1.5 },
+};
+
+/** Normalización cross-platform (sin fontFeatureSettings ni antialiasing solo-macOS) */
+export const cssBaselineStyles = {
+  html: {
+    scrollbarGutter: 'stable',
+    WebkitTextSizeAdjust: '100%',
+    textSizeAdjust: '100%',
+  },
+  body: {
+    fontFamily: FONT_FAMILY,
+    fontSynthesis: 'none',
+    WebkitFontSmoothing: 'subpixel-antialiased',
+    MozOsxFontSmoothing: 'auto',
+  },
+  '*': {
+    scrollbarWidth: 'thin',
+  },
+};
 
 const theme = createTheme({
   breakpoints: {
@@ -49,34 +79,14 @@ const theme = createTheme({
       secondary: '#637381',
     },
   },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 700,
-      letterSpacing: '-0.02em',
-    },
-    h6: {
-      fontWeight: 600,
-      letterSpacing: '-0.01em',
-    },
-    body1: {
-      letterSpacing: '0.01em',
-    },
-    body2: {
-      letterSpacing: '0.01em',
-    },
-  },
+  typography: typographyBase,
   shape: {
     borderRadius: 12,
   },
   spacing: 8,
   components: {
     MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          fontFeatureSettings: '"cv02", "cv03", "cv04", "cv11"',
-        },
-      },
+      styleOverrides: cssBaselineStyles,
     },
     MuiPaper: {
       styleOverrides: {

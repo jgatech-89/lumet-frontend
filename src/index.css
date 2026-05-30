@@ -2,6 +2,12 @@
   box-sizing: border-box;
 }
 
+html {
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -10,6 +16,7 @@ html, body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  font-synthesis: none;
 }
 
 #root {

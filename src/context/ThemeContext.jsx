@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { typographyBase, cssBaselineStyles } from '../utils/theme';
 
 const STORAGE_KEY = 'lumet-theme-mode';
 
@@ -49,20 +50,12 @@ const createAppTheme = (mode) => {
     breakpoints: {
       values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536, compact: 1400 },
     },
-    typography: {
-      fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-      h4: { fontWeight: 700, letterSpacing: '-0.02em' },
-      h6: { fontWeight: 600, letterSpacing: '-0.01em' },
-      body1: { letterSpacing: '0.01em' },
-      body2: { letterSpacing: '0.01em' },
-    },
+    typography: typographyBase,
     shape: { borderRadius: 12 },
     spacing: 8,
     components: {
       MuiCssBaseline: {
-        styleOverrides: {
-          body: { fontFeatureSettings: '"cv02", "cv03", "cv04", "cv11"' },
-        },
+        styleOverrides: cssBaselineStyles,
       },
       MuiPaper: {
         styleOverrides: {

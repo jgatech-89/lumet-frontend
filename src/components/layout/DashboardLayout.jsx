@@ -22,7 +22,7 @@ const DashboardLayout = ({ children }) => {
       sx={{
         position: 'relative',
         height: '100vh',
-        height: '100dvh',
+        '@supports (height: 100dvh)': { height: '100dvh' },
         overflow: 'hidden',
         bgcolor: 'background.default',
       }}

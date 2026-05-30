@@ -1,6 +1,6 @@
 export const FILAS_POR_PAGINA = 8;
 
-/** Columnas de conteo por tipo de servicio (ClienteEmpresa.empresa → Energía/ONG/Telefonía). Energía se muestra como CUPS. */
+/** Columnas de conteo: CUPS = respuestas CUPS registradas; ONG/Telefonía = productos activos por tipo. */
 export const COLUMNAS_TIPO_SERVICIO = [
   {
     key: 'productosCups',
