@@ -183,18 +183,14 @@ export const descargarPlantillaClientes = async () => {
 export const importarExcelClientes = async (archivo) => {
   const formData = new FormData();
   formData.append('archivo', archivo);
-  const token = getToken();
-  const response = await fetch(`${api}/api/clientes/importar-excel/`, {
-    method: 'POST',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
-    body: formData,
-  });
-  const data = await response.json().catch(() => ({}));
-  return {
-    ok: response.ok,
-    status: response.status,
-    ...data,
-  };
+  try {
+    const { data, status } = await http.post('/api/clientes/importar-excel/', formData);
+    return { ok: true, status, ...data };
+  } catch (e) {
+    const status = e?.response?.status ?? 0;
+    const data = e?.response?.data ?? {};
+    return { ok: false, status, ...data };
+  }
 };
 
 /**
@@ -203,17 +199,20 @@ export const importarExcelClientes = async (archivo) => {
  * @returns {Promise<Blob>}
  */
 export const exportarExcelClientes = async (filters = {}) => {
-  const params = new URLSearchParams();
-  if (filters.search?.trim()) params.set('search', filters.search.trim());
-  if (filters.estado_venta?.trim()) params.set('estado_venta', filters.estado_venta.trim());
-  const qs = params.toString();
-  const url = `${api}/api/clientes/exportar-excel/${qs ? `?${qs}` : ''}`;
-  const token = getToken();
-  const response = await fetch(url, {
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
-  });
-  if (!response.ok) throw new Error('Error al exportar');
-  return response.blob();
+  const params = {};
+  if (filters.search?.trim()) params.search = filters.search.trim();
+  if (filters.estado_venta?.trim()) params.estado_venta = filters.estado_venta.trim();
+  try {
+    const { data } = await http.get('/api/clientes/exportar-excel/', {
+      params,
+      responseType: 'blob',
+    });
+    return data;
+  } catch (e) {
+    const err = e?.response?.data;
+    const msg = err?.detail || err?.error || (typeof err === 'string' ? err : null);
+    throw new Error(msg || 'Error al exportar');
+  }
 };
 
 /**
