@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Box, Typography, TextField, Link } from '@mui/material';
 import { LoadingButton } from '../loading';
+import { formatErrorMessage } from '../../utils/funciones';
 
 const DIGIT_COUNT = 6;
 const RESEND_COOLDOWN_SEC = 60;
@@ -201,7 +202,7 @@ const ConfirmCodeForm = ({ email, onSubmit, onResendCode, isLoading = false }) =
           role="alert"
           sx={{ display: 'block', textAlign: 'center', mb: 1 }}
         >
-          {error}
+          {formatErrorMessage(error)}
         </Typography>
       )}
 

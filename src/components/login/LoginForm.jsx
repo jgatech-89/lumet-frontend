@@ -9,6 +9,7 @@ import {
   Link,
 } from '@mui/material';
 import { LoadingButton } from '../loading';
+import { formatErrorMessage } from '../../utils/funciones';
 
 const VisibilityIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
@@ -106,7 +107,7 @@ const LoginForm = ({ onSubmit, isLoading = false, onForgotPassword }) => {
           },
         })}
         error={Boolean(errors.email)}
-        helperText={errors.email?.message}
+        helperText={errors.email?.message ? formatErrorMessage(errors.email.message) : ''}
         inputProps={{ 'aria-label': 'Correo electrónico' }}
         sx={{
           '& .MuiOutlinedInput-root': {
@@ -135,7 +136,7 @@ const LoginForm = ({ onSubmit, isLoading = false, onForgotPassword }) => {
           defaultValue=""
           {...register('password', { required: 'La contraseña es obligatoria' })}
           error={Boolean(errors.password)}
-          helperText={errors.password?.message}
+          helperText={errors.password?.message ? formatErrorMessage(errors.password.message) : ''}
           inputProps={{ 'aria-label': 'Contraseña' }}
           InputProps={{
             endAdornment: (

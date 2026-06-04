@@ -28,8 +28,12 @@ export function usePermissions() {
       canAccessSettings: checkHasPermission(role, PERMISSIONS.ACCESS_SETTINGS),
       /** true si puede eliminar clientes */
       canDeleteClient: checkHasPermission(role, PERMISSIONS.DELETE_CLIENT),
-      /** true si puede exportar/importar Excel y exportar PDF en clientes */
-      canExportImportPdfClientes: checkHasPermission(role, PERMISSIONS.EXPORT_IMPORT_PDF_CLIENTES),
+      /** true si puede importar clientes desde Excel */
+      canImportExcelClientes: checkHasPermission(role, PERMISSIONS.IMPORT_EXCEL_CLIENTES),
+      /** true si puede exportar el listado de clientes a Excel */
+      canExportExcelClientes: checkHasPermission(role, PERMISSIONS.EXPORT_EXCEL_CLIENTES),
+      /** true si puede descargar el PDF de un cliente */
+      canExportPdfCliente: checkHasPermission(role, PERMISSIONS.EXPORT_PDF_CLIENTE),
       /** true si puede cambiar estado de venta de productos en la tabla de productos */
       canChangeProductState: checkHasPermission(role, PERMISSIONS.CHANGE_PRODUCT_STATE),
       /**

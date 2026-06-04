@@ -23,7 +23,7 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [menuAnchor, setMenuAnchor] = useState(null);
   const { isDark } = useThemeMode();
-  const { canDeleteClient, canExportImportPdfClientes } = usePermissions();
+  const { canDeleteClient, canExportPdfCliente } = usePermissions();
   const actionBtnBlue = getActionBtnBlue(isDark);
   const actionBtnRed = getActionBtnRed(isDark);
   const handleCloseMenu = () => setMenuAnchor(null);
@@ -91,7 +91,7 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               PaperProps={{ sx: { minWidth: 200 } }}
             >
-              {canExportImportPdfClientes && (
+              {canExportPdfCliente && (
                 <MenuItem onClick={() => { onDescargar?.(row); handleCloseMenu(); }}>
                   Descargar PDF
                 </MenuItem>
@@ -111,7 +111,7 @@ export function ClienteRow({ row, chipEstados = {}, opcionesEstadoVenta = [], on
             <IconButton size="small" aria-label="Ver detalle" title="Ver detalle" sx={actionBtnBlue} onClick={() => onVer?.(row)}>
               <EyeIcon />
             </IconButton>
-            {canExportImportPdfClientes && (
+            {canExportPdfCliente && (
             <IconButton size="small" aria-label="Descargar" title="Descargar" sx={actionBtnBlue} onClick={() => onDescargar?.(row)}>
               <DownloadIcon />
             </IconButton>

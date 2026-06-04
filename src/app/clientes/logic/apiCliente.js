@@ -183,14 +183,18 @@ export const descargarPlantillaClientes = async () => {
 export const importarExcelClientes = async (archivo) => {
   const formData = new FormData();
   formData.append('archivo', archivo);
-  try {
-    const { data, status } = await http.post('/api/clientes/importar-excel/', formData);
-    return { ok: true, status, ...data };
-  } catch (e) {
-    const status = e?.response?.status ?? 0;
-    const data = e?.response?.data ?? {};
-    return { ok: false, status, ...data };
-  }
+  const token = getToken();
+  const response = await fetch(`${api}/api/clientes/importar-excel/`, {
+    method: 'POST',
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+    body: formData,
+  });
+  const data = await response.json().catch(() => ({}));
+  return {
+    ok: response.ok,
+    status: response.status,
+    ...data,
+  };
 };
 
 /**

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { Box, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { formatErrorMessage } from '../utils/funciones';
 
 const GlobalFeedbackContext = createContext(null);
 
@@ -26,8 +27,9 @@ export const GlobalFeedbackProvider = ({ children }) => {
   }, []);
 
   const setError = useCallback((message) => {
-    setErrorState(message ?? null);
-    setErrorOpen(Boolean(message));
+    const text = message != null && message !== '' ? formatErrorMessage(message) : null;
+    setErrorState(text);
+    setErrorOpen(Boolean(text));
   }, []);
 
   const closeError = useCallback(() => {

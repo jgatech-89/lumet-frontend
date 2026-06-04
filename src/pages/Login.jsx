@@ -6,7 +6,7 @@ import { useSnackbar } from '../context/SnackbarContext';
 import LoginLeftPanel from '../components/login/LoginLeftPanel';
 import LoginForm from '../components/login/LoginForm';
 import ConfirmCodeForm from '../components/login/ConfirmCodeForm';
-import { post, getErrorMessage } from '../utils/funciones';
+import { post, getErrorMessage, formatErrorMessage } from '../utils/funciones';
 import { setTokens, parseAuthResponse } from '../utils/api';
 import { CheckIcon } from '../utils/icons';
 import { LoadingButton } from '../components/loading';
@@ -94,7 +94,7 @@ const Login = () => {
 
   const showAlert = (severity, msg) => {
     setAlertSeverity(severity);
-    setAlertMsg(msg);
+    setAlertMsg(severity === 'error' ? formatErrorMessage(msg) : msg);
     setAlertOpen(true);
   };
 
@@ -363,7 +363,7 @@ const Login = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             error={Boolean(fieldError)}
-            helperText={fieldError}
+            helperText={fieldError ? formatErrorMessage(fieldError) : ''}
             sx={inputSx}
             inputProps={{ 'aria-label': 'Confirmar contraseña' }}
           />

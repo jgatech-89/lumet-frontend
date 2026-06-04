@@ -20,6 +20,7 @@ import {
   Divider,
 } from '@mui/material';
 import { CloseIcon } from '../../../utils/icons';
+import { formatErrorMessage } from '../../../utils/funciones';
 import { modalPaperSx } from '../../../components/shared/ConfirmDeleteDialog';
 import { ConfirmDeleteDialog } from '../../../components/shared/ConfirmDeleteDialog';
 import { LoadingButton } from '../../../components/loading';
@@ -203,7 +204,7 @@ export function CampoModals({
                 <MenuItem key={e.id} value={String(e.id)}>{e.nombre}</MenuItem>
               ))}
             </Select>
-            {errors?.empresa && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.empresa}</Typography>}
+            {errors?.empresa && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{formatErrorMessage(errors.empresa)}</Typography>}
           </FormControl>
           {empresaId && (
             <Box
@@ -279,7 +280,7 @@ export function CampoModals({
                 <MenuItem key={s.id} value={String(s.id)}>{s.nombre ?? s.servicio}</MenuItem>
               ))}
             </Select>
-            {errors?.servicio && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.servicio}</Typography>}
+            {errors?.servicio && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{formatErrorMessage(errors.servicio)}</Typography>}
           </FormControl>
           {!aplicarTodosServicios && servicioId && (
             <Box
@@ -401,7 +402,7 @@ export function CampoModals({
               onChange={(e) => setNombre(e.target.value)}
               required
               error={!!errors?.nombre}
-              helperText={errors?.nombre}
+              helperText={errors?.nombre ? formatErrorMessage(errors.nombre) : ''}
               sx={inputSx}
             />
           </Box>
@@ -427,7 +428,7 @@ export function CampoModals({
                   <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
                 ))}
               </Select>
-              {errors?.tipo && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.tipo}</Typography>}
+              {errors?.tipo && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{formatErrorMessage(errors.tipo)}</Typography>}
             </FormControl>
           </Box>
           {tipoCampo === 'select' && (
@@ -495,7 +496,7 @@ export function CampoModals({
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
             Indica en qué bloque del formulario aparecerá este campo (Cliente, Datos base, Campos del formulario o Vendedor).
           </Typography>
-          {errors?.seccion && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{errors.seccion}</Typography>}
+          {errors?.seccion && <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>{formatErrorMessage(errors.seccion)}</Typography>}
         </FormControl>
       </Box>
       {/* Fila: Orden (input pequeño) | Obligatorio | Activo — flex, no grid */}
@@ -517,7 +518,7 @@ export function CampoModals({
           onChange={(e) => setOrden(e.target.value)}
           required
           error={!!errors?.orden}
-          helperText={errors?.orden}
+          helperText={errors?.orden ? formatErrorMessage(errors.orden) : ''}
           inputProps={{ min: 1, step: 1 }}
           sx={{ ...inputSx, width: 90, minWidth: 90 }}
         />

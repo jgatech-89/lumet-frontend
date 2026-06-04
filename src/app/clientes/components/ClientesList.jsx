@@ -66,7 +66,7 @@ export function ClientesList() {
   const { isDark } = useThemeMode();
   const { showSnackbar } = useSnackbar();
   const CHIP_ESTADOS = getChipEstadosVenta(isDark);
-  const { canExportImportPdfClientes } = usePermissions();
+  const { canImportExcelClientes, canExportExcelClientes } = usePermissions();
   const {
     clientes,
     total,
@@ -281,49 +281,49 @@ export function ClientesList() {
               ))}
             </Select>
           </FormControl>
-          {canExportImportPdfClientes && (
-            <>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<UploadExcelIcon />}
-                onClick={() => setModalImportar(true)}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  py: 0.75,
-                  px: 2.5,
-                  minHeight: 40,
-                  minWidth: { xs: '100%', sm: 160 },
-                  flexShrink: 0,
-                  fontSize: '0.875rem',
-                }}
-              >
-                Importar
-              </Button>
-              <LoadingButton
-                variant="outlined"
-                size="small"
-                startIcon={!exportando ? <DownloadExcelIcon /> : null}
-                onClick={handleExportarExcel}
-                loading={exportando}
-                loadingText="Exportando..."
-                sx={{
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  py: 0.75,
-                  px: 2.5,
-                  minHeight: 40,
-                  minWidth: { xs: '100%', sm: 160 },
-                  flexShrink: 0,
-                  fontSize: '0.875rem',
-                }}
-              >
-                Exportar Excel
-              </LoadingButton>
-            </>
+          {canImportExcelClientes && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<UploadExcelIcon />}
+              onClick={() => setModalImportar(true)}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: 0.75,
+                px: 2.5,
+                minHeight: 40,
+                minWidth: { xs: '100%', sm: 160 },
+                flexShrink: 0,
+                fontSize: '0.875rem',
+              }}
+            >
+              Importar masivo
+            </Button>
+          )}
+          {canExportExcelClientes && (
+            <LoadingButton
+              variant="outlined"
+              size="small"
+              startIcon={!exportando ? <DownloadExcelIcon /> : null}
+              onClick={handleExportarExcel}
+              loading={exportando}
+              loadingText="Exportando..."
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: 0.75,
+                px: 2.5,
+                minHeight: 40,
+                minWidth: { xs: '100%', sm: 160 },
+                flexShrink: 0,
+                fontSize: '0.875rem',
+              }}
+            >
+              Exportar Excel
+            </LoadingButton>
           )}
         </Stack>
       </Box>

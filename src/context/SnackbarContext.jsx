@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { Snackbar, Alert } from '@mui/material';
+import { formatErrorMessage } from '../utils/funciones';
 
 const SnackbarContext = createContext(null);
 
@@ -22,7 +23,8 @@ export const SnackbarProvider = ({ children }) => {
   const [autoHideDuration, setAutoHideDuration] = useState(DEFAULT_DURATION);
 
   const showSnackbar = useCallback((msg, sev = 'success', opts = {}) => {
-    setMessage(msg);
+    const text = msg != null ? String(msg) : '';
+    setMessage(sev === 'error' ? formatErrorMessage(text) : text);
     setSeverity(sev);
     setAnchorOrigin(opts.anchorOrigin ?? DEFAULT_ANCHOR);
     setAutoHideDuration(opts.autoHideDuration ?? DEFAULT_DURATION);
