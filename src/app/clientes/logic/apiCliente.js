@@ -162,9 +162,10 @@ export const descargarPdfCliente = async (id) => {
  * Descarga la plantilla Excel para importación masiva de clientes.
  * @returns {Promise<Blob>}
  */
-export const descargarPlantillaClientes = async () => {
+export const descargarPlantillaClientes = async (tipo = 'cups') => {
   try {
     const { data } = await http.get('/api/clientes/descargar-plantilla/', {
+      params: { tipo },
       responseType: 'blob',
     });
     return data;
@@ -180,9 +181,10 @@ export const descargarPlantillaClientes = async () => {
  * @param {File} archivo - Archivo Excel
  * @returns {Promise<{ ok: boolean, status: number, success?: boolean, creados?: number, mensaje?: string, errors?: Array<{fila?: number|null, columna?: string, mensaje: string, texto?: string}>, errores?: string[] }>}
  */
-export const importarExcelClientes = async (archivo) => {
+export const importarExcelClientes = async (archivo, tipo = 'cups') => {
   const formData = new FormData();
   formData.append('archivo', archivo);
+  formData.append('tipo', tipo);
   const token = getToken();
   const response = await fetch(`${api}/api/clientes/importar-excel/`, {
     method: 'POST',
