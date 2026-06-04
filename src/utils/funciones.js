@@ -14,6 +14,17 @@ export const patch = (url, data, authorization = true) =>
 export const del = (url, data = null, authorization = true) =>
   request(url, data, "DELETE", authorization);
 
+const ERROR_PREFIX_RE = /^ERROR\s*:?\s*/i;
+
+/** Prefija mensajes de error para que se identifiquen sin depender solo del color. */
+export const formatErrorMessage = (message) => {
+  if (message == null || message === '') return 'ERROR';
+  const text = String(message).trim();
+  if (!text) return 'ERROR';
+  if (ERROR_PREFIX_RE.test(text)) return text;
+  return `ERROR: ${text}`;
+};
+
 export const mostrarError = (errores) => {
   if (!errores || typeof errores !== "object") return "Ocurrió un error.";
   for (const k in errores) {

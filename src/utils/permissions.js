@@ -22,8 +22,12 @@ export const PERMISSIONS = {
   ACCESS_SETTINGS: 'access_settings',
   /** Poder eliminar clientes desde la tabla */
   DELETE_CLIENT: 'delete_client',
-  /** Exportar/Importar Excel y Exportar PDF en clientes (solo admin) */
-  EXPORT_IMPORT_PDF_CLIENTES: 'export_import_pdf_clientes',
+  /** Importar clientes desde Excel */
+  IMPORT_EXCEL_CLIENTES: 'import_excel_clientes',
+  /** Exportar listado de clientes a Excel */
+  EXPORT_EXCEL_CLIENTES: 'export_excel_clientes',
+  /** Descargar PDF de contrato por cliente */
+  EXPORT_PDF_CLIENTE: 'export_pdf_cliente',
   /** Cambiar estado de venta de productos en la tabla de productos del cliente (solo admin) */
   CHANGE_PRODUCT_STATE: 'change_product_state',
 };
@@ -37,11 +41,13 @@ const ROLE_PERMISSIONS = {
   [ROLES.ADMIN]: [
     PERMISSIONS.ACCESS_SETTINGS,
     PERMISSIONS.DELETE_CLIENT,
-    PERMISSIONS.EXPORT_IMPORT_PDF_CLIENTES,
+    PERMISSIONS.IMPORT_EXCEL_CLIENTES,
+    PERMISSIONS.EXPORT_EXCEL_CLIENTES,
+    PERMISSIONS.EXPORT_PDF_CLIENTE,
     PERMISSIONS.CHANGE_PRODUCT_STATE,
   ],
-  [ROLES.USUARIO]: [],
-  user: [], // alias de usuario
+  [ROLES.USUARIO]: [PERMISSIONS.IMPORT_EXCEL_CLIENTES],
+  user: [PERMISSIONS.IMPORT_EXCEL_CLIENTES], // alias de usuario
   [ROLES.CLIENTE]: [],
   [ROLES.INVITADO]: [],
 };
