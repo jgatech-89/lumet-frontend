@@ -4,6 +4,7 @@ import { COMPACT_MEDIA } from '../../utils/theme';
 import { APP_BAR_HEIGHT } from '../../utils/layout';
 import AppNavbar from './AppNavbar';
 import Sidebar from './Sidebar';
+import SubscriptionBanner from './SubscriptionBanner';
 
 const SIDEBAR_WIDTH = 240;
 
@@ -36,9 +37,12 @@ const DashboardLayout = ({ children }) => {
           right: 0,
           bottom: 0,
           display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
+        <SubscriptionBanner />
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
         {isDesktop ? (
           <Box sx={{ width: SIDEBAR_WIDTH, flexShrink: 0, minHeight: 0, overflow: 'hidden' }}>{sidebarContent}</Box>
         ) : (
@@ -103,6 +107,7 @@ const DashboardLayout = ({ children }) => {
           >
             Powered by JGA Tech 2026
           </Box>
+        </Box>
         </Box>
       </Box>
     </Box>
