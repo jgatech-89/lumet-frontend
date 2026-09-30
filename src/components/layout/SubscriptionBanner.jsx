@@ -79,27 +79,54 @@ const SubscriptionBanner = () => {
       </Box>
 
       <Box
-        sx={{
+        sx={(theme) => ({
           display: 'flex',
           alignItems: 'center',
           gap: 1.5,
           px: 2,
           py: 1.5,
+          mr: { sm: 2 },
           borderRadius: 2,
-          border: 1,
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-        }}
+          border: `1px solid ${alpha(theme.palette.error.main, 0.45)}`,
+          borderLeft: `5px solid ${theme.palette.error.main}`,
+          bgcolor: alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
+          boxShadow: `0 4px 14px ${alpha(theme.palette.error.main, 0.18)}`,
+        })}
       >
-        <EventIcon sx={{ color: 'error.main' }} />
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            bgcolor: 'error.main',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            animation: 'subscriptionPulse 1.8s ease-out infinite',
+            '@keyframes subscriptionPulse': {
+              '0%': { boxShadow: '0 0 0 0 rgba(211, 47, 47, 0.55)' },
+              '70%': { boxShadow: '0 0 0 10px rgba(211, 47, 47, 0)' },
+              '100%': { boxShadow: '0 0 0 0 rgba(211, 47, 47, 0)' },
+            },
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+          }}
+        >
+          <EventIcon fontSize="small" />
+        </Box>
         <Box>
-          <Typography variant="caption" color="text.secondary" display="block">
+          <Typography
+            variant="caption"
+            sx={{ color: 'error.main', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}
+            display="block"
+          >
             Acceso disponible hasta
           </Typography>
-          <Typography variant="subtitle2" sx={{ color: 'error.main', fontWeight: 700 }}>
+          <Typography variant="subtitle1" sx={{ color: 'error.main', fontWeight: 800, lineHeight: 1.3 }}>
             Hoy, {dateLabel} a las 11:59 p. m.
           </Typography>
-          <Typography variant="caption" color="text.secondary" display="block">
+          <Typography variant="caption" sx={{ color: 'error.dark', fontWeight: 500 }} display="block">
             Después de esta fecha tu cuenta será suspendida.
           </Typography>
         </Box>
