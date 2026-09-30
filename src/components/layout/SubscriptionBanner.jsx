@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import { Box, IconButton, SvgIcon, Typography, alpha } from '@mui/material';
-
-const CloseIcon = (props) => (
-  <SvgIcon {...props}>
-    <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-  </SvgIcon>
-);
+import { Box, SvgIcon, Typography, alpha } from '@mui/material';
 
 const PriorityHighIcon = (props) => (
   <SvgIcon {...props}>
@@ -24,9 +18,9 @@ const EventIcon = (props) => (
 const ACCESS_ENDS_AT = new Date(2026, 8, 30, 23, 59, 59);
 
 const SubscriptionBanner = () => {
-  const [open, setOpen] = useState(() => Date.now() <= ACCESS_ENDS_AT.getTime());
+  const [visible] = useState(() => Date.now() <= ACCESS_ENDS_AT.getTime());
 
-  if (!open) return null;
+  if (!visible) return null;
 
   const dateLabel = ACCESS_ENDS_AT.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -34,7 +28,6 @@ const SubscriptionBanner = () => {
     <Box
       role="alert"
       sx={(theme) => ({
-        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         flexWrap: 'wrap',
@@ -43,7 +36,6 @@ const SubscriptionBanner = () => {
         mt: 1,
         px: { xs: 2, sm: 3 },
         py: 2,
-        pr: 6,
         borderRadius: 3,
         border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
         bgcolor: alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.12 : 0.06),
@@ -85,7 +77,6 @@ const SubscriptionBanner = () => {
           gap: 1.5,
           px: 2,
           py: 1.5,
-          mr: { sm: 2 },
           borderRadius: 2,
           border: `1px solid ${alpha(theme.palette.error.main, 0.45)}`,
           borderLeft: `5px solid ${theme.palette.error.main}`,
@@ -131,15 +122,6 @@ const SubscriptionBanner = () => {
           </Typography>
         </Box>
       </Box>
-
-      <IconButton
-        aria-label="Cerrar aviso"
-        size="small"
-        onClick={() => setOpen(false)}
-        sx={{ position: 'absolute', top: 8, right: 8 }}
-      >
-        <CloseIcon fontSize="small" />
-      </IconButton>
     </Box>
   );
 };
