@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box, SvgIcon, Typography, alpha } from '@mui/material';
+import { ACCESS_ENDS_AT } from '../../utils/subscription';
 
 const PriorityHighIcon = (props) => (
   <SvgIcon {...props}>
@@ -14,8 +15,6 @@ const EventIcon = (props) => (
   </SvgIcon>
 );
 
-// Access ends at this local date/time; the banner hides itself afterwards.
-const ACCESS_ENDS_AT = new Date(2026, 8, 30, 23, 59, 59);
 
 const SubscriptionBanner = () => {
   const [visible] = useState(() => Date.now() <= ACCESS_ENDS_AT.getTime());
